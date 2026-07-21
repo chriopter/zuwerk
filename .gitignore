@@ -1,4 +1,29 @@
+# Environment and credentials
+.env
+.env.*
+/config/*.key
+/.kamal/secrets
+
+# Ruby and Rails runtime files
+/.bundle
+/vendor/bundle
+/log/*
+!/log/.keep
+/tmp/*
+!/tmp/.keep
+!/tmp/pids
+/tmp/pids/*
+!/tmp/pids/.keep
+/storage/*
+!/storage/.keep
+/public/assets
+
+# Python files from the previous prototype
 __pycache__/
 *.py[cod]
 .venv/
-.env
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/

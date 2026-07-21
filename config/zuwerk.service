@@ -1,0 +1,17 @@
+[Unit]
+Description=Zuwerk Rails chat
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/git/zuwerk
+Environment=RAILS_ENV=production
+Environment=PORT=3100
+Environment=SOLID_QUEUE_IN_PUMA=1
+Environment=RAILS_LOG_TO_STDOUT=1
+ExecStart=/usr/local/bin/bundle exec puma -C config/puma.rb
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
