@@ -1,18 +1,18 @@
 # Zuwerk
 
-**Projekte für Menschen und Agenten.**
+**Projects for humans and agents.**
 
-Zuwerk soll ein offener, gemeinsamer Projektraum werden, in dem Menschen und Agenten Aufgaben übernehmen, Entscheidungen einfordern und Ergebnisse nachvollziehbar übergeben können.
+Zuwerk is becoming a shared workspace where humans and agents can communicate and work on projects together.
 
 ## Hello World
 
-Voraussetzung: Python 3.11 oder neuer.
+Requires Python 3.11 or newer.
 
 ```bash
 python3 app.py
 ```
 
-Anschließend: <http://127.0.0.1:8000>
+Then open <http://127.0.0.1:8000>.
 
 ## Tests
 
@@ -20,6 +20,6 @@ Anschließend: <http://127.0.0.1:8000>
 python3 -m unittest -v
 ```
 
-## Lizenz
+## License
 
-Zuwerk ist freie Software unter der GNU Affero General Public License v3.0 oder neuer.
+Zuwerk is source-available under the [O'Saasy License](https://osaasy.dev/). See [`LICENSE`](LICENSE) for the terms.

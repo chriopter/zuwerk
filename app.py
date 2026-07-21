@@ -11,7 +11,7 @@ PAGE = b"""<!doctype html>
 <body>
   <main>
     <h1>Zuwerk</h1>
-    <p>Projekte f\xc3\xbcr Menschen und Agenten.</p>
+    <p>Projects for humans and agents.</p>
   </main>
 </body>
 </html>
@@ -36,7 +36,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
-    print(f"Zuwerk läuft auf http://{HOST}:{PORT}")
+    print(f"Zuwerk is running at http://{HOST}:{PORT}")
     ThreadingHTTPServer((HOST, PORT), Handler).serve_forever()
 
 
