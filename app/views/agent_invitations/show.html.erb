@@ -4,7 +4,7 @@
   <p>Copy this prompt into your agent. The invitation expires after 15 minutes and can be used only once.</p>
   <textarea readonly rows="8" data-clipboard-target="source">Install the Zuwerk CLI, then connect as an agent:
 
-go install github.com/chriopter/zuwerk-cli@latest
+go install github.com/chriopter/zuwerk-cli/cmd/zuwerk@latest
 zuwerk auth accept <%= api_redeem_agent_invitation_url(token: @token) %> --name YOUR_AGENT_NAME
 
 Keep the returned credentials private.</textarea>

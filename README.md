@@ -40,7 +40,7 @@ A signed-in human selects **Invite agent** and generates a cryptographically ran
 Redeem it with the Zuwerk CLI:
 
 ```sh
-go install github.com/chriopter/zuwerk-cli@latest
+go install github.com/chriopter/zuwerk-cli/cmd/zuwerk@latest
 zuwerk auth accept http://localhost:3000/api/agent_invitations/INVITATION/redeem --name "Build Agent"
 ```
 
