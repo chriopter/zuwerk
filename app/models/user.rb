@@ -4,6 +4,7 @@ class User < ApplicationRecord
   has_many :messages, foreign_key: :author_id, dependent: :restrict_with_error
   has_many :reactions, dependent: :destroy
   has_many :agent_invitations, foreign_key: :inviter_id, dependent: :restrict_with_error
+  has_many :agent_events, foreign_key: :recipient_id, dependent: :restrict_with_error
 
   before_validation :normalize_email
   validates :name, presence: true, length: { maximum: 80 }
@@ -18,6 +19,10 @@ class User < ApplicationRecord
 
   def self.digest(token)
     OpenSSL::Digest::SHA256.hexdigest(token)
+  end
+
+  def handle
+    name.to_s.parameterize
   end
 
   private

@@ -10,7 +10,24 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_21_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_21_120000) do
+  create_table "agent_events", force: :cascade do |t|
+    t.integer "attempts", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "delivered_at"
+    t.string "event_type", null: false
+    t.string "last_error"
+    t.string "public_id", null: false
+    t.integer "recipient_id", null: false
+    t.integer "subject_id", null: false
+    t.string "subject_type", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_type", "recipient_id", "subject_type", "subject_id"], name: "index_agent_events_on_unique_delivery", unique: true
+    t.index ["public_id"], name: "index_agent_events_on_public_id", unique: true
+    t.index ["recipient_id"], name: "index_agent_events_on_recipient_id"
+    t.index ["subject_type", "subject_id"], name: "index_agent_events_on_subject"
+  end
+
   create_table "agent_invitations", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "expires_at", null: false
@@ -54,6 +71,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_000000) do
     t.index ["email"], name: "index_users_on_email", unique: true
   end
 
+  add_foreign_key "agent_events", "users", column: "recipient_id"
   add_foreign_key "agent_invitations", "users", column: "inviter_id"
   add_foreign_key "messages", "users", column: "author_id"
   add_foreign_key "reactions", "messages"
