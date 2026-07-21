@@ -1,14 +1,30 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" data-theme="corporate">
   <head>
     <title><%= content_for(:title) || "Zuwerk" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <%= csrf_meta_tags %><%= csp_meta_tag %>
-    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <% if Rails.env.test? %>
+      <link rel="stylesheet" href="/assets/tailwind.css">
+    <% else %>
+      <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
+    <% end %>
     <%= javascript_importmap_tags %>
   </head>
-  <body>
-    <header class="topbar"><%= link_to "Zuwerk", root_path, class: "brand" %><% if current_user %><nav><span><%= current_user.name %></span><%= button_to "Log out", session_path, method: :delete, class: "link-button" %></nav><% end %></header>
-    <main><% flash.each do |type, message| %><div class="flash <%= type %>"><%= message %></div><% end %><%= yield %></main>
+  <% immersive_chat = current_user && controller_name == "messages" && action_name == "index" %>
+  <body class="<%= immersive_chat ? 'h-dvh overflow-hidden bg-white' : 'min-h-screen bg-slate-50 text-slate-950 antialiased' %>">
+    <% unless immersive_chat %>
+      <header class="border-b border-slate-200 bg-white px-5">
+        <div class="mx-auto flex h-16 max-w-6xl items-center justify-between">
+          <%= link_to "Zuwerk", root_path, class: "text-lg font-bold tracking-tight text-slate-950" %>
+          <% if current_user %><%= button_to "Log out", session_path, method: :delete, class: "text-sm font-medium text-slate-500 hover:text-slate-950" %><% end %>
+        </div>
+      </header>
+    <% end %>
+    <main class="<%= immersive_chat ? 'h-full' : 'mx-auto w-full max-w-6xl p-4 sm:p-8' %>">
+      <% flash.each do |type, message| %><div class="alert <%= type == 'alert' ? 'alert-error' : 'alert-success' %> mb-4 shadow-sm" role="status"><span><%= message %></span></div><% end %>
+      <%= yield %>
+    </main>
   </body>
 </html>

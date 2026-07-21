@@ -1,0 +1,10 @@
+{
+  "name": "zuwerk",
+  "private": true,
+  "scripts": {
+    "css:build": "bin/rails tailwindcss:build"
+  },
+  "devDependencies": {
+    "daisyui": "5.7.0"
+  }
+}

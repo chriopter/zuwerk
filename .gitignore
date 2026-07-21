@@ -17,6 +17,7 @@
 /storage/*
 !/storage/.keep
 /public/assets
+/node_modules
 
 # Python files from the previous prototype
 __pycache__/
@@ -27,3 +28,6 @@ __pycache__/
 .DS_Store
 .idea/
 .vscode/
+
+/app/assets/builds/*
+!/app/assets/builds/.keep

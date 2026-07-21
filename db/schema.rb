@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_21_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_21_130000) do
   create_table "agent_events", force: :cascade do |t|
     t.integer "attempts", default: 0, null: false
     t.datetime "created_at", null: false
@@ -43,6 +43,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_120000) do
     t.integer "author_id", null: false
     t.text "body", null: false
     t.datetime "created_at", null: false
+    t.integer "state", default: 0, null: false
     t.datetime "updated_at", null: false
     t.index ["author_id"], name: "index_messages_on_author_id"
   end
@@ -58,15 +59,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_120000) do
     t.index ["user_id"], name: "index_reactions_on_user_id"
   end
 
+  create_table "room_settings", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.boolean "notify_agents", default: false, null: false
+    t.string "room_key", default: "shared", null: false
+    t.datetime "updated_at", null: false
+    t.index ["room_key"], name: "index_room_settings_on_room_key", unique: true
+  end
+
   create_table "users", force: :cascade do |t|
     t.boolean "admin", default: false, null: false
     t.string "api_token_digest"
     t.datetime "created_at", null: false
     t.string "email"
+    t.datetime "heartbeat_at"
     t.integer "kind", default: 0, null: false
     t.string "name", null: false
     t.string "password_digest"
     t.datetime "updated_at", null: false
+    t.string "working_label"
+    t.boolean "working_status", default: false, null: false
     t.index ["api_token_digest"], name: "index_users_on_api_token_digest", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true
   end

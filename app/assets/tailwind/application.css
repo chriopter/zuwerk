@@ -1,0 +1,76 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: corporate --default, business --prefersdark;
+}
+
+@keyframes stream-blink { 0%, 45% { opacity: 1; } 46%, 100% { opacity: 0; } }
+@keyframes typing-bounce { 0%, 60%, 100% { transform: translateY(0); opacity: .35; } 30% { transform: translateY(-3px); opacity: 1; } }
+
+@layer components {
+  .workspace-shell { @apply grid h-dvh min-h-0 grid-cols-1 overflow-hidden bg-white lg:grid-cols-[248px_minmax(0,1fr)]; }
+  .workspace-sidebar { @apply hidden min-h-0 flex-col border-r border-slate-800 bg-slate-950 px-3 py-5 text-white lg:flex; }
+  .workspace-mark { @apply flex items-center gap-3 px-2; }
+  .workspace-logo { @apply grid h-9 w-9 place-items-center rounded-xl bg-indigo-500 text-sm font-black text-white shadow-lg shadow-indigo-950/30; }
+  .sidebar-label { @apply mb-2 px-3 text-[10px] font-bold uppercase tracking-[.16em] text-slate-500; }
+  .sidebar-channel { @apply flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-medium text-slate-400 transition hover:bg-white/5 hover:text-white; }
+  .sidebar-channel-active { @apply bg-white/10 text-white shadow-sm; }
+  .agent-row { @apply flex items-center gap-3 rounded-lg px-3 py-2; }
+  .sidebar-avatar { @apply grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-indigo-500/20 text-xs font-bold text-indigo-300; }
+  .sidebar-avatar-human { @apply bg-emerald-500/20 text-emerald-300; }
+  .agent-dot { @apply absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-slate-950; }
+  .agent-dot-working { @apply bg-amber-400; }
+  .agent-dot-idle { @apply bg-emerald-400; }
+  .sidebar-invite { @apply mt-2 flex h-9 items-center gap-2 rounded-lg px-3 text-sm text-slate-400 transition hover:bg-white/5 hover:text-white; }
+  .icon-button-dark { @apply grid h-8 w-8 place-items-center rounded-lg text-sm text-slate-500 transition hover:bg-white/10 hover:text-white; }
+
+  .chat-panel { @apply flex min-h-0 min-w-0 flex-col bg-white; }
+  .chat-header-bar { @apply flex h-[72px] shrink-0 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-7; }
+  .notify-control { @apply flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2; }
+  .header-action { @apply inline-flex h-9 items-center gap-1.5 rounded-lg bg-slate-950 px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-600; }
+  .message-stage { @apply relative min-h-0 flex-1 bg-white; }
+  .message-scroll { @apply h-full overflow-y-auto overscroll-contain scroll-smooth; scrollbar-gutter: stable; }
+  .new-message-button { @apply absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-slate-950 px-4 py-2 text-xs font-semibold text-white shadow-xl transition hover:bg-indigo-600; }
+  .empty-conversation { @apply flex min-h-[24rem] flex-col items-center justify-center text-center; }
+  .empty-icon { @apply grid h-14 w-14 place-items-center rounded-2xl bg-slate-100 text-2xl font-semibold text-slate-400; }
+
+  .message-row { @apply relative flex gap-3 rounded-xl px-2 py-3 transition-colors hover:bg-slate-50/80 sm:gap-4 sm:px-3; }
+  .message-row-agent { @apply my-1 border border-indigo-100 bg-indigo-50/45 hover:bg-indigo-50/70; }
+  .message-avatar { @apply relative grid h-9 w-9 shrink-0 place-items-center rounded-xl text-xs font-bold shadow-sm sm:h-10 sm:w-10; }
+  .message-avatar-human { @apply bg-slate-900 text-white; }
+  .message-avatar-agent { @apply bg-gradient-to-br from-indigo-500 to-violet-600 text-white; }
+  .message-avatar-spark { @apply absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full border-2 border-white bg-amber-300 text-[7px] text-amber-950; }
+  .agent-label { @apply rounded-full bg-indigo-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-indigo-700; }
+  .stream-label { @apply ml-auto inline-flex items-center gap-1.5 text-[10px] font-semibold text-indigo-500; }
+  .stream-dot { @apply h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-500; }
+  .message-copy { @apply mt-1 whitespace-pre-wrap break-words text-[15px] leading-6 text-slate-700; }
+  .message-copy-agent { @apply text-slate-800; }
+  .message-actions { @apply mt-2 flex min-h-6 flex-wrap gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100; }
+  .reaction-chip { @apply inline-flex h-6 min-w-7 items-center justify-center gap-1 rounded-full border border-slate-200 bg-white px-1.5 text-xs shadow-sm transition hover:-translate-y-px hover:border-indigo-200 hover:bg-indigo-50; }
+  .reaction-chip-active { @apply border-indigo-300 bg-indigo-50 ring-1 ring-indigo-100; }
+
+  .composer-dock { @apply shrink-0 border-t border-slate-100 bg-white px-4 pb-4 pt-3 sm:px-8 sm:pb-6; }
+  .composer-box { @apply overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_30px_rgba(15,23,42,.08)] transition focus-within:border-indigo-300 focus-within:ring-4 focus-within:ring-indigo-100/60; }
+  .composer-input { @apply block max-h-40 min-h-14 w-full resize-none border-0 bg-transparent px-4 py-3 text-[15px] leading-6 text-slate-900 outline-none placeholder:text-slate-400; }
+  .send-button { @apply rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-indigo-500 active:translate-y-px; }
+
+  .auth-card, .invite-card { @apply mx-auto mt-12 w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/50; }
+  .eyebrow { @apply text-xs font-bold uppercase tracking-widest text-indigo-600; }
+  .auth-card h1, .invite-card h1 { @apply mb-5 mt-1 text-3xl font-black; }
+  .auth-card label, .invite-card label { @apply mt-3 block py-2 font-semibold; }
+  .auth-card input, .invite-card input, .invite-card textarea { @apply w-full rounded-xl border border-slate-300 bg-white p-3 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100; }
+  .primary { @apply mt-5 inline-flex rounded-lg bg-indigo-600 px-4 py-2 font-bold text-white; }
+  .secondary { @apply inline-flex rounded-lg bg-slate-200 px-4 py-2 font-bold; }
+  .copy-row { @apply flex flex-col gap-2 sm:flex-row; }
+  .copy-row textarea { @apply flex-1 rounded-lg border border-slate-300 p-3; }
+  .flash { @apply mb-4 rounded-lg border p-4; }
+  .errors { @apply my-3 rounded-lg bg-red-100 p-4 text-red-900; }
+}
+
+.streaming-caret { display: inline-block; width: 2px; height: 1em; margin-left: 3px; vertical-align: -.12em; border-radius: 999px; background: currentColor; animation: stream-blink .85s steps(1) infinite; }
+.typing-dots { display: inline-flex; align-items: center; gap: 4px; min-height: 24px; }
+.typing-dots i { width: 5px; height: 5px; border-radius: 999px; background: #6366f1; animation: typing-bounce 1.2s infinite; }
+.typing-dots i:nth-child(2) { animation-delay: .15s; }
+.typing-dots i:nth-child(3) { animation-delay: .3s; }
+.typing-dots-small i { width: 3px; height: 3px; }
+
+@media (hover: none) { .message-actions { opacity: 1; } }

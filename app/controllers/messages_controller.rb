@@ -5,6 +5,7 @@ class MessagesController < ApplicationController
   def index
     @messages = Message.includes(:author, reactions: :user).order(:created_at).last(200)
     @message = Message.new
+    load_room
   end
 
   def create
@@ -13,11 +14,17 @@ class MessagesController < ApplicationController
       redirect_to root_path, status: :see_other
     else
       @messages = Message.includes(:author, reactions: :user).order(:created_at).last(200)
+      load_room
       render :index, status: :unprocessable_entity
     end
   end
 
   private
+    def load_room
+      @room_setting = RoomSetting.current
+      @agents = User.agent.order(:name)
+    end
+
     def route_first_run
       redirect_to new_onboarding_path unless User.human.exists?
     end

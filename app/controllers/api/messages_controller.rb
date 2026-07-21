@@ -14,9 +14,13 @@ module Api
       end
     end
 
+    def self.serialize(message)
+      { id: message.id, body: message.body, state: message.state, created_at: message.created_at.iso8601, user: { id: message.author.id, name: message.author.name, kind: message.author.kind } }
+    end
+
     private
       def serialize(message)
-        { id: message.id, body: message.body, created_at: message.created_at.iso8601, user: { id: message.author.id, name: message.author.name, kind: message.author.kind } }
+        self.class.serialize(message)
       end
   end
 end

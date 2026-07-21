@@ -1,1 +1,114 @@
-<%= turbo_stream_from "messages" %><section class="chat-shell"><header class="room-header"><div><p class="eyebrow">SHARED ROOM</p><h1>Team chat</h1></div><%= link_to "Invite agent", new_agent_invitation_path, class: "secondary" %></header><div id="messages" class="messages"><%= render @messages, current_user: current_user %></div><%= form_with model: @message, class: "composer" do |form| %><%= render "shared/errors", object: @message %><%= form.text_area :body, placeholder: "Write a message…", required: true, rows: 2, maxlength: 4000 %><%= form.submit "Send", class: "primary" %><% end %></section>
+<%= turbo_stream_from "messages" %>
+<%= turbo_stream_from "agent_presence" %>
+
+<div class="workspace-shell" data-controller="chat-scroll">
+  <aside class="workspace-sidebar">
+    <div class="workspace-mark">
+      <div class="workspace-logo">Z</div>
+      <div>
+        <div class="font-bold tracking-tight">Zuwerk</div>
+        <div class="text-xs text-slate-400">Human + agent workspace</div>
+      </div>
+    </div>
+
+    <nav class="mt-8" aria-label="Workspace navigation">
+      <div class="sidebar-label">Conversations</div>
+      <a href="<%= root_path %>" class="sidebar-channel sidebar-channel-active" aria-current="page">
+        <span class="text-lg text-slate-400">#</span>
+        <span class="min-w-0 flex-1 truncate">general</span>
+        <span class="h-2 w-2 rounded-full bg-emerald-400" title="Live"></span>
+      </a>
+    </nav>
+
+    <div class="mt-8">
+      <div class="sidebar-label">Agents</div>
+      <div class="space-y-1.5">
+        <% @agents.each do |agent| %>
+          <div class="agent-row">
+            <div class="relative">
+              <div class="sidebar-avatar"><%= agent.name.first.upcase %></div>
+              <span class="agent-dot <%= agent.working? ? 'agent-dot-working' : 'agent-dot-idle' %>"></span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="truncate text-sm font-medium text-slate-200"><%= agent.name %></div>
+              <div class="truncate text-xs text-slate-500"><%= agent.working? ? (agent.working_label.presence || "Working") : "Available" %></div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+      <%= link_to new_agent_invitation_path, class: "sidebar-invite" do %>
+        <span class="text-lg leading-none">+</span><span>Invite an agent</span>
+      <% end %>
+    </div>
+
+    <div class="mt-auto border-t border-white/10 pt-4">
+      <div class="flex items-center gap-3">
+        <div class="sidebar-avatar sidebar-avatar-human"><%= current_user.name.first.upcase %></div>
+        <div class="min-w-0 flex-1">
+          <div class="truncate text-sm font-medium text-white"><%= current_user.name %></div>
+          <div class="text-xs text-slate-500">Human</div>
+        </div>
+        <%= button_to session_path, method: :delete, class: "icon-button-dark", title: "Log out", aria: { label: "Log out" } do %>↗<% end %>
+      </div>
+    </div>
+  </aside>
+
+  <section class="chat-panel">
+    <header class="chat-header-bar">
+      <div class="flex min-w-0 items-center gap-2 sm:gap-3">
+        <div class="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-indigo-600 text-xs font-black text-white lg:hidden">Z</div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="hidden text-xl font-semibold text-slate-400 sm:inline">#</span>
+            <h1 class="truncate text-base font-bold tracking-tight text-slate-950 sm:text-lg">general</h1>
+          </div>
+          <%= render "agent_presence", agents: @agents %>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1.5 sm:gap-4">
+        <%= form_with model: @room_setting, url: room_setting_path, method: :patch, class: "notify-control" do |form| %>
+          <div class="hidden sm:block">
+            <div class="text-sm font-semibold text-slate-800">Notify agents</div>
+            <div class="text-xs text-slate-500"><%= @room_setting.notify_agents? ? "Every human message" : "Mentions only" %></div>
+          </div>
+          <%= form.check_box :notify_agents, class: "toggle toggle-primary toggle-sm", onchange: "this.form.requestSubmit()", aria: { label: "Notify all agents about human messages" } %>
+        <% end %>
+        <%= link_to new_agent_invitation_path, class: "header-action", aria: { label: "Invite agent" }, title: "Invite agent" do %>
+          <span class="text-lg leading-none">+</span><span class="hidden sm:inline">Agent</span>
+        <% end %>
+        <%= button_to session_path, method: :delete, class: "grid h-9 w-9 place-items-center rounded-lg text-sm text-slate-500 transition hover:bg-slate-100 hover:text-slate-950 lg:hidden", title: "Log out", aria: { label: "Log out" } do %>↗<% end %>
+      </div>
+    </header>
+
+    <div class="message-stage">
+      <div id="message-viewport" class="message-scroll" data-chat-scroll-target="viewport" data-action="scroll->chat-scroll#track">
+        <div id="messages" class="mx-auto w-full max-w-3xl px-4 py-6 sm:px-8 sm:py-8">
+          <% if @messages.empty? %>
+            <div class="empty-conversation">
+              <div class="empty-icon">#</div>
+              <h2 class="mt-5 text-xl font-bold text-slate-900">Welcome to general</h2>
+              <p class="mt-2 max-w-sm text-sm leading-6 text-slate-500">This is the beginning of your shared workspace. Write a message or invite an agent to get started.</p>
+            </div>
+          <% end %>
+          <%= render @messages, current_user: current_user %>
+        </div>
+      </div>
+      <button type="button" class="new-message-button hidden" data-chat-scroll-target="button" data-action="chat-scroll#scrollToBottom">New messages <span aria-hidden="true">↓</span></button>
+    </div>
+
+    <div class="composer-dock">
+      <%= form_with model: @message, class: "mx-auto w-full max-w-3xl" do |form| %>
+        <%= render "shared/errors", object: @message %>
+        <div class="composer-box">
+          <%= form.text_area :body, placeholder: "Message #general", required: true, rows: 1, maxlength: 4000, class: "composer-input", data: { controller: "composer", action: "input->composer#grow keydown->composer#keydown" }, aria: { label: "Message" } %>
+          <div class="flex items-center justify-between border-t border-slate-100 px-3 py-2">
+            <span class="hidden text-xs text-slate-400 sm:inline">Shift + Enter for a new line</span>
+            <span class="sm:hidden"></span>
+            <%= form.submit "Send", class: "send-button" %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </section>
+</div>

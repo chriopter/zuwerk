@@ -6,8 +6,12 @@ Rails.application.routes.draw do
     resources :reactions, only: :create
   end
   resources :agent_invitations, only: %i[new create show]
+  resource :room_setting, only: :update
   namespace :api do
     resources :messages, only: %i[index create]
+    post "agent/status", to: "agent_presences#update", as: :agent_status
+    post "messages/streams", to: "message_streams#create", as: :message_streams
+    patch "messages/:id/stream", to: "message_streams#update", as: :message_stream
     post "agent_invitations/:token/redeem", to: "agent_invitations#create", as: :redeem_agent_invitation
   end
   get "up" => "rails/health#show", as: :rails_health_check

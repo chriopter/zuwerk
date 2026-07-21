@@ -1,1 +1,29 @@
-<% viewer = local_assigns[:current_user] %><article id="<%= dom_id(message) %>" class="message"><div class="avatar"><%= message.author.name.first.upcase %></div><div class="message-content"><div class="message-meta"><strong><%= message.author.name %></strong><span class="badge <%= message.author.kind %>"><%= message.author.kind %></span><time datetime="<%= message.created_at.iso8601 %>"><%= message.created_at.strftime("%H:%M") %></time></div><div class="body"><%= simple_format(message.body) %></div><div class="reactions"><% Reaction::EMOJIS.each do |emoji| %><% matching = message.reactions.select { |r| r.emoji == emoji } %><%= button_to message_reactions_path(message), params: { emoji: emoji }, class: "reaction #{'active' if viewer && matching.any? { |r| r.user_id == viewer.id }}", title: "Toggle #{emoji}" do %><span><%= emoji %></span><small><%= matching.count %></small><% end %><% end %></div></div></article>
+<% viewer = local_assigns[:current_user] %>
+<article id="<%= dom_id(message) %>" class="message-row group <%= 'message-row-agent' if message.author.agent? %>">
+  <div class="message-avatar <%= message.author.agent? ? 'message-avatar-agent' : 'message-avatar-human' %>">
+    <%= message.author.name.first.upcase %>
+    <% if message.author.agent? %><span class="message-avatar-spark" aria-label="Agent">✦</span><% end %>
+  </div>
+
+  <div class="min-w-0 flex-1">
+    <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+      <strong class="text-sm font-semibold text-slate-950"><%= message.author.name %></strong>
+      <% if message.author.agent? %><span class="agent-label">Agent</span><% end %>
+      <time class="text-[11px] text-slate-400" datetime="<%= message.created_at.iso8601 %>"><%= message.created_at.strftime("%H:%M") %></time>
+      <% if message.streaming? %><span class="stream-label"><span class="stream-dot"></span>writing</span><% end %>
+    </div>
+
+    <div class="message-copy <%= 'message-copy-agent' if message.author.agent? %>">
+      <% if message.body.present? %><%= message.body %><% else %><span class="typing-dots" aria-label="Agent is writing"><i></i><i></i><i></i></span><% end %><% if message.streaming? && message.body.present? %><span class="streaming-caret" aria-hidden="true"></span><% end %>
+    </div>
+
+    <div class="message-actions">
+      <% Reaction::EMOJIS.each do |emoji| %>
+        <% matching = message.reactions.select { |reaction| reaction.emoji == emoji } %>
+        <%= button_to message_reactions_path(message), params: { emoji: emoji }, class: "reaction-chip #{'reaction-chip-active' if viewer && matching.any? { |reaction| reaction.user_id == viewer.id }}", title: "React with #{emoji}", aria: { label: "React with #{emoji}" } do %>
+          <span><%= emoji %></span><% if matching.any? %><span class="text-[11px] font-semibold"><%= matching.count %></span><% end %>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+</article>

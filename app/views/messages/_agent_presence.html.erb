@@ -1,0 +1,10 @@
+<div id="agent_presence" class="mt-0.5 flex items-center gap-2" aria-live="polite">
+  <% working = agents.select(&:working?) %>
+  <% if working.any? %>
+    <span class="typing-dots typing-dots-small" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="truncate text-xs font-medium text-indigo-600"><%= working.map(&:name).to_sentence %> <%= working.one? ? "is" : "are" %> working<%= " · #{working.first.working_label}" if working.one? && working.first.working_label.present? %></span>
+  <% else %>
+    <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+    <span class="text-xs text-slate-500"><%= pluralize(agents.count, "agent") %> available</span>
+  <% end %>
+</div>
