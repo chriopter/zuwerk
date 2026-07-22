@@ -15,6 +15,11 @@
     <div class="agents-form-errors"><strong>Container error:</strong> <%= @hosted_agent.last_error %></div>
   <% end %>
 
+  <div class="agent-connection-note" data-chat-bridge-status>
+    <strong>Zuwerk chat bridge: Not connected.</strong>
+    The Claude Code environment is installed and running, but messages are not forwarded to it automatically yet. Use the terminal below.
+  </div>
+
   <div class="agent-toolbar">
     <%= button_to "Start", start_agent_path(@agent), disabled: @hosted_agent.running? %>
     <%= button_to "Restart", restart_agent_path(@agent) %>

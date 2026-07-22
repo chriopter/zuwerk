@@ -173,6 +173,8 @@
   .agents-status-stopped i { @apply bg-stone-400; }
   .agents-status-error { @apply bg-red-50 text-red-700; }
   .agents-status-error i { @apply bg-red-500; }
+  .agent-connection-note { @apply mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900; }
+  .agent-connection-note strong { @apply mr-1 font-semibold; }
   .agent-toolbar { @apply my-5 flex flex-wrap items-center gap-2; }
   .agent-toolbar form { @apply inline-flex; }
   .agent-toolbar button { @apply rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-40; }
