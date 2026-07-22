@@ -1,0 +1,19 @@
+<aside data-table-navigation class="overflow-hidden rounded-xl border border-stone-200 bg-white lg:sticky lg:top-6 lg:self-start">
+  <div class="border-b border-stone-200 px-4 py-3">
+    <p class="text-xs font-semibold uppercase tracking-[.12em] text-stone-400">Tables</p>
+  </div>
+  <% @table_groups.each do |slug, label, tables| %>
+    <section data-table-group="<%= slug %>" class="border-b border-stone-100 last:border-0">
+      <h2 class="px-4 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-[.12em] text-stone-400"><%= label %></h2>
+      <nav class="pb-2">
+        <% tables.each do |table| %>
+          <%= link_to database_table_path(table),
+            class: "block truncate border-l-2 px-4 py-1.5 font-mono text-xs #{table == @table ? "border-orange-500 bg-stone-100 font-semibold text-stone-900" : "border-transparent text-stone-500 hover:bg-stone-50 hover:text-stone-900"}",
+            aria: (table == @table ? { current: "page" } : {}) do %>
+            <%= table %>
+          <% end %>
+        <% end %>
+      </nav>
+    </section>
+  <% end %>
+</aside>

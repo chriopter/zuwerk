@@ -7,14 +7,25 @@ class DatabaseBrowserTest < ActionDispatch::IntegrationTest
     post session_path, params: { email: @human.email, password: "password1" }
   end
 
-  test "administrators browse tables from the workspace sidebar" do
+  test "administrators browse grouped tables beside the selected table data" do
     get database_path
+    assert_redirected_to database_table_path("users")
+    follow_redirect!
 
     assert_response :success
     assert_select ".workspace-sidebar a[href='#{database_path}']", text: "DB"
-    assert_select "h1", text: "Database"
-    assert_select "a[href='#{database_table_path("users")}']", text: /users/
-    assert_select "a[href='#{database_table_path("messages")}']", text: /messages/
+    assert_select "h1", text: "users"
+    assert_select "[data-table-navigation]" do
+      assert_select "section > h2" do |headings|
+        assert_equal [ "Users", "User data", "Agents", "Active Storage / Action Text", "Rails internal" ], headings.map(&:text)
+      end
+    end
+    assert_select "[data-table-group='users'] a[href='#{database_table_path("users")}']"
+    assert_select "[data-table-group='user-data'] a[href='#{database_table_path("messages")}']"
+    assert_select "[data-table-group='agents'] a[href='#{database_table_path("hosted_agents")}']"
+    assert_select "[data-table-group='active-storage-action-text'] a[href='#{database_table_path("active_storage_blobs")}']"
+    assert_select "[data-table-group='rails-internal'] a[href='#{database_table_path("schema_migrations")}']"
+    assert_select "[data-database-section='data']"
   end
 
   test "table page shows structure indexes and redacted data" do

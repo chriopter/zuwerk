@@ -1,59 +1,65 @@
 <% content_for :title, "#{@table} · Database · Zuwerk" %>
 
-<section class="mx-auto max-w-[1400px]">
-  <header class="mb-7">
-    <%= link_to "← Database", database_path, class: "text-xs font-medium text-stone-400 hover:text-stone-700" %>
-    <h1 class="mt-2 font-mono text-2xl font-semibold text-stone-900"><%= @table %></h1>
-    <p class="mt-1 text-sm text-stone-500"><%= @rows.length %> most recent rows · read only</p>
-  </header>
+<section class="mx-auto max-w-[1500px]">
+  <div class="grid items-start gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+    <%= render "table_navigation" %>
 
-  <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,.45fr)]">
-    <section data-database-section="data" class="min-w-0 overflow-hidden rounded-xl border border-stone-200 bg-white">
-      <div class="border-b border-stone-200 px-4 py-3 text-xs font-semibold uppercase tracking-[.12em] text-stone-400">Data</div>
-      <div class="overflow-auto">
-        <table class="table table-sm w-max min-w-full">
-          <thead><tr><% @columns.each do |column| %><th class="whitespace-nowrap font-mono text-[11px]"><%= column.name %></th><% end %></tr></thead>
-          <tbody>
-            <% @rows.each do |row| %>
-              <tr><% @columns.each do |column| %><td class="max-w-80 whitespace-nowrap font-mono text-xs"><div class="max-w-80 truncate" title="<%= row[column.name] %>"><%= row[column.name].nil? ? "NULL" : row[column.name] %></div></td><% end %></tr>
-            <% end %>
-          </tbody>
-        </table>
-      </div>
-    </section>
+    <div class="min-w-0">
+      <header class="mb-7">
+        <p class="text-xs font-semibold uppercase tracking-[.14em] text-stone-400">Database</p>
+        <h1 class="mt-2 font-mono text-2xl font-semibold text-stone-900"><%= @table %></h1>
+        <p class="mt-1 text-sm text-stone-500"><%= @rows.length %> most recent rows · read only</p>
+      </header>
 
-    <div class="space-y-6">
-      <section data-database-section="structure" class="overflow-hidden rounded-xl border border-stone-200 bg-white">
-        <div class="border-b border-stone-200 px-4 py-3 text-xs font-semibold uppercase tracking-[.12em] text-stone-400">Structure</div>
-        <div class="divide-y divide-stone-100">
-          <% @columns.each do |column| %>
-            <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-4 px-4 py-3 text-xs">
-              <code class="truncate text-stone-800"><%= column.name %></code>
-              <span class="text-right text-stone-400"><%= column.type %><%= " · null" if column.null %><%= " · PK" if column.name == @primary_key %></span>
+      <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(300px,.42fr)]">
+        <section data-database-section="data" class="min-w-0 overflow-hidden rounded-xl border border-stone-200 bg-white">
+          <div class="border-b border-stone-200 px-4 py-3 text-xs font-semibold uppercase tracking-[.12em] text-stone-400">Data</div>
+          <div class="overflow-auto">
+            <table class="table table-sm w-max min-w-full">
+              <thead><tr><% @columns.each do |column| %><th class="whitespace-nowrap font-mono text-[11px]"><%= column.name %></th><% end %></tr></thead>
+              <tbody>
+                <% @rows.each do |row| %>
+                  <tr><% @columns.each do |column| %><td class="max-w-80 whitespace-nowrap font-mono text-xs"><div class="max-w-80 truncate" title="<%= row[column.name] %>"><%= row[column.name].nil? ? "NULL" : row[column.name] %></div></td><% end %></tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <div class="space-y-6">
+          <section data-database-section="structure" class="overflow-hidden rounded-xl border border-stone-200 bg-white">
+            <div class="border-b border-stone-200 px-4 py-3 text-xs font-semibold uppercase tracking-[.12em] text-stone-400">Structure</div>
+            <div class="divide-y divide-stone-100">
+              <% @columns.each do |column| %>
+                <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-4 px-4 py-3 text-xs">
+                  <code class="truncate text-stone-800"><%= column.name %></code>
+                  <span class="text-right text-stone-400"><%= column.type %><%= " · null" if column.null %><%= " · PK" if column.name == @primary_key %></span>
+                </div>
+              <% end %>
             </div>
-          <% end %>
-        </div>
-      </section>
+          </section>
 
-      <section data-database-section="indexes" class="overflow-hidden rounded-xl border border-stone-200 bg-white">
-        <div class="border-b border-stone-200 px-4 py-3 text-xs font-semibold uppercase tracking-[.12em] text-stone-400">Indexes</div>
-        <div class="divide-y divide-stone-100">
-          <% @indexes.each do |index| %>
-            <div class="px-4 py-3 text-xs"><code class="text-stone-800"><%= index.name %></code><div class="mt-1 text-stone-400"><%= index.columns.join(", ") %><%= " · unique" if index.unique %></div></div>
-          <% end %>
-          <% if @indexes.empty? %><p class="px-4 py-3 text-xs text-stone-400">No indexes</p><% end %>
-        </div>
-      </section>
+          <section data-database-section="indexes" class="overflow-hidden rounded-xl border border-stone-200 bg-white">
+            <div class="border-b border-stone-200 px-4 py-3 text-xs font-semibold uppercase tracking-[.12em] text-stone-400">Indexes</div>
+            <div class="divide-y divide-stone-100">
+              <% @indexes.each do |index| %>
+                <div class="px-4 py-3 text-xs"><code class="text-stone-800"><%= index.name %></code><div class="mt-1 text-stone-400"><%= index.columns.join(", ") %><%= " · unique" if index.unique %></div></div>
+              <% end %>
+              <% if @indexes.empty? %><p class="px-4 py-3 text-xs text-stone-400">No indexes</p><% end %>
+            </div>
+          </section>
 
-      <section class="overflow-hidden rounded-xl border border-stone-200 bg-white">
-        <div class="border-b border-stone-200 px-4 py-3 text-xs font-semibold uppercase tracking-[.12em] text-stone-400">Foreign keys</div>
-        <div class="divide-y divide-stone-100">
-          <% @foreign_keys.each do |foreign_key| %>
-            <div class="px-4 py-3 text-xs"><code><%= foreign_key.column %></code><span class="text-stone-400"> → <%= foreign_key.to_table %>.<%= foreign_key.primary_key %></span></div>
-          <% end %>
-          <% if @foreign_keys.empty? %><p class="px-4 py-3 text-xs text-stone-400">No foreign keys</p><% end %>
+          <section class="overflow-hidden rounded-xl border border-stone-200 bg-white">
+            <div class="border-b border-stone-200 px-4 py-3 text-xs font-semibold uppercase tracking-[.12em] text-stone-400">Foreign keys</div>
+            <div class="divide-y divide-stone-100">
+              <% @foreign_keys.each do |foreign_key| %>
+                <div class="px-4 py-3 text-xs"><code><%= foreign_key.column %></code><span class="text-stone-400"> → <%= foreign_key.to_table %>.<%= foreign_key.primary_key %></span></div>
+              <% end %>
+              <% if @foreign_keys.empty? %><p class="px-4 py-3 text-xs text-stone-400">No foreign keys</p><% end %>
+            </div>
+          </section>
         </div>
-      </section>
+      </div>
     </div>
   </div>
 </section>

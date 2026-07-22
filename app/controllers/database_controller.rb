@@ -1,6 +1,14 @@
 class DatabaseController < ApplicationController
   SENSITIVE_COLUMN = /(password|token|secret|digest|credential|external_session_id|\Akey\z)/i
   ROW_LIMIT = 100
+  TABLE_GROUPS = [
+    [ "users", "Users" ],
+    [ "user-data", "User data" ],
+    [ "agents", "Agents" ],
+    [ "active-storage-action-text", "Active Storage / Action Text" ],
+    [ "rails-internal", "Rails internal" ]
+  ].freeze
+  AGENT_TABLES = %w[agent_events agent_invitations hosted_agent_sessions hosted_agents].freeze
 
   before_action :require_human!
   before_action :require_admin!
@@ -8,6 +16,7 @@ class DatabaseController < ApplicationController
   before_action :set_tables
 
   def index
+    redirect_to database_table_path(@tables.include?("users") ? "users" : @tables.first)
   end
 
   def show
@@ -39,6 +48,20 @@ class DatabaseController < ApplicationController
 
   def set_tables
     @tables = ActiveRecord::Base.connection.data_sources.sort
+    @table_groups = TABLE_GROUPS.filter_map do |slug, label|
+      tables = @tables.select { |table| table_group(table) == slug }
+      [ slug, label, tables ] if tables.any?
+    end
+  end
+
+  def table_group(table)
+    case table
+    when "ar_internal_metadata", "schema_migrations" then "rails-internal"
+    when /\A(?:active_storage|action_text)_/ then "active-storage-action-text"
+    when "users" then "users"
+    when *AGENT_TABLES then "agents"
+    else "user-data"
+    end
   end
 
   def redact(record)
