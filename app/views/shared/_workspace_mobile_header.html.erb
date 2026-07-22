@@ -1,0 +1,8 @@
+<header class="workspace-mobile-header">
+  <%= render "messages/project_switcher", project: project, projects: projects, compact: true %>
+  <nav aria-label="Mobile workspace navigation">
+    <%= link_to "Chat", chat_project_path(project), class: active == :chat ? "active" : nil %>
+    <%= link_to "Todos", project_todos_path(project), class: active == :todos ? "active" : nil %>
+    <%= link_to "Agents", agents_path, class: active == :agents ? "active" : nil %>
+  </nav>
+</header>

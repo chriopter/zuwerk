@@ -63,8 +63,10 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
     assert_select "a[href='#{new_agent_invitation_path}']"
 
     get project_todos_path(@first_project)
-    assert_select "h1", text: "No todos yet"
-    assert_select "a[href='#{new_project_todo_path(@first_project)}']", text: "New todo"
+    assert_select "h1", text: "Todos"
+    assert_select ".kanban-column", count: 3
+    assert_select ".kanban-empty", text: "Todos hierher ziehen", count: 3
+    assert_select "a[href='#{new_project_todo_path(@first_project)}']", text: "Neues Todo"
 
     get agents_path
     assert_select ".agents-empty", text: /No hosted agents/

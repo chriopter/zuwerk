@@ -1,2 +1,37 @@
-<% content_for :title, "Todos · Zuwerk" %>
-<section class="mx-auto max-w-[1500px]"><div class="grid items-start gap-6 lg:grid-cols-[250px_minmax(0,1fr)]"><%= render "navigation" %><div class="rounded-xl border border-dashed border-stone-300 bg-white p-10 text-center"><h1 class="text-xl font-semibold">No todos yet</h1><p class="mt-2 text-sm text-stone-500">Create the first item for <%= @project.name %>.</p><%= link_to "New todo", new_project_todo_path(@project), class: "btn mt-5 bg-stone-900 text-white" %></div></div></section>
+<% content_for :title, "Todos · #{@project.name} · Zuwerk" %>
+
+<section class="kanban-page" data-controller="kanban" data-kanban-project-id-value="<%= @project.id %>">
+  <header class="workspace-page-header">
+    <div><p class="workspace-kicker"><%= @project.name %></p><h1>Todos</h1><p>Arbeit übersichtlich vom Eingang bis zum Abschluss führen.</p></div>
+    <%= link_to "Neues Todo", new_project_todo_path(@project), class: "workspace-primary-action" %>
+  </header>
+
+  <% columns = [["open", "Offen", "Bereit zur Bearbeitung"], ["in_progress", "In Arbeit", "Wird gerade umgesetzt"], ["completed", "Erledigt", "Abgenommen und abgeschlossen"]] %>
+  <div class="kanban-board" aria-label="Todo Kanban Board">
+    <% columns.each do |status, label, subtitle| %>
+      <% todos = @board_todos.select { |todo| todo.status == status } %>
+      <section class="kanban-column kanban-column-<%= status.dasherize %>" data-kanban-target="column" data-status="<%= status %>" data-action="dragover->kanban#dragOver drop->kanban#drop">
+        <header class="kanban-column-header">
+          <div><div class="kanban-column-title"><i></i><h2><%= label %></h2><span><%= todos.count %></span></div><p><%= subtitle %></p></div>
+          <%= link_to "+", new_project_todo_path(@project, todo: { status: status }), class: "kanban-add", aria: { label: "Todo in #{label} anlegen" } %>
+        </header>
+        <div class="kanban-cards" data-kanban-target="cards">
+          <% todos.each do |todo| %>
+            <article class="kanban-card" draggable="true" data-kanban-target="card" data-todo-id="<%= todo.id %>" data-action="dragstart->kanban#dragStart dragend->kanban#dragEnd">
+              <%= link_to project_todo_path(@project, todo), class: "kanban-card-link" do %>
+                <div class="kanban-card-topline"><span>#<%= todo.id %></span><% if todo.parent %><span class="kanban-parent" title="<%= todo.parent.title %>">↳ <%= todo.parent.title %></span><% end %></div>
+                <h3><%= todo.title %></h3>
+                <% if todo.description.present? %><p class="kanban-card-description"><%= truncate(todo.description.to_plain_text, length: 120) %></p><% end %>
+                <footer class="kanban-card-footer">
+                  <div class="kanban-assignees"><% todo.assigned_agents.first(3).each do |agent| %><span title="<%= agent.name %>"><%= agent.name.first.upcase %></span><% end %><% if todo.assigned_agents.empty? %><span class="kanban-unassigned">–</span><% end %></div>
+                  <div class="kanban-card-meta"><% if todo.children.any? %><span><%= todo.children.count %> Untertodos</span><% end %><% if todo.comments.any? %><span><%= todo.comments.count %> Kommentare</span><% end %></div>
+                </footer>
+              <% end %>
+            </article>
+          <% end %>
+          <% if todos.empty? %><div class="kanban-empty">Todos hierher ziehen</div><% end %>
+        </div>
+      </section>
+    <% end %>
+  </div>
+</section>

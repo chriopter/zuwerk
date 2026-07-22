@@ -10,7 +10,7 @@ class Todo < ApplicationRecord
   has_many :reactions, as: :reactable, dependent: :destroy
   has_rich_text :description
 
-  enum :status, { open: 0, completed: 1 }
+  enum :status, { open: 0, completed: 1, in_progress: 2 }
 
   scope :ordered, -> { order(:position, :created_at) }
 

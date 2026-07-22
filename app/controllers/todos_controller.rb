@@ -4,10 +4,7 @@ class TodosController < ApplicationController
   before_action :set_todo, only: %i[show edit update reorder]
 
   def index
-    @todo = @project.todos.roots.ordered.first
-    return redirect_to project_todo_path(@project, @todo) if @todo
-
-    @todo = @project.todos.new
+    @board_todos = @project.todos.includes(:creator, :assigned_agents, :comments).ordered
   end
 
   def show
@@ -15,7 +12,7 @@ class TodosController < ApplicationController
   end
 
   def new
-    @todo = @project.todos.new(parent_id: params[:parent_id])
+    @todo = @project.todos.new(parent_id: params[:parent_id], status: params.dig(:todo, :status).presence || :open)
   end
 
   def create

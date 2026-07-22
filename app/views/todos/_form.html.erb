@@ -5,6 +5,10 @@
     <%= form.text_field :title, required: true, maxlength: 160, class: "input input-bordered w-full bg-white" %>
   </div>
   <div>
+    <%= form.label :status, "Status", class: "mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500" %>
+    <%= form.select :status, [["Offen", "open"], ["In Arbeit", "in_progress"], ["Erledigt", "completed"]], {}, class: "select select-bordered w-full bg-white" %>
+  </div>
+  <div>
     <%= form.label :parent_id, "Parent", class: "mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500" %>
     <% excluded_parent_ids = todo.persisted? ? todo.subtree_ids : [] %>
     <%= form.collection_select :parent_id, @project.todos.where.not(id: excluded_parent_ids).ordered, :id, :title, { include_blank: "Top level" }, class: "select select-bordered w-full bg-white" %>

@@ -3,6 +3,7 @@
   <head>
     <title><%= content_for(:title) || "Zuwerk" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><rect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22%2327332d%22/><path d=%22M17 18h30L28 46h19%22 fill=%22none%22 stroke=%22white%22 stroke-width=%228%22 stroke-linejoin=%22round%22/></svg>">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
     <% if Rails.env.test? %>
@@ -25,7 +26,8 @@
           agents: chat_page ? @agents : @sidebar_agents,
           active: chat_page ? :chat : (controller_name == "database" ? :database : (todo_page ? :todos : :agents)),
           active_agent_id: @agent&.id %>
-        <main class="<%= chat_page ? 'h-full min-h-0 min-w-0' : 'min-h-0 min-w-0 overflow-y-auto p-4 sm:p-8' %>">
+        <%= render "shared/workspace_mobile_header", project: @project, projects: @projects, active: (controller_name == "database" ? :database : (todo_page ? :todos : :agents)) unless chat_page %>
+        <main class="workspace-main <%= chat_page ? 'h-full min-h-0 min-w-0' : 'min-h-0 min-w-0 overflow-y-auto p-4 sm:p-8' %>">
           <% flash.each do |type, message| %><div class="alert <%= type == 'alert' ? 'alert-error' : 'alert-success' %> mb-4 shadow-sm" role="status"><span><%= message %></span></div><% end %>
           <%= yield %>
         </main>

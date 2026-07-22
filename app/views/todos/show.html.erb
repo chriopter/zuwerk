@@ -1,61 +1,27 @@
 <% content_for :title, "#{@todo.title} · Todos · Zuwerk" %>
 <%= turbo_stream_from "todo_#{@todo.id}_status" %>
-
-<section class="mx-auto max-w-[1500px]">
-  <div class="grid items-start gap-6 lg:grid-cols-[250px_minmax(0,1fr)]">
-    <%= render "todos/navigation" %>
-
-    <div class="min-w-0 rounded-xl border border-stone-200 bg-white">
-      <header class="border-b border-stone-200 px-5 py-5 sm:px-7">
-        <div class="flex flex-wrap items-start gap-3">
-          <div class="min-w-0 flex-1">
-            <p class="mb-1 text-xs font-semibold uppercase tracking-[.12em] text-stone-400"><%= @project.name %> · Todo #<%= @todo.id %></p>
-            <h1 class="text-2xl font-semibold tracking-tight text-stone-950"><%= @todo.title %></h1>
-            <%= render "todos/agent_acknowledgements", todo: @todo %>
-          </div>
-          <%= button_to(@todo.completed? ? "Reopen" : "Complete", project_todo_path(@project, @todo), method: :patch, params: { todo: { status: @todo.completed? ? "open" : "completed" } }, class: "btn btn-sm btn-outline") %>
-          <%= link_to "Edit", edit_project_todo_path(@project, @todo), class: "btn btn-sm btn-ghost" %>
-        </div>
-        <% if @todo.description.present? %><div class="lexxy-content mt-5 text-stone-700"><%= @todo.description %></div><% end %>
-      </header>
-
-      <div class="grid gap-8 p-5 sm:p-7 xl:grid-cols-[minmax(0,1fr)_240px]">
-        <section class="min-w-0" aria-labelledby="comments-heading">
-          <h2 id="comments-heading" class="text-sm font-semibold text-stone-900">Comments <span class="font-normal text-stone-400"><%= @todo.comments.count %></span></h2>
-          <div class="mt-2">
-            <%= render partial: "todo_comments/comment", collection: @todo.comments.includes(:author, :rich_text_body, reactions: :author).order(:created_at) %>
-          </div>
-          <%= form_with model: @comment, url: project_todo_comments_path(@project, @todo), class: "mt-6 border-t border-stone-200 pt-6" do |form| %>
-            <% if @comment.errors.any? %><p class="mb-2 text-sm text-red-600"><%= @comment.errors.full_messages.to_sentence %></p><% end %>
-            <%= form.rich_text_area :body, placeholder: "Add context, an update, files or a decision…" %>
-            <div class="mt-3 flex justify-end"><%= form.submit "Add comment", class: "btn btn-sm bg-stone-900 text-white hover:bg-stone-700" %></div>
-          <% end %>
-        </section>
-
-        <aside class="space-y-6 border-t border-stone-200 pt-6 xl:border-l xl:border-t-0 xl:pl-6 xl:pt-0">
-          <section>
-            <h2 class="text-xs font-semibold uppercase tracking-[.12em] text-stone-400">Agents</h2>
-            <div class="mt-3 space-y-2">
-              <% @todo.assignments.includes(:agent).each do |assignment| %>
-                <div class="flex items-center justify-between text-sm"><span><%= assignment.agent.name %></span><%= button_to "×", project_todo_assignment_path(@project, @todo, assignment), method: :delete, class: "text-stone-400 hover:text-red-600", title: "Remove agent" %></div>
-              <% end %>
-              <% available_agents = @agents.where.not(id: @todo.assigned_agent_ids) %>
-              <% if available_agents.any? %>
-                <%= form_with url: project_todo_assignments_path(@project, @todo), class: "flex gap-2" do |form| %>
-                  <%= form.collection_select :agent_id, available_agents, :id, :name, {}, class: "select select-bordered select-sm min-w-0 flex-1 bg-white" %>
-                  <%= form.submit "Assign", class: "btn btn-sm btn-outline" %>
-                <% end %>
-              <% end %>
-            </div>
-          </section>
-          <section class="text-xs text-stone-500">
-            <h2 class="mb-2 font-semibold uppercase tracking-[.12em] text-stone-400">Context</h2>
-            <% @todo.ancestors.each do |ancestor| %><p class="truncate">↳ <%= ancestor.title %></p><% end %>
-            <p>Created by <%= @todo.creator.name %></p>
-            <p><%= @todo.created_at.strftime("%d.%m.%Y · %H:%M") %></p>
-          </section>
-        </aside>
+<section class="todo-detail-page">
+  <%= link_to "← Zurück zum Board", project_todos_path(@project), class: "workspace-back-link" %>
+  <div class="todo-detail-shell">
+    <header class="todo-detail-header">
+      <div class="todo-detail-heading">
+        <div class="todo-detail-eyebrow"><span>TODO #<%= @todo.id %></span><span class="todo-status todo-status-<%= @todo.status.dasherize %>"><%= { "open" => "Offen", "in_progress" => "In Arbeit", "completed" => "Erledigt" }.fetch(@todo.status) %></span></div>
+        <h1><%= @todo.title %></h1><%= render "todos/agent_acknowledgements", todo: @todo %>
       </div>
+      <div class="todo-detail-actions"><%= button_to(@todo.completed? ? "Wieder öffnen" : "Erledigen", project_todo_path(@project, @todo), method: :patch, params: { todo: { status: @todo.completed? ? "open" : "completed" } }, class: "workspace-secondary-action") %><%= link_to "Bearbeiten", edit_project_todo_path(@project, @todo), class: "workspace-primary-action" %></div>
+      <% if @todo.description.present? %><div class="todo-description lexxy-content"><%= @todo.description %></div><% end %>
+    </header>
+    <div class="todo-detail-grid">
+      <section class="todo-conversation" aria-labelledby="comments-heading">
+        <div class="todo-section-heading"><h2 id="comments-heading">Aktivität</h2><span><%= @todo.comments.count %></span></div>
+        <div class="todo-comments"><%= render partial: "todo_comments/comment", collection: @todo.comments.includes(:author, :rich_text_body, reactions: :author).order(:created_at) %></div>
+        <%= form_with model: @comment, url: project_todo_comments_path(@project, @todo), class: "todo-comment-form" do |form| %><% if @comment.errors.any? %><p class="mb-2 text-sm text-red-600"><%= @comment.errors.full_messages.to_sentence %></p><% end %><%= form.rich_text_area :body, placeholder: "Update, Entscheidung oder Kontext hinzufügen…" %><div class="mt-3 flex justify-end"><%= form.submit "Kommentar hinzufügen", class: "workspace-primary-action" %></div><% end %>
+      </section>
+      <aside class="todo-properties">
+        <section><h2>Status</h2><div class="todo-status-options"><% [["open", "Offen"], ["in_progress", "In Arbeit"], ["completed", "Erledigt"]].each do |status, label| %><%= button_to label, project_todo_path(@project, @todo), method: :patch, params: { todo: { status: status } }, class: "todo-status-option #{'todo-status-option-active' if @todo.status == status}" %><% end %></div></section>
+        <section><h2>Zugewiesen</h2><div class="todo-agent-list"><% @todo.assignments.includes(:agent).each do |assignment| %><div><span class="todo-agent-avatar"><%= assignment.agent.name.first.upcase %></span><strong><%= assignment.agent.name %></strong><%= button_to "×", project_todo_assignment_path(@project, @todo, assignment), method: :delete, title: "Agent entfernen" %></div><% end %></div><% available_agents = @agents.where.not(id: @todo.assigned_agent_ids) %><% if available_agents.any? %><%= form_with url: project_todo_assignments_path(@project, @todo), class: "todo-agent-form" do |form| %><%= form.collection_select :agent_id, available_agents, :id, :name, {}, class: "select select-bordered select-sm min-w-0 flex-1 bg-white" %><%= form.submit "Zuweisen", class: "workspace-secondary-action" %><% end %><% end %></section>
+        <section><h2>Kontext</h2><dl class="todo-context-list"><% if @todo.parent %><div><dt>Übergeordnet</dt><dd><%= link_to @todo.parent.title, project_todo_path(@project, @todo.parent) %></dd></div><% end %><div><dt>Erstellt von</dt><dd><%= @todo.creator.name %></dd></div><div><dt>Erstellt</dt><dd><%= @todo.created_at.strftime("%d.%m.%Y") %></dd></div></dl></section>
+      </aside>
     </div>
   </div>
 </section>

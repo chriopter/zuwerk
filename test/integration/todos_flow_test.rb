@@ -53,6 +53,8 @@ class TodosFlowTest < ActionDispatch::IntegrationTest
     assert_redirected_to project_todo_path(@project, todo)
     assert_equal [ "Edited", "Final context", parent ], [ todo.reload.title, todo.description.to_plain_text, todo.parent ]
 
+    patch project_todo_path(@project, todo), params: { todo: { status: "in_progress" } }
+    assert todo.reload.in_progress?
     patch project_todo_path(@project, todo), params: { todo: { status: "completed" } }
     assert todo.reload.completed?
     patch project_todo_path(@project, todo), params: { todo: { status: "open" } }
