@@ -168,6 +168,24 @@
   .agents-form-errors { @apply mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800; }
 
   .agent-cockpit { @apply mx-auto max-w-6xl pb-12; }
+  .agent-detail-header { @apply flex flex-col gap-5 rounded-2xl border border-stone-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between sm:p-7; }
+  .agent-detail-header h1 { @apply truncate font-serif text-3xl text-stone-950; }
+  .agent-detail-header p { @apply mt-1 text-sm text-stone-500; }
+  .agent-detail-avatar { @apply flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#ebe8e0] font-serif text-xl font-semibold text-stone-700; }
+  .agent-overview-grid { @apply mt-5 grid gap-4 lg:grid-cols-3; }
+  .agent-overview-card { @apply rounded-2xl border border-stone-200 bg-white p-5; }
+  .agent-overview-card > span { @apply text-[10px] font-semibold uppercase tracking-[.13em] text-stone-400; }
+  .agent-overview-card strong { @apply mt-3 flex items-center gap-2 text-sm font-semibold text-stone-900; }
+  .agent-overview-card p { @apply mt-2 text-xs leading-5 text-stone-500; }
+  .agent-overview-card-warning { @apply border-amber-200 bg-amber-50/50; }
+  .status-light { @apply h-2 w-2 rounded-full; }
+  .status-light-runtime { @apply bg-amber-400; }
+  .status-light-offline { @apply bg-stone-400; }
+  .agent-connect-link { @apply mt-4 inline-flex rounded-lg bg-stone-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-stone-700; }
+  .agent-live-terminal { @apply mt-6; }
+  .agent-section-heading { @apply mb-3 flex items-end justify-between; }
+  .agent-section-heading span { @apply text-sm font-semibold text-stone-900; }
+  .agent-section-heading p { @apply mt-1 text-xs text-stone-500; }
   .agent-cockpit-header { @apply flex flex-col gap-4 border-b border-stone-200 pb-6 sm:flex-row sm:items-end sm:justify-between; }
   .agent-cockpit-header h1 { @apply font-serif text-4xl text-stone-950; }
   .agent-cockpit-header p:last-child { @apply mt-2 text-sm text-stone-500; }
@@ -201,6 +219,7 @@
   .terminal-titlebar span { @apply mx-auto; }
   .terminal-titlebar button { @apply text-[10px] font-semibold uppercase tracking-wide hover:text-white; }
   .terminal-screen { @apply h-[min(68vh,720px)] min-h-96 p-3; }
+  .terminal-screen-compact { @apply h-[430px] min-h-0; }
   .terminal-screen-fullscreen { @apply h-auto min-h-0 flex-1; }
   .terminal-help { @apply border-t border-white/10 px-4 py-2 text-[10px] text-stone-500; }
 }

@@ -1,16 +1,21 @@
 <% content_for :title, "#{@agent.name} · Zuwerk" %>
 
-<div class="agent-terminal-page">
-  <header class="agent-terminal-header">
-    <div class="min-w-0">
-      <div class="flex items-center gap-2">
-        <h1><%= @agent.name %></h1>
-        <span class="agents-status agents-status-<%= @hosted_agent.state %>"><i></i><%= @hosted_agent.state.humanize %></span>
+<div class="agent-cockpit">
+  <%= link_to "← All agents", agents_path, class: "agents-back-link" %>
+
+  <header class="agent-detail-header">
+    <div class="flex min-w-0 items-center gap-4">
+      <div class="agent-detail-avatar"><%= @agent.name.first.upcase %></div>
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-2">
+          <h1><%= @agent.name %></h1>
+          <span class="agents-status agents-status-<%= @hosted_agent.state %>"><i></i><%= @hosted_agent.state.humanize %></span>
+        </div>
+        <p><%= @hosted_agent.runtime == "claude" ? "Claude Code" : "Codex" %> · Hosted on this server</p>
       </div>
-      <p><%= @hosted_agent.runtime == "claude" ? "Claude Code" : "Codex" %> · <%= @hosted_agent.container_name %> · <span data-chat-bridge-status>Chat bridge: Not connected</span></p>
     </div>
 
-    <div class="agent-terminal-actions">
+    <div class="agent-toolbar">
       <%= button_to "Start", start_agent_path(@agent), disabled: @hosted_agent.running? %>
       <%= button_to "Restart", restart_agent_path(@agent) %>
       <%= button_to "Stop", stop_agent_path(@agent), disabled: @hosted_agent.stopped? %>
@@ -21,12 +26,42 @@
     <div class="agents-form-errors"><strong>Container error:</strong> <%= @hosted_agent.last_error %></div>
   <% end %>
 
-  <section class="terminal-cockpit terminal-cockpit-fullscreen" data-terminal-agent-id="<%= @agent.id %>" data-terminal-enabled="<%= @hosted_agent.running? %>">
-    <div class="terminal-titlebar">
-      <div><i></i><i></i><i></i></div>
-      <span>agent · <%= @hosted_agent.runtime %> · live websocket</span>
-      <button type="button" data-terminal-reconnect>Reconnect</button>
+  <section class="agent-overview-grid" aria-label="Agent status">
+    <article class="agent-overview-card">
+      <span>Runtime</span>
+      <strong><i class="status-light status-light-runtime"></i><%= @hosted_agent.state.humanize %></strong>
+      <p><%= @hosted_agent.container_name %></p>
+    </article>
+
+    <article class="agent-overview-card agent-overview-card-warning">
+      <span>Zuwerk connection</span>
+      <strong data-chat-bridge-status><i class="status-light status-light-offline"></i>Not connected</strong>
+      <p>The runtime is available, but it does not receive messages from the shared chat yet.</p>
+      <%= link_to "Create invitation link", new_agent_invitation_path, class: "agent-connect-link" %>
+    </article>
+
+    <article class="agent-overview-card">
+      <span>Workspace</span>
+      <strong>Persistent</strong>
+      <p>Home, login and files survive restarts.</p>
+    </article>
+  </section>
+
+  <section class="agent-live-terminal">
+    <div class="agent-section-heading">
+      <div>
+        <span>Live terminal</span>
+        <p>Direct view of the persistent tmux session.</p>
+      </div>
     </div>
-    <div class="terminal-screen terminal-screen-fullscreen" data-terminal-screen tabindex="0" aria-label="Interactive agent terminal"></div>
+
+    <div class="terminal-cockpit" data-terminal-agent-id="<%= @agent.id %>" data-terminal-enabled="<%= @hosted_agent.running? %>">
+      <div class="terminal-titlebar">
+        <div><i></i><i></i><i></i></div>
+        <span>agent · <%= @hosted_agent.runtime %> · live websocket</span>
+        <button type="button" data-terminal-reconnect>Reconnect</button>
+      </div>
+      <div class="terminal-screen terminal-screen-compact" data-terminal-screen tabindex="0" aria-label="Interactive agent terminal"></div>
+    </div>
   </section>
 </div>
