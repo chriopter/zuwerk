@@ -1,12 +1,12 @@
 <details class="project-switcher <%= 'project-switcher-compact' if local_assigns[:compact] %>">
-  <summary aria-label="Projekt wechseln: <%= project.name %>">
+  <summary aria-label="Switch project: <%= project.name %>">
     <span class="project-switcher-copy">
       <strong><%= project.name %></strong>
     </span>
     <span class="project-switcher-chevron" aria-hidden="true">⌄</span>
   </summary>
   <div class="project-switcher-menu">
-    <div class="project-switcher-menu-label">Projekte</div>
+    <div class="project-switcher-menu-label">Projects</div>
     <div class="project-switcher-list">
       <% projects.each do |item| %>
         <%= link_to chat_project_path(item), class: "project-switcher-option #{'project-switcher-option-active' if item == project}" do %>
