@@ -6,6 +6,7 @@ class User < ApplicationRecord
   has_many :agent_invitations, foreign_key: :inviter_id, dependent: :restrict_with_error
   has_many :agent_events, foreign_key: :recipient_id, dependent: :restrict_with_error
   has_many :todo_assignments, foreign_key: :agent_id, dependent: :destroy
+  has_many :agent_subscriptions, foreign_key: :agent_id, dependent: :destroy
   has_many :assigned_todo_assignments, class_name: "TodoAssignment", foreign_key: :assigner_id, dependent: :destroy
   has_one :hosted_agent, dependent: :destroy
 

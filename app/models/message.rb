@@ -33,10 +33,11 @@ class Message < ApplicationRecord
     def create_mention_events
       return unless author.human?
 
+      automatically_notified_ids = project.agent_subscriptions.pluck(:agent_id)
       User.agent.find_each do |agent|
         escaped_handle = Regexp.escape(agent.handle)
         mentioned = body.match?(/(?<![[:alnum:]_-])@#{escaped_handle}(?![[:alnum:]_-])/i)
-        next unless mentioned || project.room_setting.notify_agents?
+        next unless mentioned || automatically_notified_ids.include?(agent.id)
 
         agent_events.create!(event_type: "mentioned", recipient: agent)
       end

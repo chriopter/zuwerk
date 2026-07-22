@@ -8,14 +8,21 @@
       </div>
 
       <div class="chat-header-actions">
-        <%= link_to "Agents", agents_path, class: "header-action" %>
-        <%= form_with model: @room_setting, url: project_room_setting_path(@project), method: :patch, class: "notify-control" do |form| %>
-          <div class="notify-copy">
-            <div class="notify-title">Notify</div>
-            <div class="notify-subtitle"><%= @room_setting.notify_agents? ? "Every human message" : "Mentions only" %></div>
+        <%= link_to "Agents", agents_path, class: "header-action hidden sm:inline-flex" %>
+        <div class="bot-notify-control" aria-label="Automatic bot notifications">
+          <span>Auto notify</span>
+          <div>
+            <% @agents.each do |agent| %>
+              <% enabled = @auto_notify_agent_ids.include?(agent.id) %>
+              <%= form_with url: project_agent_subscription_path(@project, agent), method: :patch do %>
+                <%= hidden_field_tag :enabled, enabled ? "0" : "1" %>
+                <button type="submit" class="bot-notify-toggle <%= 'is-enabled' if enabled %>" aria-pressed="<%= enabled %>" title="<%= enabled ? 'Stop automatic notifications for' : 'Automatically notify' %> <%= agent.name %>">
+                  <span class="bot-notify-dot" aria-hidden="true"></span><%= agent.name %>
+                </button>
+              <% end %>
+            <% end %>
           </div>
-          <%= form.check_box :notify_agents, class: "toggle toggle-sm", onchange: "this.form.requestSubmit()", aria: { label: "Notify all agents about human messages" } %>
-        <% end %>
+        </div>
         <%= link_to new_agent_invitation_path, class: "header-action", aria: { label: "Invite agent" }, title: "Invite agent" do %>
           <span aria-hidden="true">＋</span><span class="hidden sm:inline">Invite agent</span>
         <% end %>

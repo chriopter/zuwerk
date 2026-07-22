@@ -1,5 +1,7 @@
 class Project < ApplicationRecord
   has_many :messages, dependent: :destroy
+  has_many :agent_subscriptions, dependent: :destroy
+  has_many :automatically_notified_agents, through: :agent_subscriptions, source: :agent
   has_many :todos, dependent: :destroy
   has_many :hosted_agent_sessions, as: :origin, dependent: :destroy
   has_one :room_setting, dependent: :destroy

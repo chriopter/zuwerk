@@ -28,9 +28,10 @@ class AgentEventTest < ActiveSupport::TestCase
     assert_empty message.agent_events
   end
 
-  test "notify agents creates one project event per agent without an explicit mention" do
+  test "agent subscriptions create one project event per selected agent without a mention" do
     project = Project.create!(name: "Alerts")
-    project.room_setting.update!(notify_agents: true)
+    project.agent_subscriptions.create!(agent: @hermes)
+    project.agent_subscriptions.create!(agent: @build_agent)
 
     message = Message.create!(author: @human, project: project, body: "Status update")
 
@@ -40,7 +41,7 @@ class AgentEventTest < ActiveSupport::TestCase
 
   test "agent-authored messages never create mention events" do
     project = Project.create!(name: "Agent chat")
-    project.room_setting.update!(notify_agents: true)
+    project.agent_subscriptions.create!(agent: @build_agent)
 
     message = Message.create!(author: @hermes, project: project, body: "@build-agent status")
 

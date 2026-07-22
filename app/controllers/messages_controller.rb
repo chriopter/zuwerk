@@ -29,6 +29,7 @@ class MessagesController < ApplicationController
     def load_room
       @room_setting = @project.room_setting
       @agents = User.agent.includes(:hosted_agent).order(:name)
+      @auto_notify_agent_ids = @project.agent_subscriptions.pluck(:agent_id)
     end
 
     def chat_path

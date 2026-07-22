@@ -9,6 +9,7 @@ Rails.application.routes.draw do
       resources :reactions, only: :create
     end
     resource :room_setting, only: :update
+    resources :agent_subscriptions, only: :update
     resources :todos, except: :destroy do
       patch :reorder, on: :member
       resources :assignments, controller: "todo_assignments", only: %i[create destroy]

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_22_180000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_22_193447) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
@@ -58,17 +58,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_180000) do
     t.string "last_error"
     t.string "public_id", null: false
     t.integer "recipient_id", null: false
+    t.datetime "runtime_recovered_at"
     t.integer "subject_id", null: false
     t.string "subject_type", null: false
     t.datetime "updated_at", null: false
     t.integer "watchdog_attempts", default: 0, null: false
     t.datetime "watchdog_retry_at"
-    t.datetime "runtime_recovered_at"
     t.index ["delivered_at", "watchdog_retry_at"], name: "index_agent_events_for_watchdog"
     t.index ["event_type", "recipient_id", "subject_type", "subject_id"], name: "index_agent_events_on_unique_delivery", unique: true
     t.index ["public_id"], name: "index_agent_events_on_public_id", unique: true
-    t.index ["recipient_id"], name: "index_agent_events_on_recipient_id"
     t.index ["recipient_id", "accepted_at"], name: "index_agent_events_on_recipient_id_and_accepted_at"
+    t.index ["recipient_id"], name: "index_agent_events_on_recipient_id"
     t.index ["subject_type", "subject_id"], name: "index_agent_events_on_subject"
   end
 
@@ -81,6 +81,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_180000) do
     t.datetime "updated_at", null: false
     t.index ["inviter_id"], name: "index_agent_invitations_on_inviter_id"
     t.index ["token_digest"], name: "index_agent_invitations_on_token_digest", unique: true
+  end
+
+  create_table "agent_subscriptions", force: :cascade do |t|
+    t.integer "agent_id", null: false
+    t.datetime "created_at", null: false
+    t.integer "project_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["agent_id"], name: "index_agent_subscriptions_on_agent_id"
+    t.index ["project_id", "agent_id"], name: "index_agent_subscriptions_on_project_id_and_agent_id", unique: true
+    t.index ["project_id"], name: "index_agent_subscriptions_on_project_id"
   end
 
   create_table "hosted_agent_sessions", force: :cascade do |t|
@@ -208,6 +218,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_180000) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "agent_events", "users", column: "recipient_id"
   add_foreign_key "agent_invitations", "users", column: "inviter_id"
+  add_foreign_key "agent_subscriptions", "projects"
+  add_foreign_key "agent_subscriptions", "users", column: "agent_id"
   add_foreign_key "hosted_agent_sessions", "hosted_agents"
   add_foreign_key "hosted_agents", "users"
   add_foreign_key "messages", "agent_events"

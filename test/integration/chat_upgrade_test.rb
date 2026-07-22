@@ -26,7 +26,7 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
     assert_equal project, project.room_setting.project
   end
 
-  test "each project has one isolated chat and notify setting" do
+  test "each project has one isolated chat and bot subscriptions" do
     first = Project.default
     second = Project.create!(name: "Second project")
     first.messages.create!(author: @human, body: "First-only message")
@@ -47,10 +47,10 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
     assert_redirected_to chat_project_path(second)
     assert_equal second, Message.order(:id).last.project
 
-    patch project_room_setting_path(second), params: { room_setting: { notify_agents: "1" } }
+    patch project_agent_subscription_path(second, @agent), params: { enabled: "1" }
     assert_redirected_to chat_project_path(second)
-    assert second.room_setting.reload.notify_agents?
-    assert_not first.room_setting.reload.notify_agents?
+    assert second.agent_subscriptions.exists?(agent: @agent)
+    assert_not first.agent_subscriptions.exists?(agent: @agent)
   end
 
   test "renders the focused shared chat shell with project navigation" do
@@ -61,41 +61,48 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
     assert_select ".workspace-sidebar", count: 0
     assert_select ".project-context-nav a[aria-current='page']", text: "Chat"
     assert_select ".chat-header-bar h1", text: "Shared chat"
-    assert_select "form.notify-control"
+    assert_select ".bot-notify-control form[action='#{project_agent_subscription_path(project, @agent)}'] button[aria-pressed='false']", text: /Hermes/
     assert_select "a", text: /Invite agent/
     assert_select "#message-viewport #messages"
     assert_select "textarea[placeholder='Write a message…']"
     assert_select "body", text: /Decisions|Schedule|Project overview/, count: 0
   end
 
-  test "room settings require a signed-in human" do
+  test "bot subscriptions require a signed-in human" do
     project = Project.default
     delete session_path
 
-    patch project_room_setting_path(project), params: { room_setting: { notify_agents: "1" } }
+    patch project_agent_subscription_path(project, @agent), params: { enabled: "1" }
 
     assert_redirected_to new_session_path
-    assert_not project.room_setting.reload.notify_agents?
+    assert_not project.agent_subscriptions.exists?(agent: @agent)
   end
 
-  test "authenticated humans toggle the shared room notify agents setting" do
-    assert_not RoomSetting.current.notify_agents?
-    patch room_setting_path, params: { room_setting: { notify_agents: "1" } }
-    assert_redirected_to chat_project_path(Project.default)
-    assert RoomSetting.current.reload.notify_agents?
-  end
-
-  test "notify agents wakes every agent once for human messages and never for agent messages" do
+  test "authenticated humans toggle one bot without changing another" do
     other = User.create!(name: "Scout", kind: :agent, api_token: "other-token")
-    RoomSetting.current.update!(notify_agents: true)
+    project = Project.default
+
+    patch project_agent_subscription_path(project, @agent), params: { enabled: "1" }
+    assert_redirected_to chat_project_path(project)
+    assert project.agent_subscriptions.exists?(agent: @agent)
+    assert_not project.agent_subscriptions.exists?(agent: other)
+
+    patch project_agent_subscription_path(project, @agent), params: { enabled: "0" }
+    assert_not project.agent_subscriptions.exists?(agent: @agent)
+  end
+
+  test "subscriptions and explicit mentions wake each selected bot once" do
+    other = User.create!(name: "Scout", kind: :agent, api_token: "other-token")
+    project = Project.default
+    project.agent_subscriptions.create!(agent: other)
 
     assert_difference "AgentEvent.count", 2 do
-      @human.messages.create!(body: "Hello @hermes")
+      project.messages.create!(author: @human, body: "Hello @hermes")
     end
     assert_equal [ @agent.id, other.id ].sort, AgentEvent.last(2).map(&:recipient_id).sort
 
     assert_no_difference "AgentEvent.count" do
-      @agent.messages.create!(body: "Agent response @scout")
+      project.messages.create!(author: @agent, body: "Agent response @scout")
     end
   end
 
