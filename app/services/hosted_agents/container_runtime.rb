@@ -7,6 +7,14 @@ module HostedAgents
       @executor = executor
     end
 
+    def running?
+      @executor.run(
+        "podman", "inspect", "--format", "{{.State.Status}}", @hosted_agent.container_name
+      ).strip == "running"
+    rescue CommandExecutor::CommandError
+      false
+    end
+
     def provision
       @hosted_agent.update!(state: "provisioning", last_error: nil)
       if (container = existing_container)

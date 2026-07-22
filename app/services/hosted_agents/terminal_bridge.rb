@@ -1,13 +1,12 @@
-require "open3"
-
 module HostedAgents
   class TerminalBridge
     MAX_INPUT = 4_096
     SESSION = "agent"
 
-    def initialize(hosted_agent, executor: CommandExecutor.new)
+    def initialize(hosted_agent, executor: CommandExecutor.new, interactive_executor: InteractiveCommandExecutor.new)
       @hosted_agent = hosted_agent
       @executor = executor
+      @interactive_executor = interactive_executor
     end
 
     def start(rows: 24, columns: 80, &on_output)
@@ -15,12 +14,17 @@ module HostedAgents
 
       rows = rows.to_i.clamp(10, 200)
       columns = columns.to_i.clamp(20, 400)
-      attach_command = "stty rows #{rows} cols #{columns}; exec tmux attach-session -t #{SESSION}"
+      attach_command = 'stty rows "$ZUWERK_ROWS" cols "$ZUWERK_COLUMNS"; exec tmux attach-session -t agent'
 
-      @writer, @reader, @wait_thread = Open3.popen2e(
-        "podman", "exec", "-i", "-e", "TERM=xterm-256color", @hosted_agent.container_name,
+      argv = [
+        "podman", "exec", "-i",
+        "-e", "TERM=xterm-256color",
+        "-e", "ZUWERK_ROWS=#{rows}",
+        "-e", "ZUWERK_COLUMNS=#{columns}",
+        @hosted_agent.container_name,
         "script", "-qfec", attach_command, "/dev/null"
-      )
+      ]
+      @writer, @reader, @wait_thread = @interactive_executor.open(*argv)
       @reader_thread = Thread.new { read_output(&on_output) }
       self
     end

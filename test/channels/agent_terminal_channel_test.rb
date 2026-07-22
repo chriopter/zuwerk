@@ -1,6 +1,11 @@
 require "test_helper"
 
 class AgentTerminalChannelTest < ActionCable::Channel::TestCase
+  class FakeRuntime
+    def running? = true
+    def provision = nil
+  end
+
   class FakeBridge
     attr_reader :writes, :sizes, :start_size
 
@@ -39,10 +44,12 @@ class AgentTerminalChannelTest < ActionCable::Channel::TestCase
     @bridge = FakeBridge.new
     stub_connection current_user: @human
     AgentTerminalChannel.bridge_factory = ->(_hosted_agent) { @bridge }
+    AgentTerminalChannel.runtime_factory = ->(_hosted_agent) { FakeRuntime.new }
   end
 
   teardown do
     AgentTerminalChannel.bridge_factory = ->(hosted_agent) { HostedAgents::TerminalBridge.new(hosted_agent) }
+    AgentTerminalChannel.runtime_factory = ->(hosted_agent) { HostedAgents::ContainerRuntime.new(hosted_agent) }
   end
 
   test "streams terminal output and accepts input and resize messages" do

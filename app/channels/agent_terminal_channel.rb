@@ -1,10 +1,14 @@
 class AgentTerminalChannel < ApplicationCable::Channel
   class_attribute :bridge_factory, default: ->(hosted_agent) { HostedAgents::TerminalBridge.new(hosted_agent) }
+  class_attribute :runtime_factory, default: ->(hosted_agent) { HostedAgents::ContainerRuntime.new(hosted_agent) }
 
   def subscribed
     agent = User.agent.find(params[:agent_id])
     hosted_agent = HostedAgent.find_by!(user: agent)
-    unless hosted_agent.running?
+    runtime = runtime_factory.call(hosted_agent)
+    runtime.provision if hosted_agent.running? && !runtime.running?
+    hosted_agent.reload
+    unless hosted_agent.running? && runtime.running?
       reject
       return
     end
@@ -14,7 +18,7 @@ class AgentTerminalChannel < ApplicationCable::Channel
       transmit({ type: "output", data: output })
     end
     transmit({ type: "ready" })
-  rescue ActiveRecord::RecordNotFound, ArgumentError
+  rescue ActiveRecord::RecordNotFound, ArgumentError, HostedAgents::CommandExecutor::CommandError
     reject
   end
 

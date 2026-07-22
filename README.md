@@ -90,6 +90,20 @@ The Rails web process and Solid Queue worker must be allowed to invoke the same 
 sudo systemctl enable --now podman-restart.service
 ```
 
+Run Zuwerk after Podman's restart service and reconcile database state with the real containers before Puma accepts terminal connections. For the systemd deployment, add this drop-in:
+
+```ini
+# /etc/systemd/system/zuwerk.service.d/hosted-agents.conf
+[Unit]
+Wants=podman-restart.service
+After=podman-restart.service
+
+[Service]
+ExecStartPre=/usr/local/bin/bundle exec rails runner HostedAgents::StartupReconciler.call
+```
+
+Then apply it with `sudo systemctl daemon-reload && sudo systemctl restart zuwerk`.
+
 The runtime adapter uses fixed argv commands and server-generated container and volume names. Hosted containers have CPU, memory, and PID limits, run with `no-new-privileges`, and receive no host paths, Podman socket, Zuwerk database, or server credentials. Root access remains available inside the container so agents can install development tools; it does not grant host root access.
 
 Runtime package versions and the base-image digest are pinned in `docker/agent/Dockerfile`. Update them deliberately, rebuild the image, and verify both runtime startup screens before deploying an update.
