@@ -1,0 +1,47 @@
+<nav class="sidebar-project-tree" aria-label="Projects and project objects">
+  <div class="sidebar-tree-heading">
+    <span>Projects</span>
+    <details class="sidebar-project-create">
+      <summary aria-label="Create project" title="Create project">＋</summary>
+      <div class="sidebar-project-create-popover">
+        <%= form_with model: Project.new, url: projects_path do |form| %>
+          <%= form.label :name, "New project" %>
+          <div>
+            <%= form.text_field :name, placeholder: "Project name", maxlength: 80, required: true, aria: { label: "New project name" } %>
+            <%= form.submit "Add" %>
+          </div>
+        <% end %>
+      </div>
+    </details>
+  </div>
+
+  <div class="sidebar-project-list">
+    <% projects.each do |item| %>
+      <% selected_project = item == project %>
+      <details class="sidebar-project" <%= "open" if selected_project %>>
+        <summary>
+          <span class="sidebar-project-mark" aria-hidden="true"><%= item.name.first.upcase %></span>
+          <span class="sidebar-project-name"><%= item.name %></span>
+          <span class="sidebar-project-chevron" aria-hidden="true">›</span>
+        </summary>
+        <div class="sidebar-project-objects">
+          <span class="sidebar-object sidebar-object-disabled" aria-disabled="true">
+            <span class="sidebar-object-icon" aria-hidden="true">#</span><span>Threads</span><span class="sr-only"> — not yet available</span>
+          </span>
+          <%= link_to chat_project_path(item), class: "sidebar-object #{'sidebar-object-active' if selected_project && active == :chat}", aria: (selected_project && active == :chat ? { current: "page" } : {}) do %>
+            <span class="sidebar-object-icon" aria-hidden="true">○</span><span>Chat</span>
+          <% end %>
+          <%= link_to project_todos_path(item), class: "sidebar-object #{'sidebar-object-active' if selected_project && active == :todos}", aria: (selected_project && active == :todos ? { current: "page" } : {}) do %>
+            <span class="sidebar-object-icon" aria-hidden="true">✓</span><span>Tasks</span>
+          <% end %>
+          <span class="sidebar-object sidebar-object-disabled" aria-disabled="true">
+            <span class="sidebar-object-icon" aria-hidden="true">□</span><span>Files</span><span class="sr-only"> — not yet available</span>
+          </span>
+          <span class="sidebar-object sidebar-object-disabled" aria-disabled="true">
+            <span class="sidebar-object-icon" aria-hidden="true">◇</span><span>Memory</span><span class="sr-only"> — not yet available</span>
+          </span>
+        </div>
+      </details>
+    <% end %>
+  </div>
+</nav>

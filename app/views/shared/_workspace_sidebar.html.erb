@@ -1,22 +1,6 @@
 <aside class="workspace-sidebar">
   <%= turbo_stream_from "agent_work" %>
-  <%= render "messages/project_switcher", project: project, projects: projects %>
-
-  <nav class="sidebar-navigation" aria-label="Workspace navigation">
-    <div class="sidebar-label">Workspace</div>
-    <span class="sidebar-channel sidebar-channel-mock" aria-disabled="true">
-      <span>Threads</span><small>Preview</small><span class="sr-only"> — not yet available</span>
-    </span>
-    <%= link_to chat_project_path(project), class: "sidebar-channel #{'sidebar-channel-active' if active == :chat}", aria: (active == :chat ? { current: "page" } : {}) do %>
-      <span>Chat</span>
-    <% end %>
-    <%= link_to project_todos_path(project), class: "sidebar-channel #{'sidebar-channel-active' if active == :todos}", aria: (active == :todos ? { current: "page" } : {}) do %>
-      <span>Tasks</span>
-    <% end %>
-    <span class="sidebar-channel sidebar-channel-mock" aria-disabled="true">
-      <span>Files &amp; Memory</span><small>Preview</small><span class="sr-only"> — not yet available</span>
-    </span>
-  </nav>
+  <%= render "shared/sidebar_project_tree", project: project, projects: projects, active: active %>
 
   <section class="sidebar-agents" aria-labelledby="agents-heading">
     <div class="sidebar-section-heading">

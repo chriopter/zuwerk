@@ -40,11 +40,20 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
 
     get chat_project_path(@first_project)
     assert_response :success
-    assert_select ".project-switcher-option[href='#{chat_project_path(@second_project)}']", text: /Beta/
-    assert_select ".workspace-sidebar a[aria-current='page'][href='#{chat_project_path(@first_project)}']", text: "Chat"
-    assert_select ".workspace-sidebar a[href='#{project_todos_path(@first_project)}']", text: "Tasks"
-    assert_select ".workspace-sidebar [aria-disabled='true']", text: /Threads/, count: 1
-    assert_select ".workspace-sidebar [aria-disabled='true']", text: /Files & Memory/, count: 1
+    assert_select ".workspace-sidebar .sidebar-project-tree details.sidebar-project", count: 2
+    assert_select ".workspace-sidebar details.sidebar-project[open]" do
+      assert_select "summary", text: /Alpha/
+      assert_select "a[aria-current='page'][href='#{chat_project_path(@first_project)}']", text: /Chat/
+      assert_select "a[href='#{project_todos_path(@first_project)}']", text: /Tasks/
+      assert_select "[aria-disabled='true']", text: /Threads/, count: 1
+      assert_select "[aria-disabled='true']", text: /Files/, count: 1
+      assert_select "[aria-disabled='true']", text: /Memory/, count: 1
+    end
+    assert_select ".workspace-sidebar details.sidebar-project:not([open])" do
+      assert_select "summary", text: /Beta/
+      assert_select "a[href='#{chat_project_path(@second_project)}']", text: /Chat/
+      assert_select "a[href='#{project_todos_path(@second_project)}']", text: /Tasks/
+    end
 
     get chat_project_path(@second_project)
     assert_response :success
@@ -53,8 +62,8 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
 
     get project_todos_path(@second_project)
     assert_response :success
-    assert_select ".workspace-sidebar a[aria-current='page'][href='#{project_todos_path(@second_project)}']", text: "Tasks"
-    assert_select ".workspace-sidebar a[href='#{chat_project_path(@second_project)}']", text: "Chat"
+    assert_select ".workspace-sidebar a[aria-current='page'][href='#{project_todos_path(@second_project)}']", text: /Tasks/
+    assert_select ".workspace-sidebar a[href='#{chat_project_path(@second_project)}']", text: /Chat/
   end
 
   test "empty chat todos and agents pages provide useful next actions" do
