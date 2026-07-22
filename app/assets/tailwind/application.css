@@ -36,13 +36,13 @@
   .project-switcher-compact .project-switcher-copy strong { @apply m-0 text-[13px]; }
   .project-switcher-compact .project-switcher-menu { left: 0; top: 46px; width: calc(100vw - 32px); max-width: 304px; }
   .sidebar-navigation { @apply mt-7; }
-  .sidebar-system-navigation { @apply mt-auto; }
+
   .sidebar-label { @apply mb-2 px-2 text-[10px] font-semibold uppercase tracking-[.13em] text-stone-400; }
   .sidebar-channel { @apply flex h-11 items-center rounded-[10px] px-3 text-sm text-stone-500 transition hover:bg-stone-100 hover:text-stone-900; }
   .sidebar-channel-active { @apply bg-[#eff0eb] font-semibold text-stone-900; }
   .sidebar-channel-active::before { content: ""; @apply mr-2 h-1.5 w-1.5 rounded-full bg-[#e85f42]; }
   .sidebar-live-dot { @apply ml-auto h-1.5 w-1.5 rounded-full bg-emerald-500; }
-  .sidebar-agents { @apply mt-4; }
+  .sidebar-agents { @apply mt-7; }
   .sidebar-section-heading { @apply mb-2 flex h-8 items-center justify-between px-2; }
   .sidebar-section-heading > a:first-child { @apply text-[10px] font-semibold uppercase tracking-[.13em] text-stone-400 hover:text-stone-900; }
   .sidebar-section-heading > .sidebar-heading-active { @apply text-stone-900; }
@@ -59,15 +59,19 @@
   .sidebar-avatar-human { @apply bg-[#27332d] text-white; }
   .agent-name { @apply min-w-0 truncate text-[13px] font-medium text-stone-800; }
   .agent-avatar-online { @apply absolute -bottom-px -right-px h-2 w-2 rounded-full border-2 border-white bg-emerald-500; }
-  .agent-kind-mark { @apply h-3 w-3 shrink-0 text-stone-400; }
+
   .agent-dot { @apply absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border-2 border-white; }
   .agent-dot-working { @apply bg-[#e85f42]; }
   .agent-dot-idle, .agent-dot-online { @apply bg-emerald-500; }
   .agent-dot-runtime { @apply bg-amber-400; }
   .agent-dot-offline { @apply bg-stone-300; }
   .sidebar-invite { @apply mt-2 flex h-10 items-center gap-2 rounded-[10px] px-2 text-sm text-stone-400 transition hover:bg-stone-100 hover:text-stone-900; }
-  .sidebar-footer { @apply mb-5 mt-5 flex items-center gap-3 border-t border-stone-200 px-1 pt-5; }
+  .sidebar-footer { @apply mb-5 mt-auto border-t border-stone-200 px-1 pt-4; }
+  .sidebar-footer-profile { @apply flex items-center gap-3; }
+  .sidebar-footer-actions { @apply flex shrink-0 flex-col items-end gap-0.5; }
   .sidebar-logout { @apply rounded-lg px-2 py-1 text-[10px] text-stone-400 transition hover:bg-stone-100 hover:text-stone-900; }
+  .sidebar-db-link { @apply rounded-lg px-2 py-1 text-[10px] text-stone-400 transition hover:bg-stone-100 hover:text-stone-900; }
+  .sidebar-db-link-active { @apply bg-[#eff0eb] font-semibold text-stone-900; }
 
   .chat-panel { @apply flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-[#fbfbf8]; }
   .chat-header-bar { @apply flex h-16 shrink-0 items-center justify-between border-b border-stone-200 bg-white px-4 sm:px-6 lg:h-[72px] lg:px-8; }
