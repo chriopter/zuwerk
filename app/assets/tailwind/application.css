@@ -3,7 +3,6 @@
   themes: corporate --default, business --prefersdark;
 }
 
-@keyframes stream-blink { 0%, 45% { opacity: 1; } 46%, 100% { opacity: 0; } }
 @keyframes typing-bounce { 0%, 60%, 100% { transform: translateY(0); opacity: .35; } 30% { transform: translateY(-3px); opacity: 1; } }
 
 @layer components {
@@ -86,8 +85,7 @@
   .message-avatar-agent { @apply bg-[#e85f42] text-white; }
   .message-avatar-spark { @apply absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full border-2 border-[#fbfbf8] bg-white text-[7px] text-[#e85f42]; }
   .agent-label { @apply text-[9px] font-semibold uppercase tracking-[.1em] text-[#d9563b]; }
-  .stream-label { @apply ml-auto inline-flex items-center gap-1.5 text-[10px] font-medium text-[#d9563b]; }
-  .stream-dot { @apply h-1.5 w-1.5 animate-pulse rounded-full bg-[#e85f42]; }
+
   .message-copy { @apply mt-1 whitespace-pre-wrap break-words text-[15px] leading-6 text-stone-700; }
   .message-copy-agent { @apply text-stone-700; }
   .message-actions { @apply mt-2 flex min-h-6 flex-wrap gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100; }
@@ -237,7 +235,7 @@
 .xterm .xterm-scroll-area { visibility: hidden; }
 .xterm-char-measure-element { display: inline-block; visibility: hidden; position: absolute; top: 0; left: -9999em; line-height: normal; }
 
-.streaming-caret { display: inline-block; width: 2px; height: 1em; margin-left: 3px; vertical-align: -.12em; border-radius: 999px; background: currentColor; animation: stream-blink .85s steps(1) infinite; }
+
 .typing-dots { display: inline-flex; align-items: center; gap: 4px; min-height: 24px; }
 .typing-dots i { width: 5px; height: 5px; border-radius: 999px; background: #e85f42; animation: typing-bounce 1.2s infinite; }
 .typing-dots i:nth-child(2) { animation-delay: .15s; }

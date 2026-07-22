@@ -3,14 +3,16 @@ require "fileutils"
 
 module HostedAgents
   class AcpPool
-    Entry = Data.define(:client, :loaded_projects)
+    Entry = Data.define(:client, :loaded_origins)
 
     class << self
-      def prompt(hosted_agent, project, text, &on_chunk)
+      def prompt(hosted_agent, origin, text, &on_chunk)
         with_agent_lock(hosted_agent.id) do
           entry = entry_for(hosted_agent)
-          session_id = session_for(entry, hosted_agent, project)
+          record = session_for(entry, hosted_agent, origin)
+          session_id = record.external_session_id
           entry.client.prompt(session_id, text, &on_chunk)
+          record.touch(:last_used_at)
           mark_connected(hosted_agent)
         end
       rescue => error
@@ -21,12 +23,14 @@ module HostedAgents
 
       def warm(hosted_agent)
         with_agent_lock(hosted_agent.id) do
-          record = hosted_agent.sessions.includes(:project).first
+          records = hosted_agent.sessions.includes(:origin).order(last_used_at: :desc).to_a
+          records.select { |candidate| candidate.origin.nil? }.each(&:destroy!)
+          record = records.find { |candidate| candidate.origin.present? }
           return clear_connection(hosted_agent) unless record
 
           entry = entry_for(hosted_agent)
-          session_id = session_for(entry, hosted_agent, record.project)
-          entry.client.ping(session_id)
+          record = session_for(entry, hosted_agent, record.origin)
+          entry.client.ping(record.external_session_id)
           mark_connected(hosted_agent)
         end
       rescue => error
@@ -54,29 +58,30 @@ module HostedAgents
             entry&.client&.close
             entries[hosted_agent.id] = Entry.new(
               client: AcpClient.new(hosted_agent),
-              loaded_projects: Set.new
+              loaded_origins: Set.new
             )
           end
         end
 
-        def session_for(entry, hosted_agent, project)
-          record = hosted_agent.sessions.find_by(project: project)
+        def session_for(entry, hosted_agent, origin)
+          key = [ origin.class.polymorphic_name, origin.id ]
+          record = hosted_agent.sessions.find_by(origin: origin)
           if record
-            return record.external_session_id if entry.loaded_projects.include?(project.id)
+            return record if entry.loaded_origins.include?(key)
 
             begin
               entry.client.load_session(record.external_session_id)
-              entry.loaded_projects.add(project.id)
-              return record.external_session_id
+              entry.loaded_origins.add(key)
+              return record
             rescue AcpClient::Error
               record.destroy!
             end
           end
 
           session_id = entry.client.new_session
-          hosted_agent.sessions.create!(project: project, external_session_id: session_id)
-          entry.loaded_projects.add(project.id)
-          session_id
+          record = hosted_agent.sessions.create!(origin: origin, external_session_id: session_id)
+          entry.loaded_origins.add(key)
+          record
         end
 
         def mark_connected(hosted_agent)

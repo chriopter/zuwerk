@@ -1,23 +1,52 @@
 require "test_helper"
 
 class HostedAgents::ChatBridgeTest < ActiveSupport::TestCase
-  class FakePool
+  class PublishingPool
     attr_reader :prompt_text
 
-    def prompt(_hosted_agent, _project, text)
+    def initialize(agent:, project:, event:)
+      @agent = agent
+      @project = project
+      @event = event
+    end
+
+    def prompt(_hosted_agent, origin, text)
       @prompt_text = text
-      yield "Hello "
-      yield "from Klaus."
+      raise "wrong origin" unless origin == @project
+      @agent.messages.create!(project: @project, body: "Published through the CLI", agent_event: @event)
+      yield "ACP output that must remain invisible" if block_given?
     end
   end
 
-  class EmptyPool
-    def prompt(*)
-      nil
-    end
+  class SilentPool
+    def prompt(*) = nil
   end
 
-  test "records empty ACP responses and completes the placeholder" do
+  test "delivers only after the recipient publishes a message through Zuwerk" do
+    human = User.create!(name: "Ada", email: "ada-bridge@example.com", password: "password1")
+    klaus = User.create!(name: "Klaus", kind: :agent)
+    HostedAgent.create!(user: klaus, runtime: "claude", state: "running")
+    project = Project.create!(name: "Bridge Project")
+    source = Message.create!(author: human, project: project, body: "@Klaus please introduce yourself")
+    event = source.agent_events.find_by!(recipient: klaus)
+    pool = PublishingPool.new(agent: klaus, project: project, event: event)
+
+    assert_difference -> { klaus.messages.count }, 1 do
+      HostedAgents::ChatBridge.new(event, pool: pool).deliver
+    end
+
+    assert event.reload.delivered_at?
+    assert_equal "Published through the CLI", klaus.messages.last.body
+    assert_not_includes klaus.messages.pluck(:body), "ACP output that must remain invisible"
+    assert_includes pool.prompt_text, event.public_id
+    assert_includes pool.prompt_text, project.id.to_s
+    assert_includes pool.prompt_text, project.name
+    assert_includes pool.prompt_text, source.body
+    assert_includes pool.prompt_text, "zuwerk messages list --project #{project.id}"
+    assert_includes pool.prompt_text, "zuwerk messages create --project #{project.id} --event #{event.public_id} --body"
+  end
+
+  test "records an error without creating a placeholder when no project message is published" do
     human = User.create!(name: "Grace", email: "grace-bridge@example.com", password: "password1")
     agent = User.create!(name: "Quiet", kind: :agent)
     HostedAgent.create!(user: agent, runtime: "claude", state: "running")
@@ -25,39 +54,14 @@ class HostedAgents::ChatBridgeTest < ActiveSupport::TestCase
     source = Message.create!(author: human, project: project, body: "@Quiet answer")
     event = source.agent_events.find_by!(recipient: agent)
 
-    error = assert_raises(HostedAgents::ChatBridge::DeliveryError) do
-      HostedAgents::ChatBridge.new(event, pool: EmptyPool.new).deliver
+    assert_no_difference -> { Message.count } do
+      assert_raises(HostedAgents::ChatBridge::DeliveryError) do
+        HostedAgents::ChatBridge.new(event, pool: SilentPool.new).deliver
+      end
     end
 
-    assert_match(/empty response/, error.message)
-    assert_equal 1, event.reload.attempts
-    assert_match(/empty response/, event.last_error)
-    assert event.response_message.completed?
-    assert_predicate event.response_message.body, :present?
-    assert_not agent.reload.working?
-  end
-
-  test "delivers a mention through the existing hosted identity" do
-    human = User.create!(name: "Ada", email: "ada-bridge@example.com", password: "password1")
-    klaus = User.create!(name: "Klaus", kind: :agent)
-    HostedAgent.create!(user: klaus, runtime: "claude", state: "running")
-    project = Project.create!(name: "Bridge Project")
-    source = Message.create!(author: human, project: project, body: "@Klaus please introduce yourself")
-    event = source.agent_events.find_by!(recipient: klaus)
-    pool = FakePool.new
-
-    assert_difference -> { klaus.messages.count }, 1 do
-      HostedAgents::ChatBridge.new(event, pool: pool).deliver
-    end
-
-    event.reload
-    response = event.response_message
-    assert event.delivered_at?
-    assert response.completed?
-    assert_equal "Hello from Klaus.", response.body
-    assert_equal klaus, response.author
-    assert_equal project, response.project
-    assert_includes pool.prompt_text, "Ada: @Klaus please introduce yourself"
-    assert_not klaus.reload.working?
+    assert_nil event.reload.delivered_at
+    assert_equal 1, event.attempts
+    assert_match(/event-correlated project message/, event.last_error)
   end
 end

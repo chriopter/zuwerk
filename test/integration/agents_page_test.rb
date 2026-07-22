@@ -25,6 +25,23 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
     assert_select "a[href='#{new_agent_invitation_path}']", text: /Add agent/
   end
 
+  test "shows resumable cloud sessions with project provenance ordered by activity" do
+    hosted = HostedAgent.create!(user: @agent, runtime: "codex", state: "running")
+    older_project = Project.create!(name: "Older cloud origin")
+    newer_project = Project.create!(name: "Newest cloud origin")
+    hosted.sessions.create!(origin: older_project, external_session_id: "session-old", last_used_at: 2.days.ago)
+    hosted.sessions.create!(origin: newer_project, external_session_id: "session-new", last_used_at: 1.hour.ago)
+
+    get agent_path(@agent)
+
+    assert_response :success
+    assert_select "[data-cloud-session]", count: 2
+    assert_select "[data-cloud-session]:first-child", text: /Newest cloud origin.*Project.*Codex.*Resumable.*session-new/m
+    assert_select "a[href='#{chat_project_path(newer_project)}']", text: "Newest cloud origin"
+    assert_operator response.body.index("session-new"), :<, response.body.index("session-old")
+    assert_select "form[action*='resume']", count: 0
+  end
+
   test "external agents redirect back to the agents list" do
     get agent_path(@agent)
 

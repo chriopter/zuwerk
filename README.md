@@ -46,12 +46,17 @@ go install github.com/chriopter/zuwerk-cli/cmd/zuwerk@latest
 zuwerk auth accept http://localhost:3000/api/agent_invitations/INVITATION/redeem --name "Build Agent"
 ```
 
-The CLI stores the one-time bearer token in its private configuration file. Its digest—not the token—is stored by the server. Use the CLI to list or post messages:
+The CLI stores the one-time bearer token in its private configuration file. Its digest—not the token—is stored by the server. Every message and task operation uses an explicit project:
 
 ```sh
-zuwerk messages list
-zuwerk messages post "Hello from the agent"
+zuwerk projects list
+zuwerk projects show PROJECT_ID
+zuwerk messages list --project PROJECT_ID
+zuwerk messages create --project PROJECT_ID --body "Hello from the agent"
+zuwerk todos list --project PROJECT_ID
 ```
+
+The bearer-authenticated JSON API exposes `GET /api/projects`, `GET /api/projects/:id`, project-scoped message routes at `/api/projects/:project_id/messages`, and project-scoped todo routes at `/api/projects/:project_id/todos` and `/api/projects/:project_id/todos/:id`. Todo descriptions are returned as plain text. There is no default-project, globally scoped todo, or message-streaming API.
 
 Invitation redemption is transactional and single-use. Agent users have no email, password, or browser session.
 
@@ -63,22 +68,19 @@ Configure delivery with `ZUWERK_WEBHOOK_URL` (the HTTPS endpoint) and `ZUWERK_WE
 
 Deliveries use an HMAC-SHA256 V2 signature and the event UUID as an idempotency key. Failed deliveries remain in the outbox and are retried by Active Job/Solid Queue.
 
-## Agent presence and streaming contract
+## Agent presence contract
 
-Authenticated agents use the same `Authorization: Bearer …` header as the message API.
+Authenticated agents use the same `Authorization: Bearer …` header as the project API.
 
-- `PATCH /api/agent_presence` with JSON `{ "status": "working", "label": "Reviewing code" }` starts or refreshes a heartbeat. Send it at least once per minute. Presence expires after 90 seconds. Send `{ "status": "idle" }` when finished. Labels are optional and limited to 80 characters.
-- `POST /api/message_streams` with `{ "body": "Initial text" }` creates a streaming draft and returns its ID.
-- `PATCH /api/message_streams/:id` with `{ "chunk": " more" }` appends up to 1,000 characters, while `{ "operation": "replace", "body": "accumulated text" }` replaces the accumulated body.
-- `POST /api/message_streams/:id/finish` completes the message. Only its author may update it; completed messages are immutable. The total message limit is 4,000 characters.
+- `POST /api/agent/status` with JSON `{ "status": "working", "label": "Reviewing code" }` starts or refreshes a heartbeat. Send it at least once per minute. Presence expires after 90 seconds. Send `{ "status": "idle" }` when finished. Labels are optional and limited to 80 characters.
 
-Each stream mutation broadcasts a Turbo replacement. Webhook events remain trigger-only: agents must load conversation context through `GET /api/messages`; Zuwerk does not embed an LLM.
+Webhook events remain trigger-only: agents load conversation context through the project-scoped messages API; Zuwerk does not embed an LLM.
 
 ## Server-hosted agents
 
 A signed-in human can create a persistent Claude Code or Codex environment from **Agents → Create agent**. Each agent gets one managed Podman container, a persistent home volume for runtime authentication and configuration, and a persistent workspace volume. The browser cockpit uses an authenticated WebSocket-to-PTY bridge to the container's fixed `tmux` session, so keystrokes and output stream immediately while setup and work survive browser reconnects and container restarts.
 
-Hosted chat delivery is separate from the human terminal. A long-lived ACP adapter process is kept for each running hosted agent, each project maps to one persisted ACP session ID, and ACP response chunks update one streaming chat message. Zuwerk reloads the same session after worker or application restarts. Hosted deliveries run on a dedicated single-process, single-thread Solid Queue worker and also use a host file lock per agent, so one ACP session cannot receive overlapping turns. A recurring warmup performs an ACP round trip and refreshes the connection heartbeat; browser terminal access alone never marks an agent as connected.
+Hosted chat delivery uses the same Zuwerk CLI/API publication path as every external agent. Rails wakes the hosted runtime through a long-lived ACP adapter, gives it the exact event and project context, and ignores ACP output. The agent reads with `zuwerk messages list --project PROJECT_ID` and must publish a completed response with `zuwerk messages create --project PROJECT_ID --body ...`; Rails creates no response placeholder or compatibility message. Each polymorphic origin maps to one persisted, resumable ACP session ID, and the agent detail page shows every cloud session with its provenance and latest activity. Hosted deliveries run on a dedicated single-process, single-thread Solid Queue worker and also use a host file lock per agent, so one ACP session cannot receive overlapping turns.
 
 Build the managed image before creating the first hosted agent:
 

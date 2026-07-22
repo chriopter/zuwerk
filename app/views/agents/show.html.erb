@@ -52,6 +52,44 @@
     </article>
   </section>
 
+  <section class="agent-live-terminal" aria-labelledby="cloud-sessions-heading">
+    <div class="agent-section-heading">
+      <div>
+        <span id="cloud-sessions-heading">Cloud sessions</span>
+        <p>Resumable runtime sessions and where each conversation began.</p>
+      </div>
+    </div>
+
+    <% if @cloud_sessions.any? %>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left">
+          <thead><tr><th>Origin</th><th>Runtime / provider</th><th>Status</th><th>Last used</th><th>Created</th><th>External session ID</th></tr></thead>
+          <tbody>
+            <% @cloud_sessions.each do |session| %>
+              <tr data-cloud-session>
+                <td>
+                  <% if session.origin.is_a?(Project) %>
+                    <%= link_to session.origin_label, chat_project_path(session.origin) %>
+                  <% else %>
+                    <%= session.origin_label %>
+                  <% end %>
+                  <small><%= session.origin_type %></small>
+                </td>
+                <td><%= @hosted_agent.runtime.humanize %> / Hosted ACP</td>
+                <td><%= session.external_session_id.present? ? "Resumable" : "Unavailable" %></td>
+                <td><time datetime="<%= session.last_used_at.iso8601 %>"><%= session.last_used_at.to_fs(:long) %></time></td>
+                <td><time datetime="<%= session.created_at.iso8601 %>"><%= session.created_at.to_fs(:long) %></time></td>
+                <td><code><%= session.external_session_id %></code></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <p>No cloud sessions yet.</p>
+    <% end %>
+  </section>
+
   <section class="agent-live-terminal">
     <div class="agent-section-heading">
       <div>

@@ -124,40 +124,4 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
     @agent.working_label = "x" * 81
     assert_not @agent.valid?
   end
-
-  test "agent streams its own message from draft through finish" do
-    headers = { "Authorization" => "Bearer agent-token" }
-    post api_message_streams_path, params: {}, headers: headers, as: :json
-    assert_response :created
-    message = Message.last
-    assert message.streaming?
-
-    assert_equal "", message.body
-
-    patch api_message_stream_path(message), params: { action: "append", chunk: "Hello" }, headers: headers, as: :json
-    assert_response :success
-    assert_equal "Hello", message.reload.body
-
-    patch api_message_stream_path(message), params: { action: "replace", body: "Hello team" }, headers: headers, as: :json
-    assert_response :success
-    assert_equal "Hello team", message.reload.body
-
-    patch api_message_stream_path(message), params: { action: "finish" }, headers: headers, as: :json
-    assert_response :success
-    assert message.reload.completed?
-
-    patch api_message_stream_path(message), params: { action: "append", chunk: "!" }, headers: headers, as: :json
-    assert_response :unprocessable_entity
-  end
-
-  test "agents cannot mutate another agents stream and chunk limits are enforced" do
-    other = User.create!(name: "Scout", kind: :agent, api_token: "other-token")
-    message = other.messages.create!(body: "Draft", state: :streaming)
-    headers = { "Authorization" => "Bearer agent-token" }
-
-    patch api_message_stream_path(message), params: { action: "append", chunk: "stolen" }, headers: headers, as: :json
-    assert_response :not_found
-    patch api_message_stream_path(@agent.messages.create!(body: "Draft", state: :streaming)), params: { action: "append", chunk: "x" * 1001 }, headers: headers, as: :json
-    assert_response :unprocessable_entity
-  end
 end

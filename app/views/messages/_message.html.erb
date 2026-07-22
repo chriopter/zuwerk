@@ -10,11 +10,10 @@
       <strong class="text-sm font-semibold text-stone-900"><%= message.author.name %></strong>
       <% if message.author.agent? %><span class="agent-label">Agent</span><% end %>
       <time class="text-[11px] text-stone-400" datetime="<%= message.created_at.iso8601 %>"><%= message.created_at.strftime("%H:%M") %></time>
-      <% if message.streaming? %><span class="stream-label"><span class="stream-dot"></span>writing</span><% end %>
     </div>
 
     <div class="message-copy <%= 'message-copy-agent' if message.author.agent? %>">
-      <% if message.body.present? %><%= message.body %><% else %><span class="typing-dots" aria-label="Agent is writing"><i></i><i></i><i></i></span><% end %><% if message.streaming? && message.body.present? %><span class="streaming-caret" aria-hidden="true"></span><% end %>
+      <%= message.body %>
     </div>
 
     <div class="message-actions">

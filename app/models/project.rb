@@ -1,6 +1,7 @@
 class Project < ApplicationRecord
   has_many :messages, dependent: :destroy
   has_many :todos, dependent: :destroy
+  has_many :hosted_agent_sessions, as: :origin, dependent: :destroy
   has_one :room_setting, dependent: :destroy
   after_create :create_room_setting!
 

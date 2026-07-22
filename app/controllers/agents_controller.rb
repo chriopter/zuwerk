@@ -32,6 +32,7 @@ class AgentsController < ApplicationController
   def show
     @hosted_agent = @agent.hosted_agent
     redirect_to agents_path, alert: "This agent uses an external environment." unless @hosted_agent
+    @cloud_sessions = @hosted_agent.sessions.includes(:origin).order(last_used_at: :desc, created_at: :desc) if @hosted_agent
   end
 
   %i[start stop restart].each do |action|
