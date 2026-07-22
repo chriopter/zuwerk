@@ -5,11 +5,12 @@ class TodoCommentsController < ApplicationController
   before_action :ensure_author!, only: %i[edit update destroy]
 
   def create
-    comment = @todo.comments.new(comment_params.merge(author: current_user))
-    if comment.save
-      redirect_to project_todo_path(@project, @todo, anchor: "todo_comment_#{comment.id}")
+    @comment = @todo.comments.new(comment_params.merge(author: current_user))
+    if @comment.save
+      redirect_to project_todo_path(@project, @todo, anchor: "todo_comment_#{@comment.id}")
     else
-      redirect_to project_todo_path(@project, @todo), alert: comment.errors.full_messages.to_sentence
+      load_workspace
+      render "todos/show", status: :unprocessable_entity
     end
   end
 
@@ -55,6 +56,7 @@ class TodoCommentsController < ApplicationController
   def load_workspace
     @projects = Project.order(:name)
     @sidebar_agents = User.agent.includes(:hosted_agent).order(:name)
+    @agents = User.agent.order(:name)
     @todos = @project.todos.ordered
   end
 end

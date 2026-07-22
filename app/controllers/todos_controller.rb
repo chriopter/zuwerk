@@ -19,16 +19,18 @@ class TodosController < ApplicationController
   end
 
   def create
-    @todo = @project.todos.new(todo_params.merge(creator: current_user))
-    saved = @project.with_lock do
+    attributes = todo_params
+    @todo = @project.todos.new(creator: current_user)
+    @todo.assign_attributes(attributes.except(:parent_id))
+    @todo.parent = find_parent(attributes[:parent_id])
+    @project.with_lock do
       @todo.position = next_position(@todo.parent)
-      @todo.save
+      @todo.save!
     end
-    if saved
-      redirect_to project_todo_path(@project, @todo)
-    else
-      render :new, status: :unprocessable_entity
-    end
+    redirect_to project_todo_path(@project, @todo)
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound, ArgumentError => error
+    add_submission_error(error)
+    render :new, status: :unprocessable_entity
   end
 
   def edit
@@ -39,7 +41,7 @@ class TodosController < ApplicationController
     Todo.transaction do
       @todo.update!(attributes.except(:parent_id))
       if attributes.key?(:parent_id)
-        parent = attributes[:parent_id].present? ? @project.todos.find(attributes[:parent_id]) : nil
+        parent = find_parent(attributes[:parent_id])
         position = parent == @todo.parent ? @todo.position : (parent ? parent.children.count : @project.todos.roots.count)
         @todo.move_to!(parent: parent, position: position)
       end
@@ -49,7 +51,8 @@ class TodosController < ApplicationController
     else
       render :edit, status: :unprocessable_entity
     end
-  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound, ArgumentError => error
+    add_submission_error(error)
     render :edit, status: :unprocessable_entity
   end
 
@@ -82,6 +85,19 @@ class TodosController < ApplicationController
 
   def next_position(parent)
     siblings = parent ? parent.children : @project.todos.roots
-    siblings.maximum(:position).to_i + 1
+    maximum = siblings.maximum(:position)
+    maximum ? maximum + 1 : 0
+  end
+
+  def find_parent(parent_id)
+    parent_id.present? ? @project.todos.find(parent_id) : nil
+  end
+
+  def add_submission_error(error)
+    @todo ||= @project.todos.new(creator: current_user)
+    return if error.is_a?(ActiveRecord::RecordInvalid) && error.record == @todo
+
+    attribute = error.is_a?(ActiveRecord::RecordNotFound) ? :parent : :base
+    @todo.errors.add(attribute, error.is_a?(ActiveRecord::RecordNotFound) ? "is invalid" : error.message)
   end
 end
