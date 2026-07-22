@@ -40,7 +40,7 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
 
     get chat_project_path(second)
     assert_response :success
-    assert_select "a.sidebar-channel[href='#{chat_project_path(second)}']", text: /Shared chat/
+    assert_select "a.sidebar-channel[href='#{chat_project_path(second)}']", text: /Chat/
     assert_select "#messages", text: /Second-only message/
     assert_select "#messages", text: /First-only message/, count: 0
 
@@ -59,7 +59,7 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select ".workspace-sidebar"
-    assert_select ".sidebar-channel-active", text: /Shared chat/
+    assert_select ".sidebar-channel-active", text: /Chat/
     assert_select ".chat-header-bar h1", text: "Shared chat"
     assert_select "form.notify-control"
     assert_select "a", text: /Invite agent/

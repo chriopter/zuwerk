@@ -3,13 +3,19 @@
   <%= render "messages/project_switcher", project: project, projects: projects %>
 
   <nav class="sidebar-navigation" aria-label="Workspace navigation">
-    <div class="sidebar-label">Conversation</div>
+    <div class="sidebar-label">Workspace</div>
+    <div class="sidebar-channel sidebar-channel-mock" aria-disabled="true">
+      <span>Updates</span><small>Preview</small>
+    </div>
     <%= link_to chat_project_path(project), class: "sidebar-channel #{'sidebar-channel-active' if active == :chat}", aria: (active == :chat ? { current: "page" } : {}) do %>
-      <span>Shared chat</span>
+      <span>Chat</span>
     <% end %>
     <%= link_to project_todos_path(project), class: "sidebar-channel #{'sidebar-channel-active' if active == :todos}", aria: (active == :todos ? { current: "page" } : {}) do %>
-      <span>Todos</span>
+      <span>Tasks</span>
     <% end %>
+    <div class="sidebar-channel sidebar-channel-mock" aria-disabled="true">
+      <span>Files &amp; Memory</span><small>Preview</small>
+    </div>
   </nav>
 
   <section class="sidebar-agents" aria-labelledby="agents-heading">

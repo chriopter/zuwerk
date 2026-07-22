@@ -39,6 +39,8 @@
 
   .sidebar-label { @apply mb-2 px-2 text-[10px] font-semibold uppercase tracking-[.13em] text-stone-400; }
   .sidebar-channel { @apply flex h-11 items-center rounded-[10px] px-3 text-sm text-stone-500 transition hover:bg-stone-100 hover:text-stone-900; }
+  .sidebar-channel-mock { @apply cursor-default text-stone-400 hover:bg-transparent hover:text-stone-500; }
+  .sidebar-channel-mock small { @apply ml-auto rounded-full bg-stone-100 px-2 py-0.5 text-[8px] font-semibold uppercase tracking-[.08em] text-stone-400; }
   .sidebar-channel-active { @apply bg-[#eff0eb] font-semibold text-stone-900; }
   .sidebar-channel-active::before { content: ""; @apply mr-2 h-1.5 w-1.5 rounded-full bg-[#e85f42]; }
   .sidebar-live-dot { @apply ml-auto h-1.5 w-1.5 rounded-full bg-emerald-500; }

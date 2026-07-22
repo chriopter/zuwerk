@@ -41,8 +41,10 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
     get chat_project_path(@first_project)
     assert_response :success
     assert_select ".project-switcher-option[href='#{chat_project_path(@second_project)}']", text: /Beta/
-    assert_select ".workspace-sidebar a[aria-current='page'][href='#{chat_project_path(@first_project)}']", text: "Shared chat"
-    assert_select ".workspace-sidebar a[href='#{project_todos_path(@first_project)}']", text: "Todos"
+    assert_select ".workspace-sidebar a[aria-current='page'][href='#{chat_project_path(@first_project)}']", text: "Chat"
+    assert_select ".workspace-sidebar a[href='#{project_todos_path(@first_project)}']", text: "Tasks"
+    assert_select ".workspace-sidebar [aria-disabled='true']", text: /Updates/, count: 1
+    assert_select ".workspace-sidebar [aria-disabled='true']", text: /Files & Memory/, count: 1
 
     get chat_project_path(@second_project)
     assert_response :success
@@ -51,8 +53,8 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
 
     get project_todos_path(@second_project)
     assert_response :success
-    assert_select ".workspace-sidebar a[aria-current='page'][href='#{project_todos_path(@second_project)}']", text: "Todos"
-    assert_select ".workspace-sidebar a[href='#{chat_project_path(@second_project)}']", text: "Shared chat"
+    assert_select ".workspace-sidebar a[aria-current='page'][href='#{project_todos_path(@second_project)}']", text: "Tasks"
+    assert_select ".workspace-sidebar a[href='#{chat_project_path(@second_project)}']", text: "Chat"
   end
 
   test "empty chat todos and agents pages provide useful next actions" do
