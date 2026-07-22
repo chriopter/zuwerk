@@ -10,6 +10,10 @@
 #     schedule: at 5am every day
 
 production:
+  watch_stale_agent_events:
+    class: WatchStaleAgentEventsJob
+    queue: default
+    schedule: every minute
   warm_hosted_agent_bridges:
     class: WarmHostedAgentBridgesJob
     queue: hosted_agents

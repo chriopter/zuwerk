@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_22_170000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_22_180000) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
@@ -61,6 +61,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_170000) do
     t.integer "subject_id", null: false
     t.string "subject_type", null: false
     t.datetime "updated_at", null: false
+    t.integer "watchdog_attempts", default: 0, null: false
+    t.datetime "watchdog_retry_at"
+    t.datetime "runtime_recovered_at"
+    t.index ["delivered_at", "watchdog_retry_at"], name: "index_agent_events_for_watchdog"
     t.index ["event_type", "recipient_id", "subject_type", "subject_id"], name: "index_agent_events_on_unique_delivery", unique: true
     t.index ["public_id"], name: "index_agent_events_on_public_id", unique: true
     t.index ["recipient_id"], name: "index_agent_events_on_recipient_id"
