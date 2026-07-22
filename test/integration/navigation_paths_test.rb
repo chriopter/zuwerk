@@ -64,6 +64,7 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select ".workspace-sidebar a[aria-current='page'][href='#{project_todos_path(@second_project)}']", text: /Tasks/
     assert_select ".workspace-sidebar a[href='#{chat_project_path(@second_project)}']", text: /Chat/
+    assert_select ".workspace-mobile-header a[aria-current='page'][href='#{project_todos_path(@second_project)}']", text: "Tasks"
   end
 
   test "empty chat todos and agents pages provide useful next actions" do

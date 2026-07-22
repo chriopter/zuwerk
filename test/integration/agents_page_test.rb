@@ -22,7 +22,7 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
       assert_select ".agent-avatar-online", count: 0
       assert_select ".agent-kind-mark", count: 0
     end
-    assert_select ".sidebar-channel-active", count: 0
+    assert_select ".sidebar-object-active", count: 0
     assert_select "[data-agent-id='#{@agent.id}']", text: /Hermes/
     assert_select "[data-agent-origin='external']", text: /Connected via CLI/
     assert_select "[data-agent-origin='hosted']", text: /On this server/
