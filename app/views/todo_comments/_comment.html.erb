@@ -3,9 +3,9 @@
     <strong class="text-stone-700"><%= comment.author.name %></strong>
     <time><%= comment.created_at.strftime("%d.%m.%Y · %H:%M") %></time>
     <% if comment.author == current_user %>
-      <span class="comment-actions">
-        <%= link_to edit_project_todo_comment_path(@project, @todo, comment), class: "comment-icon-action", title: "Kommentar bearbeiten", aria: { label: "Kommentar bearbeiten" } do %><%= render "shared/icon", name: "edit" %><% end %>
-        <%= button_to project_todo_comment_path(@project, @todo, comment), method: :delete, class: "comment-icon-action hover:text-red-600", title: "Kommentar löschen", aria: { label: "Kommentar löschen" }, form: { data: { turbo_confirm: "Kommentar löschen?" } } do %><%= render "shared/icon", name: "trash" %><% end %>
+      <span class="ml-auto flex gap-3">
+        <%= link_to "Edit", edit_project_todo_comment_path(@project, @todo, comment), class: "hover:text-stone-800" %>
+        <%= button_to "Delete", project_todo_comment_path(@project, @todo, comment), method: :delete, class: "hover:text-red-600", form: { data: { turbo_confirm: "Delete comment?" } } %>
       </span>
     <% end %>
   </header>
