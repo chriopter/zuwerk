@@ -66,6 +66,7 @@ class AgentEvent < ApplicationRecord
       recipient.update_columns(connector_heartbeat_at: Time.current, updated_at: Time.current)
       active = where(recipient: recipient, state: %w[running waiting_for_approval]).order(:created_at, :id).first
       if active&.state == "running"
+        return if active.connector_connection_id.nil?
         active.update_columns(connector_connection_id: connection_id, updated_at: Time.current)
         return active
       end
@@ -96,11 +97,15 @@ class AgentEvent < ApplicationRecord
     end
   end
 
-  def terminalize_failure!(error)
+  def terminalize_failure!(error, expected_connector_owner: nil)
+    changed = false
     with_lock do
       return if state.in?(TERMINAL_STATES)
+      return if expected_connector_owner && connector_connection_id != expected_connector_owner
       update!(state: "failed", finished_at: Time.current, last_error: error.message.to_s.truncate(255))
+      changed = true
     end
+    return unless changed
     agent_approvals.pending.find_each(&:expire!)
     self.class.schedule_next_for!(recipient)
   end

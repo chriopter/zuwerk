@@ -33,7 +33,7 @@ class User < ApplicationRecord
   def register_connector!(connection_id)
     with_lock do
       update_columns(connector_connection_id: connection_id, connector_heartbeat_at: Time.current, updated_at: Time.current)
-      agent_events.where(state: "running").where.not(connector_connection_id: nil)
+      agent_events.where(state: %w[running waiting_for_approval]).where.not(connector_connection_id: nil)
         .update_all(connector_connection_id: connection_id, updated_at: Time.current)
     end
   end

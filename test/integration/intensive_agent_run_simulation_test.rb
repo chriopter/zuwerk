@@ -14,7 +14,8 @@ class IntensiveAgentRunSimulationTest < ActionDispatch::IntegrationTest
       @snapshots = Hash.new { |hash, key| hash[key] = {} }
     end
 
-    def prompt(agent, origin, _text, event:)
+    def prompt(agent, origin, _text, event:, expected_connector_owner:)
+      raise "stale connector owner" unless event.reload.connector_connection_id == expected_connector_owner
       number = @event_numbers.fetch(event.id)
       runtime = agent.name
       @attempts[event.id] += 1

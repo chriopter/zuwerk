@@ -6,11 +6,12 @@ module HostedAgents
 
     MAX_AUTOMATIC_RESPONSE_BYTES = 1.megabyte
 
-    def initialize(agent_event, pool: AcpPool, connector: false)
+    def initialize(agent_event, pool: AcpPool, connector: false, expected_connector_owner: nil)
       @event = agent_event
       @pool = pool
       @hosted_agent = agent_event.recipient.hosted_agent
       @connector = connector
+      @expected_connector_owner = expected_connector_owner
     end
 
     def deliver
@@ -31,24 +32,32 @@ module HostedAgents
       def perform_delivery
         raise DeliveryError, "Agent runtime is not running" unless @connector || @hosted_agent&.running?
 
-        @event.acknowledge!
+        return unless mutate_owned_event { @event.acknowledge! }
         set_working(true)
         chunks = +""
         capture = lambda do |chunk|
           remaining = MAX_AUTOMATIC_RESPONSE_BYTES - chunks.bytesize
           chunks << chunk.to_s.byteslice(0, remaining).to_s.scrub if remaining.positive?
         end
+        prompt_target = @connector ? @event.recipient : @hosted_agent
+        prompt_origin = origin
+        prompt = prompt_text
+        ActiveRecord::Base.connection_handler.clear_active_connections!
         if @connector
-          @pool.prompt(@event.recipient, origin, prompt_text, event: @event, &capture)
+          @pool.prompt(prompt_target, prompt_origin, prompt, event: @event, expected_connector_owner: @expected_connector_owner, &capture)
         else
-          @pool.prompt(@hosted_agent, origin, prompt_text, &capture)
+          @pool.prompt(prompt_target, prompt_origin, prompt, &capture)
         end
+        ActiveRecord::Base.connection_handler.clear_active_connections!
+        return unless owned_event?
 
         publish_automatic_response(chunks)
         validate_publication!
 
-        @event.update!(delivered_at: Time.current, last_error: nil)
-        @event.transition_to!("completed")
+        mutate_owned_event do
+          @event.update!(delivered_at: Time.current, last_error: nil)
+          @event.transition_to!("completed")
+        end
       rescue => error
         record_failure(error)
         raise error if error.is_a?(DeliveryError)
@@ -56,7 +65,8 @@ module HostedAgents
         raise DeliveryError, "Hosted bridge failed: #{error.message}"
       ensure
         set_working(false) if @working
-        AgentEvent.schedule_next_for!(@event.recipient) if @event.reload.state.in?(AgentEvent::TERMINAL_STATES)
+        AgentEvent.schedule_next_for!(@event.recipient) if owned_event? && @event.reload.state.in?(AgentEvent::TERMINAL_STATES)
+        ActiveRecord::Base.connection_handler.clear_active_connections!
       end
 
       def with_event_lock
@@ -87,17 +97,18 @@ module HostedAgents
       end
 
       def publish_automatic_response(chunks)
-        @event.reload
-        return if @event.publication_message || @event.publication_comment
-
         body = chunks.strip
         return if body.blank?
+        mutate_owned_event do
+          @event.reload
+          next if @event.publication_message || @event.publication_comment
 
-        if todo_event?
-          todo.comments.create!(author: @event.recipient, body: body, agent_event: @event)
-        else
-          body = body.truncate(Message::MAX_BODY_LENGTH, omission: "")
-          @event.recipient.messages.create!(project: project, body: body, agent_event: @event)
+          if todo_event?
+            todo.comments.create!(author: @event.recipient, body: body, agent_event: @event)
+          else
+            body = body.truncate(Message::MAX_BODY_LENGTH, omission: "")
+            @event.recipient.messages.create!(project: project, body: body, agent_event: @event)
+          end
         end
       rescue ActiveRecord::RecordNotUnique
         @event.reload
@@ -117,6 +128,7 @@ module HostedAgents
       end
 
       def set_working(value)
+        return unless owned_event?
         @event.recipient.update!(
           working_status: value,
           working_label: value ? (todo_event? ? "Working on #{todo.title}" : "Replying in shared chat").truncate(80) : nil,
@@ -131,7 +143,7 @@ module HostedAgents
           bridge_last_error: error.message.to_s.truncate(500),
           updated_at: Time.current
         )
-        @event.with_lock do
+        mutate_owned_event do
           attributes = {
             attempts: @event.attempts + 1,
             last_error: "Hosted bridge failed: #{error.class}: #{error.message}".truncate(255)
@@ -140,6 +152,26 @@ module HostedAgents
         end
       rescue => bookkeeping_error
         Rails.logger.error("Hosted event #{@event.id} failure bookkeeping failed: #{bookkeeping_error.message}")
+      end
+
+      def owned_event?
+        return true unless @expected_connector_owner
+
+        AgentEvent.where(id: @event.id, state: %w[running waiting_for_approval], connector_connection_id: @expected_connector_owner).exists?
+      end
+
+      def mutate_owned_event
+        return yield unless @expected_connector_owner
+
+        changed = false
+        @event.with_lock do
+          @event.reload
+          if @event.state.in?(%w[running waiting_for_approval]) && @event.connector_connection_id == @expected_connector_owner
+            yield
+            changed = true
+          end
+        end
+        changed
       end
 
       def prompt_text

@@ -42,6 +42,18 @@ class AgentConnectorChannelTest < ActionCable::Channel::TestCase
     assert_nil @agent.reload.connector_connection_id
   end
 
+  test "registration does not steal an event already claimed by fallback" do
+    human = User.create!(name: "Fallback Human", email: "fallback-human@example.com", password: "password1")
+    project = Project.create!(name: "Fallback Claim Project")
+    event = AgentEvent.create!(recipient: @agent, subject: Message.create!(author: human, project: project, body: "Fallback"), event_type: "mentioned")
+    assert_equal event, AgentEvent.claim_for_fallback!(event)
+
+    @agent.register_connector!("late-connector")
+
+    assert_nil event.reload.connector_connection_id
+    assert_nil AgentEvent.claim_for_connector!(@agent.id, "late-connector")
+  end
+
   test "cable-owned lifecycle claims FIFO work and dispatches it exactly once" do
     human = User.create!(name: "Cable Human", email: "cable-human@example.com", password: "password1")
     project = Project.create!(name: "Cable Project")

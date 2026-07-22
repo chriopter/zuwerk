@@ -33,6 +33,20 @@ class HostedAgents::ChatBridgeTest < ActiveSupport::TestCase
     def prompt(*) = nil
   end
 
+  class BoundaryPool
+    attr_reader :active_connection
+
+    def initialize(&during_prompt)
+      @during_prompt = during_prompt
+    end
+
+    def prompt(*)
+      @active_connection = ActiveRecord::Base.connection_pool.active_connection?
+      @during_prompt&.call
+      yield "stale output" if block_given?
+    end
+  end
+
   class TodoPublishingPool
     attr_reader :prompt_text
 
@@ -90,6 +104,46 @@ class HostedAgents::ChatBridgeTest < ActiveSupport::TestCase
 
     assert_equal "Automatic answer", event.reload.publication_message.body
     assert_equal "completed", event.state
+  end
+
+  test "connector replacement during ACP IO fences stale publication and completion" do
+    human = User.create!(name: "Fence Human", email: "bridge-fence-human@example.com", password: "password1")
+    agent = User.create!(name: "Fence Agent", kind: :agent)
+    project = Project.create!(name: "Fence Bridge Project")
+    event = AgentEvent.create!(recipient: agent, subject: Message.create!(author: human, project: project, body: "Fence"), event_type: "mentioned")
+    event.transition_to!("running")
+    event.update_columns(connector_connection_id: "old-owner")
+    pool = BoundaryPool.new { event.update_columns(connector_connection_id: "new-owner") }
+
+    AgentConnectors::Dispatcher.new(event, connection_id: "old-owner", pool: pool).deliver
+
+    assert_not pool.active_connection
+    assert_nil event.reload.publication_message
+    assert_equal "running", event.state
+    assert_equal 0, event.attempts
+    assert_equal "new-owner", event.connector_connection_id
+  end
+
+  test "stale connector failure cannot increment attempts or record an error" do
+    human = User.create!(name: "Failure Fence Human", email: "failure-fence@example.com", password: "password1")
+    agent = User.create!(name: "Failure Fence Agent", kind: :agent)
+    project = Project.create!(name: "Failure Fence Project")
+    event = AgentEvent.create!(recipient: agent, subject: Message.create!(author: human, project: project, body: "Fence failure"), event_type: "mentioned")
+    event.transition_to!("running")
+    event.update_columns(connector_connection_id: "old-owner")
+    pool = Object.new
+    pool.define_singleton_method(:prompt) do |*|
+      event.update_columns(connector_connection_id: "new-owner")
+      raise "old transport closed"
+    end
+
+    assert_raises(HostedAgents::ChatBridge::DeliveryError) do
+      AgentConnectors::Dispatcher.new(event, connection_id: "old-owner", pool: pool).deliver
+    end
+
+    assert_equal 0, event.reload.attempts
+    assert_nil event.last_error
+    assert_equal "running", event.state
   end
 
   test "truncates a long multibyte ACP chat response at the message character limit" do

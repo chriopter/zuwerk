@@ -3,11 +3,11 @@ module AgentConnectors
     POLL_INTERVAL = 0.25
     MAX_ATTEMPTS = 3
 
-    def initialize(agent_id:, connection_id:, transport:, dispatcher_factory: ->(event) { Dispatcher.new(event) }, poll_interval: POLL_INTERVAL, before_dispatch: -> { })
+    def initialize(agent_id:, connection_id:, transport:, dispatcher_factory: nil, poll_interval: POLL_INTERVAL, before_dispatch: -> { })
       @agent_id = agent_id
       @connection_id = connection_id
       @transport = transport
-      @dispatcher_factory = dispatcher_factory
+      @dispatcher_factory = dispatcher_factory || ->(event) { Dispatcher.new(event, connection_id: @connection_id) }
       @poll_interval = poll_interval
       @before_dispatch = before_dispatch
       @mutex = Mutex.new
@@ -34,6 +34,7 @@ module AgentConnectors
 
       event = database_operation { AgentEvent.claim_for_connector!(@agent_id, @connection_id) }
       return false unless event
+      @current_event_id = event.id
 
       @before_dispatch.call
       return false unless local_owner? && database_operation { dispatch_owned?(event) }
@@ -49,7 +50,7 @@ module AgentConnectors
           drain_once
           wait
         rescue HostedAgents::ChatBridge::DeliveryError => error
-          terminal = handle_delivery_error(error)
+          terminal = handle_delivery_error(error, @current_event_id)
           wait(terminal ? @poll_interval : retry_delay)
         rescue => error
           Rails.logger.error("Agent connector lifecycle #{@agent_id} failed: #{error.class}: #{error.message}")
@@ -76,11 +77,11 @@ module AgentConnectors
           AgentEvent.where(id: event.id, state: "running", connector_connection_id: @connection_id).exists?
       end
 
-      def handle_delivery_error(error)
+      def handle_delivery_error(error, event_id)
         ActiveRecord::Base.connection_pool.with_connection do
-          event = AgentEvent.where(recipient_id: @agent_id, state: "running").order(:created_at, :id).first
+          event = AgentEvent.find_by(id: event_id, state: "running", connector_connection_id: @connection_id)
           terminal = event&.attempts.to_i >= MAX_ATTEMPTS
-          event&.terminalize_failure!(error) if terminal
+          event&.terminalize_failure!(error, expected_connector_owner: @connection_id) if terminal
           terminal
         end
       end
@@ -89,7 +90,7 @@ module AgentConnectors
 
       def retry_delay
         ActiveRecord::Base.connection_pool.with_connection do
-          attempts = AgentEvent.where(recipient_id: @agent_id, state: "running").pick(:attempts).to_i
+          attempts = AgentEvent.where(id: @current_event_id, state: "running", connector_connection_id: @connection_id).pick(:attempts).to_i
           [ attempts**4 + 2, 30 ].min
         end
       end

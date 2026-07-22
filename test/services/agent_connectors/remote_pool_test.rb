@@ -73,6 +73,84 @@ class AgentConnectors::RemotePoolTest < ActiveSupport::TestCase
     assert_equal "cancelled", event.reload.state
   end
 
+  test "does not return a resolved approval to a connector that lost event ownership" do
+    human = User.create!(name: "Approval Human", email: "approval-human@example.com", password: "password1")
+    agent = User.create!(name: "Approval Agent", kind: :agent)
+    event = AgentEvent.create!(recipient: agent, subject: Message.create!(author: human, body: "Approve"), event_type: "mentioned")
+    event.update!(state: "running", connector_connection_id: "old-owner")
+    client = Struct.new(:alive?).new(true)
+    result = Queue.new
+
+    waiter = Thread.new do
+      ActiveRecord::Base.connection_pool.with_connection do
+        result << AgentConnectors::RemotePool.send(
+          :await_approval,
+          event,
+          "permission",
+          { "options" => [ { "optionId" => "allow" } ] },
+          client: client,
+          expected_connector_owner: "old-owner"
+        )
+      end
+    end
+
+    approval = nil
+    Timeout.timeout(2) do
+      loop do
+        approval = event.agent_approvals.find_by(state: "pending")
+        break if approval
+        sleep 0.01
+      end
+    end
+    event.update_columns(connector_connection_id: "new-owner", updated_at: Time.current)
+    approval.resolve!("allow", resolver: human)
+
+    assert_same HostedAgents::AcpClient::PERMISSION_CANCELLED, result.pop
+    assert_equal "resolved", approval.reload.state
+  ensure
+    waiter&.join(2)
+  end
+
+  test "cancels a stale pending approval and makes its replacement-owned event dispatchable" do
+    human = User.create!(name: "Pending Human", email: "pending-human@example.com", password: "password1")
+    agent = User.create!(name: "Pending Agent", kind: :agent)
+    event = AgentEvent.create!(recipient: agent, subject: Message.create!(author: human, body: "Pending"), event_type: "mentioned")
+    event.update!(state: "running", connector_connection_id: "old-owner")
+    client = Struct.new(:alive) { alias_method :alive?, :alive }.new(true)
+    result = Queue.new
+
+    waiter = Thread.new do
+      ActiveRecord::Base.connection_pool.with_connection do
+        result << AgentConnectors::RemotePool.send(
+          :await_approval,
+          event,
+          "permission",
+          { "options" => [ { "optionId" => "allow" } ] },
+          client: client,
+          expected_connector_owner: "old-owner"
+        )
+      end
+    end
+
+    approval = nil
+    Timeout.timeout(2) do
+      loop do
+        approval = event.agent_approvals.find_by(state: "pending")
+        break if approval
+        sleep 0.01
+      end
+    end
+    event.update_columns(connector_connection_id: "new-owner", updated_at: Time.current)
+    client.alive = false
+
+    assert_same HostedAgents::AcpClient::PERMISSION_CANCELLED, result.pop
+    assert_equal "cancelled", approval.reload.state
+    assert_equal "running", event.reload.state
+    assert_equal "new-owner", event.connector_connection_id
+  ensure
+    waiter&.join(2)
+  end
+
   test "serializes concurrent initialization and replacement per agent" do
     first_transport = AgentConnectors::Transport.new { |_line| }
     second_transport = AgentConnectors::Transport.new { |_line| }
