@@ -111,6 +111,27 @@ const mountAgentTerminal = () => {
   }
 }
 
-document.addEventListener("turbo:load", mountAgentTerminal)
+const prepareAgentTerminal = () => {
+  cleanupAgentTerminal()
+
+  const cockpit = document.querySelector("[data-terminal-agent-id]")
+  const disclosure = cockpit?.closest("details")
+  if (!cockpit || !disclosure || disclosure.open) return mountAgentTerminal()
+
+  const mountWhenOpened = () => {
+    if (!disclosure.open) return
+
+    disclosure.removeEventListener("toggle", mountWhenOpened)
+    mountAgentTerminal()
+  }
+
+  disclosure.addEventListener("toggle", mountWhenOpened)
+  cleanupAgentTerminal = () => {
+    disclosure.removeEventListener("toggle", mountWhenOpened)
+    cleanupAgentTerminal = () => {}
+  }
+}
+
+document.addEventListener("turbo:load", prepareAgentTerminal)
 document.addEventListener("turbo:before-cache", () => cleanupAgentTerminal())
 document.addEventListener("turbo:before-render", () => cleanupAgentTerminal())

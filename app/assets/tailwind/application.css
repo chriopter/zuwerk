@@ -184,25 +184,50 @@
   .agents-form-errors { @apply mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800; }
 
   .agent-cockpit { @apply mx-auto max-w-6xl pb-12; }
-  .agent-detail-header { @apply flex flex-col gap-5 rounded-2xl border border-stone-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between sm:p-7; }
-  .agent-detail-header h1 { @apply truncate font-serif text-3xl text-stone-950; }
-  .agent-detail-header p { @apply mt-1 text-sm text-stone-500; }
-  .agent-detail-avatar { @apply flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#ebe8e0] font-serif text-xl font-semibold text-stone-700; }
-  .agent-overview-grid { @apply mt-5 grid gap-4 lg:grid-cols-3; }
-  .agent-overview-card { @apply rounded-2xl border border-stone-200 bg-white p-5; }
+  .agent-detail-avatar { @apply flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#ebe8e0] font-serif text-lg font-semibold text-stone-700; }
+  .agent-detail-avatar img { @apply h-full w-full object-cover; }
+  .agent-overview-grid { @apply grid gap-3 sm:grid-cols-2 xl:grid-cols-4; }
+  .agent-overview-card { @apply min-h-36 rounded-2xl border border-stone-200 bg-white p-5; }
   .agent-overview-card > span { @apply text-[10px] font-semibold uppercase tracking-[.13em] text-stone-400; }
   .agent-overview-card strong { @apply mt-3 flex items-center gap-2 text-sm font-semibold text-stone-900; }
   .agent-overview-card p { @apply mt-2 text-xs leading-5 text-stone-500; }
+  .agent-identity { @apply mt-4 flex items-center gap-3; }
+  .agent-identity h1 { @apply truncate font-serif text-2xl font-normal text-stone-950; }
+  .agent-identity p { @apply mt-0.5; }
   .agent-overview-card-warning { @apply border-amber-200 bg-amber-50/50; }
   .status-light { @apply h-2 w-2 rounded-full; }
   .status-light-runtime { @apply bg-amber-400; }
   .status-light-online { @apply bg-emerald-500; }
   .status-light-offline { @apply bg-stone-400; }
   .agent-connect-link { @apply mt-4 inline-flex rounded-lg bg-stone-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-stone-700; }
-  .agent-live-terminal { @apply mt-6; }
-  .agent-section-heading { @apply mb-3 flex items-end justify-between; }
+  .agent-section-heading { @apply mb-4 flex items-end justify-between gap-4; }
   .agent-section-heading span { @apply text-sm font-semibold text-stone-900; }
   .agent-section-heading p { @apply mt-1 text-xs text-stone-500; }
+  .agent-section-heading > small { @apply shrink-0 text-[10px] font-semibold uppercase tracking-[.1em] text-stone-400; }
+  .agent-sessions { @apply mt-6 rounded-2xl border border-stone-200 bg-white p-5 sm:p-6; }
+  .agent-session-list { @apply divide-y divide-stone-100 border-t border-stone-100; }
+  .agent-session-row { @apply grid min-w-0 gap-3 py-4 md:grid-cols-[minmax(0,1.3fr)_minmax(0,.8fr)_minmax(0,1fr)] md:items-center; }
+  .agent-session-origin { @apply min-w-0; }
+  .agent-session-origin > a, .agent-session-origin > strong { @apply block truncate text-sm font-semibold text-stone-900 hover:text-[#d9563b]; }
+  .agent-session-origin > span { @apply mt-1 block text-[11px] text-stone-400; }
+  .agent-session-state { @apply flex items-center gap-2 md:block; }
+  .agent-session-state time { @apply text-[11px] text-stone-400 md:mt-1 md:block; }
+  .agent-session-badge { @apply inline-flex rounded-full bg-[#eff0eb] px-2 py-1 text-[10px] font-semibold text-stone-700; }
+  .agent-session-row code { @apply block min-w-0 truncate rounded-lg bg-stone-50 px-2.5 py-2 text-[11px] text-stone-500; }
+  .agent-sessions-empty { @apply border-t border-stone-100 py-8 text-center text-sm text-stone-400; }
+  .agent-session-archive { @apply border-t border-stone-100; }
+  .agent-session-archive > summary { @apply flex cursor-pointer list-none items-center justify-center gap-2 py-3 text-xs font-semibold text-stone-500 transition hover:text-stone-900; }
+  .agent-session-archive > summary::-webkit-details-marker { display: none; }
+  .agent-session-archive > summary i { @apply not-italic transition-transform; }
+  .agent-session-archive[open] > summary i { @apply rotate-180; }
+  .agent-terminal-disclosure { @apply mt-6 overflow-hidden rounded-2xl border border-stone-200 bg-white; }
+  .agent-terminal-disclosure > summary { @apply flex cursor-pointer list-none items-center gap-3 px-5 py-4 transition hover:bg-stone-50 sm:px-6; }
+  .agent-terminal-disclosure > summary::-webkit-details-marker { display: none; }
+  .agent-terminal-disclosure > summary > span { @apply text-sm font-semibold text-stone-900; }
+  .agent-terminal-disclosure > summary > small { @apply text-xs text-stone-400; }
+  .agent-terminal-disclosure > summary > i { @apply ml-auto not-italic text-stone-400 transition-transform; }
+  .agent-terminal-disclosure[open] > summary > i { @apply rotate-180; }
+  .agent-terminal-disclosure-body { @apply border-t border-stone-200 p-3 sm:p-4; }
   .agent-cockpit-header { @apply flex flex-col gap-4 border-b border-stone-200 pb-6 sm:flex-row sm:items-end sm:justify-between; }
   .agent-cockpit-header h1 { @apply font-serif text-4xl text-stone-950; }
   .agent-cockpit-header p:last-child { @apply mt-2 text-sm text-stone-500; }

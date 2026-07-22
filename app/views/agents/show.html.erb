@@ -1,47 +1,36 @@
 <% content_for :title, "#{@agent.name} · Zuwerk" %>
+<% avatar = { "hermes" => "/avatars/hermes.svg", "klaus" => "/avatars/klaus.svg", "codex" => "/avatars/codex.svg" }[@agent.handle] %>
 
 <div class="agent-cockpit">
   <%= link_to "← All agents", agents_path, class: "agents-back-link" %>
 
-  <header class="agent-detail-header">
-    <div class="flex min-w-0 items-center gap-4">
-      <div class="agent-detail-avatar"><%= @agent.name.first.upcase %></div>
-      <div class="min-w-0">
-        <div class="flex flex-wrap items-center gap-2">
+  <section class="agent-overview-grid" aria-label="Agent overview">
+    <article class="agent-overview-card agent-identity-card">
+      <span>Agent</span>
+      <div class="agent-identity">
+        <div class="agent-detail-avatar"><% if avatar %><%= image_tag avatar, alt: "" %><% else %><%= @agent.name.first.upcase %><% end %></div>
+        <div class="min-w-0">
           <h1><%= @agent.name %></h1>
-          <span class="agents-status agents-status-<%= @hosted_agent.state %>"><i></i><%= @hosted_agent.state.humanize %></span>
+          <p><%= @hosted_agent.runtime == "claude" ? "Claude Code" : "Codex" %> · Hosted</p>
         </div>
-        <p><%= @hosted_agent.runtime == "claude" ? "Claude Code" : "Codex" %> · Hosted on this server</p>
       </div>
-    </div>
+    </article>
 
-    <div class="agent-toolbar">
-      <%= button_to "Start", start_agent_path(@agent), disabled: @hosted_agent.running? %>
-      <%= button_to "Restart", restart_agent_path(@agent) %>
-      <%= button_to "Stop", stop_agent_path(@agent), disabled: @hosted_agent.stopped? %>
-    </div>
-  </header>
-
-  <% if @hosted_agent.last_error.present? %>
-    <div class="agents-form-errors"><strong>Container error:</strong> <%= @hosted_agent.last_error %></div>
-  <% end %>
-
-  <section class="agent-overview-grid" aria-label="Agent status">
     <article class="agent-overview-card">
       <span>Runtime</span>
       <strong><i class="status-light status-light-runtime"></i><%= @hosted_agent.state.humanize %></strong>
-      <p><%= @hosted_agent.container_name %></p>
+      <p class="truncate" title="<%= @hosted_agent.container_name %>"><%= @hosted_agent.container_name %></p>
     </article>
 
     <article class="agent-overview-card <%= 'agent-overview-card-warning' unless @hosted_agent.bridge_connected? %>">
-      <span>Zuwerk connection</span>
+      <span>Connection</span>
       <% if @hosted_agent.bridge_connected? %>
         <strong data-chat-bridge-status><i class="status-light status-light-online"></i>Connected</strong>
-        <p>This agent receives mentions from the shared chat through a persistent ACP session.</p>
+        <p>Persistent ACP session available.</p>
       <% else %>
         <strong data-chat-bridge-status><i class="status-light status-light-offline"></i>Not connected</strong>
-        <p>The runtime is available, but it does not receive messages from the shared chat yet.</p>
-        <%= link_to "Create invitation link", new_agent_invitation_path, class: "agent-connect-link" %>
+        <p>Runtime available without chat connection.</p>
+        <%= link_to "Create invitation", new_agent_invitation_path, class: "agent-connect-link" %>
       <% end %>
     </article>
 
@@ -52,61 +41,57 @@
     </article>
   </section>
 
-  <section class="agent-live-terminal" aria-labelledby="cloud-sessions-heading">
+  <div class="agent-toolbar" aria-label="Runtime controls">
+    <%= button_to "Start", start_agent_path(@agent), disabled: @hosted_agent.running? %>
+    <%= button_to "Restart", restart_agent_path(@agent) %>
+    <%= button_to "Stop", stop_agent_path(@agent), disabled: @hosted_agent.stopped? %>
+  </div>
+
+  <% if @hosted_agent.last_error.present? %>
+    <div class="agents-form-errors"><strong>Container error:</strong> <%= @hosted_agent.last_error %></div>
+  <% end %>
+
+  <section class="agent-sessions" aria-labelledby="cloud-sessions-heading">
     <div class="agent-section-heading">
       <div>
         <span id="cloud-sessions-heading">Cloud sessions</span>
-        <p>Resumable runtime sessions and where each conversation began.</p>
+        <p>Resumable conversations and their workspace origin.</p>
       </div>
+      <% if @cloud_sessions.any? %><small><%= pluralize(@cloud_sessions.size, "session") %></small><% end %>
     </div>
 
     <% if @cloud_sessions.any? %>
-      <div class="overflow-x-auto">
-        <table class="w-full text-left">
-          <thead><tr><th>Origin</th><th>Runtime / provider</th><th>Status</th><th>Last used</th><th>Created</th><th>External session ID</th></tr></thead>
-          <tbody>
-            <% @cloud_sessions.each do |session| %>
-              <tr data-cloud-session>
-                <td>
-                  <% if session.origin.is_a?(Project) %>
-                    <%= link_to session.origin_label, chat_project_path(session.origin) %>
-                  <% elsif session.origin.is_a?(Todo) %>
-                    <%= link_to session.origin_label, project_todo_path(session.origin.project, session.origin) %>
-                  <% else %>
-                    <%= session.origin_label %>
-                  <% end %>
-                  <small><%= session.origin_type %></small>
-                </td>
-                <td><%= @hosted_agent.runtime.humanize %> / Hosted ACP</td>
-                <td><%= session.external_session_id.present? ? "Resumable" : "Unavailable" %></td>
-                <td><time datetime="<%= session.last_used_at.iso8601 %>"><%= session.last_used_at.to_fs(:long) %></time></td>
-                <td><time datetime="<%= session.created_at.iso8601 %>"><%= session.created_at.to_fs(:long) %></time></td>
-                <td><code><%= session.external_session_id %></code></td>
-              </tr>
-            <% end %>
-          </tbody>
-        </table>
+      <div class="agent-session-list">
+        <%= render partial: "agents/cloud_session", collection: @cloud_sessions.first(5), as: :session, locals: { hosted_agent: @hosted_agent } %>
       </div>
+      <% if @cloud_sessions.size > 5 %>
+        <details class="agent-session-archive">
+          <summary>Show <%= @cloud_sessions.size - 5 %> older sessions <i aria-hidden="true">⌄</i></summary>
+          <div class="agent-session-list">
+            <%= render partial: "agents/cloud_session", collection: @cloud_sessions.drop(5), as: :session, locals: { hosted_agent: @hosted_agent } %>
+          </div>
+        </details>
+      <% end %>
     <% else %>
-      <p>No cloud sessions yet.</p>
+      <p class="agent-sessions-empty">No cloud sessions yet.</p>
     <% end %>
   </section>
 
-  <section class="agent-live-terminal">
-    <div class="agent-section-heading">
-      <div>
-        <span>Live terminal</span>
-        <p>Direct view of the persistent tmux session.</p>
+  <details class="agent-terminal-disclosure">
+    <summary>
+      <span>Live terminal</span>
+      <small>Optional · persistent tmux session</small>
+      <i aria-hidden="true">⌄</i>
+    </summary>
+    <div class="agent-terminal-disclosure-body">
+      <div class="terminal-cockpit" data-terminal-agent-id="<%= @agent.id %>" data-terminal-enabled="<%= @hosted_agent.running? %>">
+        <div class="terminal-titlebar">
+          <div><i></i><i></i><i></i></div>
+          <span>agent · <%= @hosted_agent.runtime %> · live websocket</span>
+          <button type="button" data-terminal-reconnect>Reconnect</button>
+        </div>
+        <div class="terminal-screen terminal-screen-compact" data-terminal-screen tabindex="0" aria-label="Interactive agent terminal"></div>
       </div>
     </div>
-
-    <div class="terminal-cockpit" data-terminal-agent-id="<%= @agent.id %>" data-terminal-enabled="<%= @hosted_agent.running? %>">
-      <div class="terminal-titlebar">
-        <div><i></i><i></i><i></i></div>
-        <span>agent · <%= @hosted_agent.runtime %> · live websocket</span>
-        <button type="button" data-terminal-reconnect>Reconnect</button>
-      </div>
-      <div class="terminal-screen terminal-screen-compact" data-terminal-screen tabindex="0" aria-label="Interactive agent terminal"></div>
-    </div>
-  </section>
+  </details>
 </div>
