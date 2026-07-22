@@ -4,18 +4,18 @@
 
   <nav class="sidebar-navigation" aria-label="Workspace navigation">
     <div class="sidebar-label">Workspace</div>
-    <div class="sidebar-channel sidebar-channel-mock" aria-disabled="true">
-      <span>Updates</span><small>Preview</small>
-    </div>
+    <span class="sidebar-channel sidebar-channel-mock" aria-disabled="true">
+      <span>Threads</span><small>Preview</small><span class="sr-only"> — not yet available</span>
+    </span>
     <%= link_to chat_project_path(project), class: "sidebar-channel #{'sidebar-channel-active' if active == :chat}", aria: (active == :chat ? { current: "page" } : {}) do %>
       <span>Chat</span>
     <% end %>
     <%= link_to project_todos_path(project), class: "sidebar-channel #{'sidebar-channel-active' if active == :todos}", aria: (active == :todos ? { current: "page" } : {}) do %>
       <span>Tasks</span>
     <% end %>
-    <div class="sidebar-channel sidebar-channel-mock" aria-disabled="true">
-      <span>Files &amp; Memory</span><small>Preview</small>
-    </div>
+    <span class="sidebar-channel sidebar-channel-mock" aria-disabled="true">
+      <span>Files &amp; Memory</span><small>Preview</small><span class="sr-only"> — not yet available</span>
+    </span>
   </nav>
 
   <section class="sidebar-agents" aria-labelledby="agents-heading">
