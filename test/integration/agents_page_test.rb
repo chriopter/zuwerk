@@ -17,7 +17,11 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
     assert_select "h1", "Agents"
     assert_select ".workspace-sidebar"
     assert_select "#agents-heading[href='#{agents_path}']", text: "Agents"
-    assert_select "[data-sidebar-agent-id='#{hosted_identity.id}'][href='#{agent_path(hosted_identity)}'][data-agent-connected='false']", text: /Runtime running.*Not connected/m
+    assert_select "[data-sidebar-agent-id='#{hosted_identity.id}'][data-agent-connected='false']" do
+      assert_select "a[href='#{agent_path(hosted_identity)}']", text: /Builder/
+      assert_select ".agent-inline-online", count: 0
+      assert_select ".agent-kind-mark", count: 1
+    end
     assert_select ".sidebar-channel-active", count: 0
     assert_select "[data-agent-id='#{@agent.id}']", text: /Hermes/
     assert_select "[data-agent-origin='external']", text: /Connected via CLI/
@@ -48,7 +52,7 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
     assert_redirected_to agents_path
   end
 
-  test "sidebar links an accepted todo event beneath its agent and shows failures without a spinner" do
+  test "sidebar shows active work inline and hides failed work" do
     HostedAgent.create!(user: @agent, runtime: "codex", state: "running")
     project = Project.create!(name: "Sidebar work")
     todo = project.todos.create!(creator: @human, title: "A deliberately long todo title that must remain stable in the sidebar")
@@ -58,15 +62,14 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
     get project_todo_path(project, todo)
 
     assert_select "turbo-cable-stream-source[channel='Turbo::StreamsChannel']"
-    assert_select ".agent-work-row[href='#{project_todo_path(project, todo)}'][data-agent-event-id='#{event.public_id}']" do
+    assert_select ".agent-inline-work[href='#{project_todo_path(project, todo)}'][data-agent-event-id='#{event.public_id}'][aria-label='Arbeitet an #{todo.title}']" do
       assert_select ".agent-work-spinner", count: 1
-      assert_select ".truncate", text: todo.title
     end
 
     event.update!(last_error: "Hosted bridge failed permanently")
     get project_todo_path(project, todo)
 
-    assert_select ".agent-work-row-error[href='#{project_todo_path(project, todo)}']", text: /#{Regexp.escape(todo.title)}/
+    assert_select ".agent-inline-work", count: 0
     assert_select ".agent-work-spinner", count: 0
   end
 

@@ -68,9 +68,7 @@ class AgentTodoWorkTest < ApplicationSystemTestCase
 
     visit project_todo_path(@project, @todo)
     assert_text "👍 Codex Browser"
-    within "[data-agent-event-id='#{event.public_id}']" do
-      assert_text @todo.title
-      assert_selector ".sr-only", text: "In progress", visible: :all
+    within "[data-agent-event-id='#{event.public_id}'][aria-label='Arbeitet an #{@todo.title}']" do
       assert_selector ".agent-work-spinner", visible: :all
     end
 
@@ -115,8 +113,7 @@ class AgentTodoWorkTest < ApplicationSystemTestCase
     worker = Thread.new { HostedAgents::ChatBridge.new(event, pool: pool).deliver }
     Timeout.timeout(5) { pool.started.pop }
     visit project_todo_path(@project, @todo)
-    within "[data-agent-event-id='#{event.public_id}']" do
-      assert_selector ".sr-only", text: "In progress", visible: :all
+    within "[data-agent-event-id='#{event.public_id}'][aria-label='Arbeitet an #{@todo.title}']" do
       assert_selector ".agent-work-spinner", visible: :all
     end
 

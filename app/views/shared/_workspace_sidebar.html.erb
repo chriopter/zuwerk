@@ -8,9 +8,6 @@
       <%= link_to "＋", new_agent_path, class: "sidebar-heading-action", aria: { label: "Create agent" }, title: "Create agent" %>
     </div>
     <%= render "shared/sidebar_agent_list", agents: agents, active_agent_id: active_agent_id %>
-    <%= link_to new_agent_invitation_path, class: "sidebar-invite" do %>
-      <span aria-hidden="true">＋</span><span>Connect external agent</span>
-    <% end %>
   </section>
 
   <nav class="sidebar-navigation" aria-label="Workspace navigation">
