@@ -101,4 +101,32 @@ class AgentTerminalChannelTest < ActionCable::Channel::TestCase
     assert_not subscription.rejected?
     assert runtime.provisioned
   end
+
+  test "reprovisions a stale running agent when the terminal reconnects" do
+    runtime = FakeRuntime.new(running: false)
+    AgentTerminalChannel.runtime_factory = ->(_hosted_agent) { runtime }
+
+    subscribe agent_id: @identity.id, rows: 42, columns: 120
+
+    assert_not subscription.rejected?
+    assert runtime.provisioned
+    assert_equal "running", @hosted_agent.reload.state
+  end
+
+  test "closes the old terminal bridge before a fresh subscription reconnects" do
+    first_bridge = @bridge
+    second_bridge = FakeBridge.new
+    bridges = [ first_bridge, second_bridge ]
+    AgentTerminalChannel.bridge_factory = ->(_hosted_agent) { bridges.shift }
+
+    subscribe agent_id: @identity.id, rows: 42, columns: 120
+    unsubscribe
+
+    assert first_bridge.closed?
+
+    subscribe agent_id: @identity.id, rows: 30, columns: 90
+
+    assert_not subscription.rejected?
+    assert_equal [ 30, 90 ], second_bridge.start_size
+  end
 end

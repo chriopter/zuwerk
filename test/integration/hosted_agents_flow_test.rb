@@ -51,5 +51,36 @@ class HostedAgentsFlowTest < ActionDispatch::IntegrationTest
     get agent_path(identity)
     assert_select "[data-chat-bridge-status]", text: /Connected/
     assert_select ".agent-overview-card a[href='#{new_agent_invitation_path}']", count: 0
+
+    hosted_agent.update!(state: "stopped")
+    get agent_path(identity)
+    assert_select "[data-chat-bridge-status]", text: /Not connected/
+    assert_select "[data-terminal-enabled='false']"
+  end
+
+  test "queues start stop and restart requests for the selected hosted agent" do
+    identity = User.create!(name: "Operator", kind: :agent)
+    hosted_agent = HostedAgent.create!(user: identity, runtime: "codex", state: "running")
+
+    %w[start stop restart].each do |action|
+      assert_enqueued_with(job: ManageHostedAgentJob, args: [ hosted_agent, action ]) do
+        post public_send("#{action}_agent_path", identity)
+      end
+      assert_redirected_to agent_path(identity)
+    end
+  end
+
+  test "links todo-specific cloud sessions back to their todo" do
+    identity = User.create!(name: "Todo worker", kind: :agent)
+    hosted_agent = HostedAgent.create!(user: identity, runtime: "codex", state: "running")
+    project = Project.create!(name: "Delivery")
+    todo = project.todos.create!(creator: @human, title: "Ship the release")
+    hosted_agent.sessions.create!(origin: todo, external_session_id: "todo-session")
+
+    get agent_path(identity)
+
+    assert_response :success
+    assert_select "[data-cloud-session] a[href='#{project_todo_path(project, todo)}']", text: todo.title
+    assert_select "[data-cloud-session] small", text: "Todo"
   end
 end

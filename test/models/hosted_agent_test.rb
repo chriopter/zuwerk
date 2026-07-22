@@ -1,6 +1,21 @@
 require "test_helper"
 
 class HostedAgentTest < ActiveSupport::TestCase
+  test "bridge is only connected while the runtime is running" do
+    identity = User.create!(name: "Bridge agent", kind: :agent)
+    hosted_agent = HostedAgent.create!(
+      user: identity,
+      runtime: "codex",
+      state: "running",
+      bridge_connected_at: Time.current
+    )
+
+    assert hosted_agent.bridge_connected?
+
+    hosted_agent.state = "stopped"
+    assert_not hosted_agent.bridge_connected?
+  end
+
   setup do
     @identity = User.create!(name: "Builder", kind: :agent, api_token: "agent-token")
   end

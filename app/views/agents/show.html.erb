@@ -70,6 +70,8 @@
                 <td>
                   <% if session.origin.is_a?(Project) %>
                     <%= link_to session.origin_label, chat_project_path(session.origin) %>
+                  <% elsif session.origin.is_a?(Todo) %>
+                    <%= link_to session.origin_label, project_todo_path(session.origin.project, session.origin) %>
                   <% else %>
                     <%= session.origin_label %>
                   <% end %>
