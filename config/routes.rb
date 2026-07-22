@@ -25,6 +25,7 @@ Rails.application.routes.draw do
   end
   get "database", to: "database#index", as: :database
   get "database/:table", to: "database#show", as: :database_table
+  get "database/:table/records/:id", to: "database#record", as: :database_record
   resource :room_setting, only: :update
   namespace :api do
     resources :projects, only: %i[index show] do

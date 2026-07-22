@@ -16,13 +16,17 @@
           <div class="border-b border-stone-200 px-4 py-3 text-xs font-semibold uppercase tracking-[.12em] text-stone-400">Data</div>
           <div class="overflow-auto">
             <table class="table table-sm w-max min-w-full">
-              <thead><tr><% @columns.each do |column| %><th class="whitespace-nowrap font-mono text-[11px]"><%= column.name %></th><% end %></tr></thead>
+              <thead><tr><% @columns.each do |column| %><th class="whitespace-nowrap font-mono text-[11px]"><%= column.name %></th><% end %><% if @primary_key %><th><span class="sr-only">Actions</span></th><% end %></tr></thead>
               <tbody>
-                <% @rows.each do |row| %>
-                  <tr><% @columns.each do |column| %><td class="max-w-80 whitespace-nowrap font-mono text-xs"><div class="max-w-80 truncate" title="<%= row[column.name] %>"><%= row[column.name].nil? ? "NULL" : row[column.name] %></div></td><% end %></tr>
+                <% @rows.each_with_index do |row, index| %>
+                  <tr>
+                    <% @columns.each do |column| %><td class="max-w-80 whitespace-nowrap font-mono text-xs"><div class="max-w-80 truncate" title="<%= row[column.name] %>"><%= row[column.name].nil? ? "NULL" : row[column.name] %></div></td><% end %>
+                    <% if @primary_key %><td><%= link_to "View", database_record_path(@table, @row_ids[index]), class: "link text-xs" %></td><% end %>
+                  </tr>
                 <% end %>
               </tbody>
             </table>
+            <% if @rows.empty? %><p data-database-empty class="px-4 py-8 text-center text-sm text-stone-400">No rows</p><% end %>
           </div>
         </section>
 

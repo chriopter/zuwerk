@@ -20,18 +20,25 @@ class DatabaseController < ApplicationController
   end
 
   def show
-    @table = params[:table]
-    raise ActiveRecord::RecordNotFound unless @tables.include?(@table)
-
-    connection = ActiveRecord::Base.connection
-    @columns = connection.columns(@table)
-    @indexes = connection.indexes(@table)
-    @foreign_keys = connection.foreign_keys(@table)
-    @primary_key = connection.primary_key(@table)
-    quoted_table = connection.quote_table_name(@table)
-    order = @primary_key ? " ORDER BY #{connection.quote_column_name(@primary_key)} DESC" : ""
-    records = connection.select_all("SELECT * FROM #{quoted_table}#{order} LIMIT #{ROW_LIMIT}").to_a
+    set_table
+    order = @primary_key ? " ORDER BY #{@connection.quote_column_name(@primary_key)} DESC" : ""
+    records = @connection.select_all("SELECT * FROM #{@quoted_table}#{order} LIMIT #{ROW_LIMIT}").to_a
+    @row_ids = records.map { |record| record[@primary_key] }
     @rows = records.map { |record| redact(record) }
+  end
+
+  def record
+    set_table
+    raise ActiveRecord::RecordNotFound unless @primary_key
+
+    quoted_primary_key = @connection.quote_column_name(@primary_key)
+    record = @connection.select_one(
+      "SELECT * FROM #{@quoted_table} WHERE #{quoted_primary_key} = #{@connection.quote(params[:id])} LIMIT 1"
+    )
+    raise ActiveRecord::RecordNotFound unless record
+
+    @record_id = record[@primary_key]
+    @record = redact(record)
   end
 
   private
@@ -52,6 +59,18 @@ class DatabaseController < ApplicationController
       tables = @tables.select { |table| table_group(table) == slug }
       [ slug, label, tables ] if tables.any?
     end
+  end
+
+  def set_table
+    @table = params[:table]
+    raise ActiveRecord::RecordNotFound unless @tables.include?(@table)
+
+    @connection = ActiveRecord::Base.connection
+    @columns = @connection.columns(@table)
+    @indexes = @connection.indexes(@table)
+    @foreign_keys = @connection.foreign_keys(@table)
+    @primary_key = @connection.primary_key(@table)
+    @quoted_table = @connection.quote_table_name(@table)
   end
 
   def table_group(table)
