@@ -19,7 +19,7 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
     assert_select "#agents-heading[href='#{agents_path}']", text: "Agents"
     assert_select "[data-sidebar-agent-id='#{hosted_identity.id}'][data-agent-connected='false']" do
       assert_select "a[href='#{agent_path(hosted_identity)}']", text: /Builder/
-      assert_select ".agent-inline-online", count: 0
+      assert_select ".agent-avatar-online", count: 0
       assert_select ".agent-kind-mark", count: 1
     end
     assert_select ".sidebar-channel-active", count: 0

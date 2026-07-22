@@ -54,11 +54,11 @@
   .agent-inline-work { @apply grid h-6 w-6 shrink-0 place-items-center rounded-md transition hover:bg-white; }
   .agent-work-spinner { @apply h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-stone-300 border-t-[#e85f42]; }
   .agent-row-active { @apply bg-[#eff0eb]; }
-  .sidebar-avatar { @apply grid h-6 w-6 shrink-0 place-items-center overflow-hidden rounded-full bg-stone-100 text-[9px] font-semibold text-stone-600; }
-  .sidebar-avatar img { @apply h-full w-full object-cover; }
+  .sidebar-avatar { @apply relative grid h-6 w-6 shrink-0 place-items-center rounded-full bg-stone-100 text-[9px] font-semibold text-stone-600; }
+  .sidebar-avatar img { @apply h-full w-full rounded-full object-cover; }
   .sidebar-avatar-human { @apply bg-[#27332d] text-white; }
   .agent-name { @apply min-w-0 truncate text-[13px] font-medium text-stone-800; }
-  .agent-inline-online { @apply h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500; }
+  .agent-avatar-online { @apply absolute -bottom-px -right-px h-2 w-2 rounded-full border-2 border-white bg-emerald-500; }
   .agent-kind-mark { @apply h-3 w-3 shrink-0 text-stone-400; }
   .agent-dot { @apply absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border-2 border-white; }
   .agent-dot-working { @apply bg-[#e85f42]; }

@@ -7,10 +7,9 @@
     <div class="sidebar-agent-group">
       <div class="agent-row-shell <%= 'agent-row-active' if active_agent_id == agent.id %>" data-sidebar-agent-id="<%= agent.id %>" data-agent-connected="<%= connected %>">
         <%= link_to hosted ? agent_path(agent) : agents_path, class: "agent-row", aria: { label: "#{agent.name}#{connected ? ', online' : ', offline'}" } do %>
-          <div class="sidebar-avatar"><% if avatar %><%= image_tag avatar, alt: "", aria: { hidden: true } %><% else %><%= agent.name.first.upcase %><% end %></div>
+          <div class="sidebar-avatar"><% if avatar %><%= image_tag avatar, alt: "", aria: { hidden: true } %><% else %><%= agent.name.first.upcase %><% end %><% if connected %><span class="agent-avatar-online" aria-label="Online" title="Online"></span><% end %></div>
           <span class="agent-name"><%= agent.name %></span>
           <svg class="agent-kind-mark" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" aria-label="Agent" role="img"><rect x="2.5" y="4.5" width="11" height="8" rx="2"/><path d="M8 2v2.5M5.5 8h.01M10.5 8h.01M5.5 10.5h5"/></svg>
-          <% if connected %><span class="agent-inline-online" aria-label="Online" title="Online"></span><% end %>
         <% end %>
         <% if event %>
           <%= link_to project_todo_path(event.todo.project, event.todo), class: "agent-inline-work", title: event.todo.title, aria: { label: "Arbeitet an #{event.todo.title}" }, data: { agent_event_id: event.public_id } do %>
