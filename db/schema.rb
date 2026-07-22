@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_22_211000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_22_221000) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
@@ -70,6 +70,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_211000) do
   create_table "agent_events", force: :cascade do |t|
     t.datetime "accepted_at"
     t.integer "attempts", default: 0, null: false
+    t.string "connector_connection_id"
     t.datetime "created_at", null: false
     t.datetime "delivered_at"
     t.string "event_type", null: false
@@ -224,6 +225,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_211000) do
   create_table "users", force: :cascade do |t|
     t.boolean "admin", default: false, null: false
     t.string "api_token_digest"
+    t.string "connector_connection_id"
+    t.datetime "connector_heartbeat_at"
     t.datetime "created_at", null: false
     t.string "email"
     t.datetime "heartbeat_at"
@@ -234,6 +237,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_211000) do
     t.string "working_label"
     t.boolean "working_status", default: false, null: false
     t.index ["api_token_digest"], name: "index_users_on_api_token_digest", unique: true
+    t.index ["connector_connection_id"], name: "index_users_on_connector_connection_id", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true
   end
 

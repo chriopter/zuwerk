@@ -39,6 +39,45 @@ class AgentEvent < ApplicationRecord
     end
   end
 
+  # The recipient row is the routing mutex shared by connector registration and
+  # every kind of event claim.
+  def self.claim_for_fallback!(event)
+    transaction do
+      recipient = User.lock.find(event.recipient_id)
+      event.reload
+      return unless event.state.in?(%w[queued running])
+      return if recipient.external_connector_present?
+
+      active = where(recipient: recipient, state: %w[running waiting_for_approval]).order(:created_at, :id).first
+      return event if event.state == "running" && active == event && event.connector_connection_id.nil?
+      return if active
+
+      next_event = where(recipient: recipient, state: "queued").order(:created_at, :id).first
+      next_event&.transition_to!("running")
+      next_event
+    end
+  end
+
+  def self.claim_for_connector!(recipient_id, connection_id)
+    transaction do
+      recipient = User.lock.find(recipient_id)
+      return unless recipient.connector_connection_id == connection_id && recipient.external_connector_present?
+
+      recipient.update_columns(connector_heartbeat_at: Time.current, updated_at: Time.current)
+      active = where(recipient: recipient, state: %w[running waiting_for_approval]).order(:created_at, :id).first
+      if active&.state == "running"
+        active.update_columns(connector_connection_id: connection_id, updated_at: Time.current)
+        return active
+      end
+      return if active
+
+      event = where(recipient: recipient, state: "queued").order(:created_at, :id).first
+      event&.transition_to!("running")
+      event&.update_columns(connector_connection_id: connection_id, updated_at: Time.current)
+      event
+    end
+  end
+
   def self.schedule_next_for!(recipient)
     event = where(recipient: recipient, state: "queued").order(:created_at, :id).first
     DeliverAgentEventJob.perform_later(event) if event

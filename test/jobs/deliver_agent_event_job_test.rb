@@ -27,9 +27,9 @@ class DeliverAgentEventJobTest < ActiveJob::TestCase
     second = AgentEvent.create!(recipient: agent, subject: Message.create!(author: human, body: "Second"), event_type: "mentioned")
     first.transition_to!("running")
     delivered = []
-    DeliverAgentEventJob.connector_dispatcher_factory = ->(candidate) { Struct.new(:id, :delivered) { def deliver = delivered << id }.new(candidate.id, delivered) }
+    fallback = ->(candidate, **) { Struct.new(:id, :delivered) { def deliver = delivered << id }.new(candidate.id, delivered) }
     transport = AgentConnectors.registry.register(agent.id) { |_line| }
-
+    DeliverAgentEventJob.fallback_delivery_factory = fallback
     DeliverAgentEventJob.perform_now(second)
     DeliverAgentEventJob.perform_now(first)
 
@@ -37,10 +37,11 @@ class DeliverAgentEventJobTest < ActiveJob::TestCase
     assert_equal "queued", second.reload.state
   ensure
     DeliverAgentEventJob.connector_dispatcher_factory = ->(candidate) { AgentConnectors::Dispatcher.new(candidate) }
+    DeliverAgentEventJob.fallback_delivery_factory = ->(candidate, url:, secret:) { AgentEventDelivery.new(candidate, url: url, secret: secret) }
     AgentConnectors.registry.unregister(agent&.id, transport) if agent
   end
 
-  test "prefers a live connector over hosted ACP and webhook" do
+  test "a process-local registry alone cannot route connector delivery" do
     human = User.create!(name: "Dispatch Human", email: "dispatch@example.com", password: "password1")
     agent = User.create!(name: "Dispatch Agent", kind: :agent)
     project = Project.create!(name: "Dispatch Project")
@@ -48,14 +49,33 @@ class DeliverAgentEventJobTest < ActiveJob::TestCase
     transport = AgentConnectors.registry.register(agent.id) { |_line| }
     delivered = []
 
-    DeliverAgentEventJob.connector_dispatcher_factory = ->(*) { Struct.new(:delivered) { def deliver = delivered << :connector }.new(delivered) }
+    fallback = ->(*) { Struct.new(:delivered) { def deliver = delivered << :fallback }.new(delivered) }
+    DeliverAgentEventJob.fallback_delivery_factory = fallback
     DeliverAgentEventJob.perform_now(event)
 
-    assert_equal [ :connector ], delivered
+    assert_equal [ :fallback ], delivered
   ensure
     DeliverAgentEventJob.connector_dispatcher_factory = ->(event) { AgentConnectors::Dispatcher.new(event) }
+    DeliverAgentEventJob.fallback_delivery_factory = ->(candidate, url:, secret:) { AgentEventDelivery.new(candidate, url: url, secret: secret) }
     AgentConnectors.registry.unregister(agent&.id, transport) if agent
   end
+  test "a worker process does not claim or webhook an event owned by a fresh cable connector" do
+    human = User.create!(name: "Cross Process Human", email: "cross-process@example.com", password: "password1")
+    agent = User.create!(name: "Cross Process Agent", kind: :agent)
+    project = Project.create!(name: "Cross Process Project")
+    event = AgentEvent.create!(recipient: agent, subject: Message.create!(author: human, project: project, body: "Dispatch externally"), event_type: "mentioned")
+    agent.update_columns(connector_connection_id: "cable-process-1", connector_heartbeat_at: Time.current)
+    previous_registry = AgentConnectors.registry
+    AgentConnectors.registry = AgentConnectors::Registry.new
+
+    DeliverAgentEventJob.perform_now(event)
+
+    assert_equal "queued", event.reload.state
+    assert_nil event.accepted_at
+  ensure
+    AgentConnectors.registry = previous_registry if previous_registry
+  end
+
   test "routes hosted deliveries to their dedicated serialized queue" do
     human = User.create!(name: "Queue Human", email: "queue-human@example.com", password: "password1")
     hosted_user = User.create!(name: "Hosted Queue Agent", kind: :agent)

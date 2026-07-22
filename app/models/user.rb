@@ -20,9 +20,38 @@ class User < ApplicationRecord
   after_update_commit :broadcast_presence, if: :saved_change_to_presence?
 
   WORKING_TTL = 90.seconds
+  CONNECTOR_TTL = 45.seconds
 
   def working?
     agent? && working_status? && heartbeat_at.present? && heartbeat_at > WORKING_TTL.ago
+  end
+
+  def external_connector_present?
+    connector_connection_id.present? && connector_heartbeat_at.present? && connector_heartbeat_at > CONNECTOR_TTL.ago
+  end
+
+  def register_connector!(connection_id)
+    with_lock do
+      update_columns(connector_connection_id: connection_id, connector_heartbeat_at: Time.current, updated_at: Time.current)
+      agent_events.where(state: "running").where.not(connector_connection_id: nil)
+        .update_all(connector_connection_id: connection_id, updated_at: Time.current)
+    end
+  end
+
+  def heartbeat_connector!(connection_id)
+    self.class.where(id: id, connector_connection_id: connection_id)
+      .update_all(connector_heartbeat_at: Time.current, updated_at: Time.current) == 1
+  end
+
+  def clear_connector!(connection_id)
+    self.class.where(id: id, connector_connection_id: connection_id)
+      .update_all(connector_connection_id: nil, connector_heartbeat_at: nil, updated_at: Time.current) == 1
+  end
+
+  def connector_owned_by?(connection_id)
+    self.class.where(id: id, connector_connection_id: connection_id)
+      .where(connector_heartbeat_at: CONNECTOR_TTL.ago..)
+      .exists?
   end
 
   def api_token=(token)
