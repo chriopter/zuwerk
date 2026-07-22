@@ -45,6 +45,7 @@ class AgentTodoWorkTest < ApplicationSystemTestCase
     fill_in "Email", with: @human.email
     fill_in "Password", with: "password1"
     click_button "Sign in"
+    assert_current_path root_path
   end
 
   test "human toggles an emoji and watches real agent work through completion" do
