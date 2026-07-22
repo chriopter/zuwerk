@@ -46,8 +46,7 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
       assert_select "a[aria-current='page'][href='#{chat_project_path(@first_project)}']", text: /Chat/
       assert_select "a[href='#{project_todos_path(@first_project)}']", text: /Tasks/
       assert_select "[aria-disabled='true']", text: /Threads/, count: 1
-      assert_select "[aria-disabled='true']", text: /Files/, count: 1
-      assert_select "[aria-disabled='true']", text: /Memory/, count: 1
+      assert_select "[aria-disabled='true']", text: /Files & Memory/, count: 1
     end
     assert_select ".workspace-sidebar details.sidebar-project:not([open])" do
       assert_select "summary", text: /Beta/

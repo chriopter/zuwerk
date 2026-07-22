@@ -36,7 +36,7 @@
   .project-switcher-compact .project-switcher-copy strong { @apply m-0 text-[13px]; }
   .project-switcher-compact .project-switcher-menu { left: 0; top: 46px; width: calc(100vw - 32px); max-width: 304px; }
   .sidebar-project-tree { @apply min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 pt-1; scrollbar-width: thin; }
-  .sidebar-tree-heading { @apply flex h-8 items-center justify-between px-2 text-[10px] font-semibold uppercase tracking-[.12em] text-stone-400; }
+  .sidebar-tree-heading { @apply flex h-8 items-center justify-between px-2 text-[11px] font-semibold uppercase tracking-[.11em] text-stone-400; }
   .sidebar-project-create { @apply relative; }
   .sidebar-project-create > summary { @apply grid h-7 w-7 cursor-pointer list-none place-items-center rounded-md text-base font-normal text-stone-400 hover:bg-white/70 hover:text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#27332d]; }
   .sidebar-project-create > summary::-webkit-details-marker { display: none; }
@@ -47,14 +47,14 @@
   .sidebar-project-create-popover input[type="submit"] { @apply rounded-lg bg-[#27332d] px-3 text-xs font-semibold text-white; }
   .sidebar-project-list { @apply pb-3; }
   .sidebar-project { @apply my-0.5; }
-  .sidebar-project > summary { @apply flex h-9 cursor-pointer list-none items-center gap-2 rounded-lg px-2 text-[13px] font-semibold text-stone-700 hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#27332d]; }
+  .sidebar-project > summary { @apply flex h-10 cursor-pointer list-none items-center gap-2 rounded-lg px-2 text-[14px] font-semibold tracking-[-.01em] text-stone-700 hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#27332d]; }
   .sidebar-project > summary::-webkit-details-marker { display: none; }
   .sidebar-project-mark { @apply grid h-5 w-5 shrink-0 place-items-center rounded-md bg-[#27332d] text-[9px] font-bold text-white; }
   .sidebar-project-name { @apply min-w-0 flex-1 truncate; }
   .sidebar-project-chevron { @apply shrink-0 text-sm font-normal text-stone-400 transition-transform; }
   .sidebar-project[open] > summary .sidebar-project-chevron { @apply rotate-90; }
   .sidebar-project-objects { @apply ml-[18px] border-l border-white/80 pb-1 pl-2; }
-  .sidebar-object { @apply flex h-8 min-w-0 items-center gap-2 rounded-lg px-2 text-[12px] text-stone-500 transition hover:bg-white/60 hover:text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#27332d]; }
+  .sidebar-object { @apply flex h-9 min-w-0 items-center gap-2 rounded-lg px-2 text-[13px] font-medium tracking-[-.005em] text-stone-500 transition hover:bg-white/60 hover:text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#27332d]; }
   .sidebar-object-icon { @apply w-4 shrink-0 text-center text-[11px] text-stone-400; }
   .sidebar-object-active { @apply bg-white/80 font-semibold text-stone-900 shadow-[0_1px_2px_rgba(28,25,23,.04)]; }
   .sidebar-object-disabled { @apply cursor-default text-stone-400 hover:bg-transparent hover:text-stone-400; }
