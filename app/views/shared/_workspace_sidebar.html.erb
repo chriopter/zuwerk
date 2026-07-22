@@ -1,4 +1,5 @@
 <aside class="workspace-sidebar">
+  <%= turbo_stream_from "agent_work" %>
   <%= render "messages/project_switcher", project: project, projects: projects %>
 
   <section class="sidebar-agents" aria-labelledby="agents-heading">
@@ -6,36 +7,7 @@
       <%= link_to "Agents", agents_path, id: "agents-heading", class: active == :agents ? "sidebar-heading-active" : nil %>
       <%= link_to "＋", new_agent_path, class: "sidebar-heading-action", aria: { label: "Create agent" }, title: "Create agent" %>
     </div>
-    <div class="sidebar-agent-list">
-      <% agents.each do |agent| %>
-        <% hosted = agent.hosted_agent %>
-        <% if hosted %>
-          <% connected = hosted.bridge_connected? %>
-          <% status = if connected
-            "Connected"
-          elsif hosted.running?
-            "Runtime running · Not connected"
-          else
-            hosted.state.humanize
-          end %>
-          <% dot_class = connected ? "agent-dot-online" : (hosted.running? ? "agent-dot-runtime" : "agent-dot-offline") %>
-        <% else %>
-          <% connected = agent.working? %>
-          <% status = connected ? (agent.working_label.presence || "Working") : "Offline" %>
-          <% dot_class = connected ? "agent-dot-working" : "agent-dot-offline" %>
-        <% end %>
-        <%= link_to(hosted ? agent_path(agent) : agents_path, class: "agent-row #{'agent-row-active' if active_agent_id == agent.id}", data: { sidebar_agent_id: agent.id, agent_connected: connected }) do %>
-          <div class="relative">
-            <div class="sidebar-avatar"><%= agent.name.first.upcase %></div>
-            <span class="agent-dot <%= dot_class %>"></span>
-          </div>
-          <div class="min-w-0 flex-1">
-            <div class="truncate text-sm font-medium text-stone-800"><%= agent.name %></div>
-            <div class="truncate text-xs text-stone-400"><%= status %></div>
-          </div>
-        <% end %>
-      <% end %>
-    </div>
+    <%= render "shared/sidebar_agent_list", agents: agents, active_agent_id: active_agent_id %>
     <%= link_to new_agent_invitation_path, class: "sidebar-invite" do %>
       <span aria-hidden="true">＋</span><span>Connect external agent</span>
     <% end %>

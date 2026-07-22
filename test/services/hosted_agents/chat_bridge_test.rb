@@ -52,6 +52,8 @@ class HostedAgents::ChatBridgeTest < ActiveSupport::TestCase
     end
 
     assert event.reload.delivered_at?
+    assert event.accepted_at?
+    assert_equal [ "👍" ], source.reactions.where(author: klaus).pluck(:emoji)
     assert_equal "Published through the CLI", klaus.messages.last.body
     assert_not_includes klaus.messages.pluck(:body), "ACP output that must remain invisible"
     assert_includes pool.prompt_text, event.public_id
@@ -77,6 +79,8 @@ class HostedAgents::ChatBridgeTest < ActiveSupport::TestCase
     end
 
     assert_nil event.reload.delivered_at
+    assert event.accepted_at?
+    assert_equal [ "👍" ], source.reactions.where(author: agent).pluck(:emoji)
     assert_equal 1, event.attempts
     assert_match(/event-correlated project message/, event.last_error)
   end
@@ -96,6 +100,8 @@ class HostedAgents::ChatBridgeTest < ActiveSupport::TestCase
     HostedAgents::ChatBridge.new(event, pool: pool).deliver
 
     assert event.reload.delivered_at?
+    assert event.accepted_at?
+    assert_equal [ "👍" ], todo.reactions.where(author: klaus).pluck(:emoji)
     assert_equal "Finished in todo context", event.publication_comment.body.to_plain_text
     assert_includes pool.prompt_text, "Todo ID: #{todo.id}"
     assert_includes pool.prompt_text, "Release"
@@ -104,5 +110,38 @@ class HostedAgents::ChatBridgeTest < ActiveSupport::TestCase
     assert_includes pool.prompt_text, "zuwerk todos comments create --project #{project.id} --todo #{todo.id} --event #{event.public_id}"
     assert_includes pool.prompt_text, "commit the finished changes before reporting the outcome"
     assert_includes pool.prompt_text, "Include the commit hash in your todo comment"
+  end
+
+  test "acknowledgement is idempotent when delivery is retried" do
+    human = User.create!(name: "Retry Human", email: "retry-human@example.com", password: "password1")
+    agent = User.create!(name: "Retry Agent", kind: :agent)
+    HostedAgent.create!(user: agent, runtime: "claude", state: "running")
+    project = Project.create!(name: "Retry Project")
+    source = Message.create!(author: human, project: project, body: "@retry-agent respond")
+    event = source.agent_events.find_by!(recipient: agent)
+    bridge = HostedAgents::ChatBridge.new(event, pool: SilentPool.new)
+
+    2.times { assert_raises(HostedAgents::ChatBridge::DeliveryError) { bridge.deliver } }
+
+    assert_equal 1, source.reactions.where(author: agent, emoji: "👍").count
+    assert event.reload.failed?
+    assert_not agent.reload.working?
+  end
+
+  test "long todo titles do not prevent automatic assignment delivery" do
+    human = User.create!(name: "Ada Long", email: "ada-long-bridge@example.com", password: "password1")
+    agent = User.create!(name: "Long-title agent", kind: :agent)
+    HostedAgent.create!(user: agent, runtime: "claude", state: "running")
+    project = Project.create!(name: "Long Todo Project")
+    todo = project.todos.create!(creator: human, title: "A" * 160)
+    assignment = todo.assignments.create!(agent: agent, assigner: human)
+    event = assignment.agent_events.find_by!(recipient: agent)
+    bridge = HostedAgents::ChatBridge.new(event, pool: SilentPool.new)
+
+    bridge.send(:set_working, true)
+
+    assert_equal 80, agent.reload.working_label.length
+  ensure
+    bridge&.send(:set_working, false)
   end
 end

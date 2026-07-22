@@ -48,6 +48,28 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
     assert_redirected_to agents_path
   end
 
+  test "sidebar links an accepted todo event beneath its agent and shows failures without a spinner" do
+    HostedAgent.create!(user: @agent, runtime: "codex", state: "running")
+    project = Project.create!(name: "Sidebar work")
+    todo = project.todos.create!(creator: @human, title: "A deliberately long todo title that must remain stable in the sidebar")
+    event = todo.assignments.create!(agent: @agent, assigner: @human).agent_events.sole
+    event.update!(accepted_at: Time.current)
+
+    get project_todo_path(project, todo)
+
+    assert_select "turbo-cable-stream-source[channel='Turbo::StreamsChannel']"
+    assert_select ".agent-work-row[href='#{project_todo_path(project, todo)}'][data-agent-event-id='#{event.public_id}']" do
+      assert_select ".agent-work-spinner", count: 1
+      assert_select ".truncate", text: todo.title
+    end
+
+    event.update!(last_error: "Hosted bridge failed permanently")
+    get project_todo_path(project, todo)
+
+    assert_select ".agent-work-row-error[href='#{project_todo_path(project, todo)}']", text: /#{Regexp.escape(todo.title)}/
+    assert_select ".agent-work-spinner", count: 0
+  end
+
   test "requires a signed-in human" do
     delete session_path
     get agents_path

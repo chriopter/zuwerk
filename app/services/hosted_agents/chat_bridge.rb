@@ -22,12 +22,14 @@ module HostedAgents
       def perform_delivery
         raise DeliveryError, "Hosted agent runtime is not running" unless @hosted_agent&.running?
 
+        @event.acknowledge!
         set_working(true)
         @pool.prompt(@hosted_agent, origin, prompt_text) { |_chunk| }
 
         validate_publication!
 
         @event.update!(delivered_at: Time.current, last_error: nil)
+        @event.broadcast_work_context
       rescue => error
         record_failure(error)
         raise error if error.is_a?(DeliveryError)
@@ -80,7 +82,7 @@ module HostedAgents
       def set_working(value)
         @event.recipient.update!(
           working_status: value,
-          working_label: value ? (todo_event? ? "Working on #{todo.title}" : "Replying in shared chat") : nil,
+          working_label: value ? (todo_event? ? "Working on #{todo.title}" : "Replying in shared chat").truncate(80) : nil,
           heartbeat_at: value ? Time.current : nil
         )
         @working = value
@@ -98,6 +100,7 @@ module HostedAgents
             last_error: "Hosted bridge failed: #{error.class}: #{error.message}".truncate(255)
           )
         end
+        @event.broadcast_work_context
       rescue => bookkeeping_error
         Rails.logger.error("Hosted event #{@event.id} failure bookkeeping failed: #{bookkeeping_error.message}")
       end

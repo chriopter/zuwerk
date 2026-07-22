@@ -1,0 +1,40 @@
+<div id="sidebar_agent_list" class="sidebar-agent-list" aria-live="polite">
+  <% agents.each do |agent| %>
+    <% hosted = agent.hosted_agent %>
+    <% connected = hosted ? hosted.bridge_connected? : agent.working? %>
+    <% status = if hosted
+      connected ? "Connected" : (hosted.running? ? "Runtime running · Not connected" : hosted.state.humanize)
+    else
+      connected ? (agent.working_label.presence || "Working") : "Offline"
+    end %>
+    <% dot_class = if hosted
+      connected ? "agent-dot-online" : (hosted.running? ? "agent-dot-runtime" : "agent-dot-offline")
+    else
+      connected ? "agent-dot-working" : "agent-dot-offline"
+    end %>
+    <div class="sidebar-agent-group">
+      <%= link_to(hosted ? agent_path(agent) : agents_path, class: "agent-row #{'agent-row-active' if active_agent_id == agent.id}", data: { sidebar_agent_id: agent.id, agent_connected: connected }) do %>
+        <div class="relative">
+          <div class="sidebar-avatar"><%= agent.name.first.upcase %></div>
+          <span class="agent-dot <%= dot_class %>"></span>
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="truncate text-sm font-medium text-stone-800"><%= agent.name %></div>
+          <div class="truncate text-xs text-stone-400"><%= status %></div>
+        </div>
+      <% end %>
+      <% event = agent.agent_events.accepted.where(event_type: "todo_assigned").order(accepted_at: :desc).find { |candidate| candidate.active? || candidate.failed? } %>
+      <% if event&.active? %>
+        <%= link_to project_todo_path(event.todo.project, event.todo), class: "agent-work-row", title: event.todo.title, data: { agent_event_id: event.public_id } do %>
+          <span class="agent-work-spinner" aria-hidden="true"></span>
+          <span class="truncate"><%= event.todo.title %></span>
+          <span class="sr-only">In progress</span>
+        <% end %>
+      <% elsif event&.failed? %>
+        <%= link_to project_todo_path(event.todo.project, event.todo), class: "agent-work-row agent-work-row-error", title: event.last_error, data: { agent_event_id: event.public_id } do %>
+          <span aria-hidden="true">!</span><span class="truncate"><%= event.todo.title %></span><span class="sr-only">Failed</span>
+        <% end %>
+      <% end %>
+    </div>
+  <% end %>
+</div>

@@ -13,6 +13,33 @@ class AgentEvent < ApplicationRecord
   validates :event_type, inclusion: { in: %w[mentioned todo_assigned] }
   validates :recipient_id, uniqueness: { scope: [ :event_type, :subject_type, :subject_id ] }
 
+  scope :accepted, -> { where.not(accepted_at: nil) }
+
+  def active?
+    accepted_at? && !delivered_at? && last_error.blank?
+  end
+
+  def failed?
+    accepted_at? && !delivered_at? && last_error.present?
+  end
+
+  def todo
+    subject.todo if event_type == "todo_assigned"
+  end
+
+  def acknowledge!
+    transaction do
+      update!(accepted_at: Time.current, last_error: nil)
+      acknowledgement_target.reactions.find_or_create_by!(author: recipient, emoji: "👍")
+    end
+    broadcast_work_context
+  end
+
+  def broadcast_work_context
+    broadcast_replace_to "agent_work", target: "sidebar_agent_list", partial: "shared/sidebar_agent_list",
+      locals: { agents: User.agent.includes(:hosted_agent).order(:name), active_agent_id: nil }
+  end
+
   def payload
     {
       id: public_id,
@@ -25,6 +52,10 @@ class AgentEvent < ApplicationRecord
   end
 
   private
+    def acknowledgement_target
+      event_type == "todo_assigned" ? todo : subject
+    end
+
     def event_context
       context = { project: { id: subject.project.id, name: subject.project.name } }
       if event_type == "todo_assigned"
