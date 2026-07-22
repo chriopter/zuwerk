@@ -46,6 +46,9 @@
     <%= link_to chat_project_path(project), class: "sidebar-channel #{'sidebar-channel-active' if active == :chat}", aria: (active == :chat ? { current: "page" } : {}) do %>
       <span>Shared chat</span>
     <% end %>
+    <%= link_to project_todos_path(project), class: "sidebar-channel #{'sidebar-channel-active' if active == :todos}", aria: (active == :todos ? { current: "page" } : {}) do %>
+      <span>Todos</span>
+    <% end %>
   </nav>
 
   <% if current_user.admin? %>

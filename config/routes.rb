@@ -9,6 +9,11 @@ Rails.application.routes.draw do
     get :chat, on: :member, to: "messages#index"
     resources :messages, only: :create
     resource :room_setting, only: :update
+    resources :todos, except: :destroy do
+      patch :reorder, on: :member
+      resources :assignments, controller: "todo_assignments", only: %i[create destroy]
+      resources :comments, controller: "todo_comments", only: %i[create edit update destroy]
+    end
   end
   resources :agent_invitations, only: %i[new create show]
   resources :agents, only: %i[index new create show] do
@@ -22,7 +27,9 @@ Rails.application.routes.draw do
   namespace :api do
     resources :projects, only: %i[index show] do
       resources :messages, only: %i[index create]
-      resources :todos, only: %i[index show create update]
+      resources :todos, only: %i[index show create update] do
+        resources :comments, controller: "todo_comments", only: %i[index create]
+      end
     end
     post "agent/status", to: "agent_presences#update", as: :agent_status
     post "agent_invitations/:token/redeem", to: "agent_invitations#create", as: :redeem_agent_invitation

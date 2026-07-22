@@ -1,0 +1,15 @@
+<% todos.each do |item| %>
+  <li class="space-y-1" data-todo-sort-target="item" data-todo-id="<%= item.id %>" data-parent-id="<%= item.parent_id %>" data-position="<%= item.position %>" draggable="true" data-action="dragstart->todo-sort#dragStart dragover->todo-sort#dragOver drop->todo-sort#drop dragend->todo-sort#dragEnd">
+    <div class="group flex items-center gap-2 rounded-lg border border-transparent px-2 py-2 <%= item == @todo ? 'bg-stone-100 text-stone-950' : 'text-stone-600 hover:bg-stone-50' %>">
+      <span class="cursor-grab text-stone-300" aria-hidden="true">⠿</span>
+      <%= link_to item.title, project_todo_path(@project, item), class: "min-w-0 flex-1 truncate text-sm #{item.completed? ? 'line-through opacity-50' : ''}" %>
+      <% if item.assigned_agents.any? %><span class="text-[10px] text-emerald-600"><%= item.assigned_agents.map { |agent| agent.name.first }.join %></span><% end %>
+      <span class="todo-nest-target hidden rounded px-1 text-[10px] text-stone-400 group-hover:inline" title="Nest dragged todo here">↳</span>
+    </div>
+    <% if item.children.any? %>
+      <ol class="ml-4 border-l border-stone-200 pl-2">
+        <%= render "todos/tree", todos: item.children.ordered %>
+      </ol>
+    <% end %>
+  </li>
+<% end %>

@@ -2,8 +2,18 @@ require "test_helper"
 
 class AgentTerminalChannelTest < ActionCable::Channel::TestCase
   class FakeRuntime
-    def running? = true
-    def provision = nil
+    attr_reader :provisioned
+
+    def initialize(running: true)
+      @running = running
+    end
+
+    def running? = @running
+
+    def provision
+      @provisioned = true
+      @running = true
+    end
   end
 
   class FakeBridge
@@ -69,5 +79,26 @@ class AgentTerminalChannelTest < ActionCable::Channel::TestCase
     subscribe agent_id: @identity.id
 
     assert subscription.rejected?
+  end
+
+  test "repairs a stale error state when the real container is running" do
+    @hosted_agent.update!(state: "error", last_error: "restart race")
+
+    subscribe agent_id: @identity.id, rows: 42, columns: 120
+
+    assert_not subscription.rejected?
+    assert_equal "running", @hosted_agent.reload.state
+    assert_nil @hosted_agent.last_error
+  end
+
+  test "reprovisions an error-state agent when its container is not running" do
+    runtime = FakeRuntime.new(running: false)
+    AgentTerminalChannel.runtime_factory = ->(_hosted_agent) { runtime }
+    @hosted_agent.update!(state: "error", last_error: "container disappeared")
+
+    subscribe agent_id: @identity.id, rows: 42, columns: 120
+
+    assert_not subscription.rejected?
+    assert runtime.provisioned
   end
 end

@@ -14,7 +14,8 @@ module HostedAgents
 
       rows = rows.to_i.clamp(10, 200)
       columns = columns.to_i.clamp(20, 400)
-      attach_command = 'stty rows "$ZUWERK_ROWS" cols "$ZUWERK_COLUMNS"; exec tmux attach-session -t agent'
+      runtime_command = @hosted_agent.runtime == "codex" ? "codex" : "claude"
+      attach_command = "tmux has-session -t agent 2>/dev/null || tmux new-session -d -s agent -c /workspace 'exec #{runtime_command}'; stty rows \"$ZUWERK_ROWS\" cols \"$ZUWERK_COLUMNS\"; exec tmux attach-session -t agent"
 
       argv = [
         "podman", "exec", "-i",
@@ -24,7 +25,7 @@ module HostedAgents
         @hosted_agent.container_name,
         "script", "-qfec", attach_command, "/dev/null"
       ]
-      @writer, @reader, @wait_thread = @interactive_executor.open(*argv)
+      @writer, @reader, @wait_thread = @interactive_executor.open(*argv, pgroup: true)
       @reader_thread = Thread.new { read_output(&on_output) }
       self
     end
@@ -49,7 +50,7 @@ module HostedAgents
     def close
       @reader&.close unless @reader&.closed?
       @writer&.close unless @writer&.closed?
-      Process.kill("TERM", @wait_thread.pid) if @wait_thread
+      Process.kill("TERM", -@wait_thread.pid) if @wait_thread
     rescue Errno::EBADF, Errno::ESRCH, IOError
       nil
     ensure

@@ -40,7 +40,7 @@ module HostedAgents
     def new_session
       result = request("session/new", { cwd: "/workspace", mcpServers: [] })
       session_id = result.fetch("sessionId")
-      request("session/set_config_option", { sessionId: session_id, configId: "mode", value: "auto" })
+      request("session/set_config_option", { sessionId: session_id, configId: "mode", value: session_mode })
       session_id
     end
 
@@ -59,7 +59,7 @@ module HostedAgents
     end
 
     def ping(session_id)
-      request("session/set_config_option", { sessionId: session_id, configId: "mode", value: "auto" })
+      request("session/set_config_option", { sessionId: session_id, configId: "mode", value: session_mode })
       true
     end
 
@@ -74,6 +74,10 @@ module HostedAgents
     end
 
     private
+      def session_mode
+        @hosted_agent.runtime == "codex" ? "agent-full-access" : "auto"
+      end
+
       def request(method, params = {}, timeout: 30, &on_chunk)
         @mutex.synchronize do
           raise Error, "ACP adapter is not running" unless alive?

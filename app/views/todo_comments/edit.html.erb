@@ -1,0 +1,11 @@
+<% content_for :title, "Edit comment · Zuwerk" %>
+<section class="mx-auto max-w-3xl rounded-xl border border-stone-200 bg-white p-5 sm:p-7">
+  <h1 class="mb-6 text-xl font-semibold">Edit comment</h1>
+  <%= form_with model: @comment, url: project_todo_comment_path(@project, @todo, @comment), class: "space-y-4" do |form| %>
+    <%= form.rich_text_area :body %>
+    <div class="flex justify-end gap-3">
+      <%= link_to "Cancel", project_todo_path(@project, @todo), class: "btn btn-ghost" %>
+      <%= form.submit "Save comment", class: "btn bg-stone-900 text-white" %>
+    </div>
+  <% end %>
+</section>

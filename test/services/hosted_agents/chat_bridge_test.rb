@@ -22,6 +22,22 @@ class HostedAgents::ChatBridgeTest < ActiveSupport::TestCase
     def prompt(*) = nil
   end
 
+  class TodoPublishingPool
+    attr_reader :prompt_text
+
+    def initialize(agent:, todo:, event:)
+      @agent = agent
+      @todo = todo
+      @event = event
+    end
+
+    def prompt(_hosted_agent, origin, text)
+      @prompt_text = text
+      raise "wrong todo origin" unless origin == @todo
+      @todo.comments.create!(author: @agent, body: "Finished in todo context", agent_event: @event)
+    end
+  end
+
   test "delivers only after the recipient publishes a message through Zuwerk" do
     human = User.create!(name: "Ada", email: "ada-bridge@example.com", password: "password1")
     klaus = User.create!(name: "Klaus", kind: :agent)
@@ -63,5 +79,30 @@ class HostedAgents::ChatBridgeTest < ActiveSupport::TestCase
     assert_nil event.reload.delivered_at
     assert_equal 1, event.attempts
     assert_match(/event-correlated project message/, event.last_error)
+  end
+
+  test "todo assignment uses a persistent todo session and requires a correlated todo comment" do
+    human = User.create!(name: "Ada Todo", email: "ada-todo-bridge@example.com", password: "password1")
+    klaus = User.create!(name: "Klaus Todo", kind: :agent)
+    HostedAgent.create!(user: klaus, runtime: "claude", state: "running")
+    project = Project.create!(name: "Todo Bridge Project")
+    parent = project.todos.create!(creator: human, title: "Release")
+    todo = project.todos.create!(creator: human, title: "Deploy", description: "Deploy safely", parent: parent)
+    todo.comments.create!(author: human, body: "Remember the smoke test")
+    assignment = todo.assignments.create!(agent: klaus, assigner: human)
+    event = assignment.agent_events.find_by!(recipient: klaus)
+    pool = TodoPublishingPool.new(agent: klaus, todo: todo, event: event)
+
+    HostedAgents::ChatBridge.new(event, pool: pool).deliver
+
+    assert event.reload.delivered_at?
+    assert_equal "Finished in todo context", event.publication_comment.body.to_plain_text
+    assert_includes pool.prompt_text, "Todo ID: #{todo.id}"
+    assert_includes pool.prompt_text, "Release"
+    assert_includes pool.prompt_text, "Remember the smoke test"
+    assert_includes pool.prompt_text, "zuwerk todos show #{todo.id} --project #{project.id}"
+    assert_includes pool.prompt_text, "zuwerk todos comments create --project #{project.id} --todo #{todo.id} --event #{event.public_id}"
+    assert_includes pool.prompt_text, "commit the finished changes before reporting the outcome"
+    assert_includes pool.prompt_text, "Include the commit hash in your todo comment"
   end
 end

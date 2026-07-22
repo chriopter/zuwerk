@@ -13,7 +13,8 @@
     <% end %>
     <%= javascript_importmap_tags %>
   </head>
-  <% workspace_page = current_user && ((controller_name == "messages" && action_name == "index") || controller_name.in?([ "agents", "database" ])) %>
+  <% todo_page = controller_name.in?([ "todos", "todo_comments", "todo_assignments" ]) %>
+  <% workspace_page = current_user && ((controller_name == "messages" && action_name == "index") || controller_name.in?([ "agents", "database" ]) || todo_page) %>
   <% chat_page = controller_name == "messages" && action_name == "index" %>
   <body class="<%= workspace_page ? 'h-dvh overflow-hidden bg-white' : 'min-h-screen bg-slate-50 text-slate-950 antialiased' %>">
     <% if workspace_page %>
@@ -22,7 +23,7 @@
           project: @project,
           projects: @projects,
           agents: chat_page ? @agents : @sidebar_agents,
-          active: chat_page ? :chat : (controller_name == "database" ? :database : :agents),
+          active: chat_page ? :chat : (controller_name == "database" ? :database : (todo_page ? :todos : :agents)),
           active_agent_id: @agent&.id %>
         <main class="<%= chat_page ? 'h-full min-h-0 min-w-0' : 'min-h-0 min-w-0 overflow-y-auto p-4 sm:p-8' %>">
           <% flash.each do |type, message| %><div class="alert <%= type == 'alert' ? 'alert-error' : 'alert-success' %> mb-4 shadow-sm" role="status"><span><%= message %></span></div><% end %>

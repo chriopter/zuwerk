@@ -8,6 +8,12 @@ class HostedAgentSession < ApplicationRecord
   validates :origin_id, uniqueness: { scope: [ :hosted_agent_id, :origin_type ] }
 
   def origin_label
-    origin.respond_to?(:name) ? origin.name : "#{origin_type} ##{origin_id}"
+    if origin.respond_to?(:name)
+      origin.name
+    elsif origin.respond_to?(:title)
+      origin.title
+    else
+      "#{origin_type} ##{origin_id}"
+    end
   end
 end

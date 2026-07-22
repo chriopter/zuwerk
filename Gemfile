@@ -66,3 +66,5 @@ group :test do
 end
 
 gem "lexxy", "~> 0.9.21"
+
+gem "ancestry", "~> 5.1"

@@ -2,8 +2,8 @@ require "open3"
 
 module HostedAgents
   class InteractiveCommandExecutor
-    def open(*argv)
-      Open3.popen2e(*argv)
+    def open(*argv, **options)
+      Open3.popen2e(*argv, **options)
     end
 
     def open_separate(*argv)

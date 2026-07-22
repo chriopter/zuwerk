@@ -6,9 +6,16 @@ class AgentTerminalChannel < ApplicationCable::Channel
     agent = User.agent.find(params[:agent_id])
     hosted_agent = HostedAgent.find_by!(user: agent)
     runtime = runtime_factory.call(hosted_agent)
-    runtime.provision if hosted_agent.running? && !runtime.running?
+    actually_running = runtime.running?
+    if (hosted_agent.running? || hosted_agent.state == "error") && !actually_running
+      runtime.provision
+      actually_running = runtime.running?
+    end
+    if hosted_agent.state == "error" && actually_running
+      hosted_agent.update!(state: "running", last_error: nil)
+    end
     hosted_agent.reload
-    unless hosted_agent.running? && runtime.running?
+    unless hosted_agent.running? && actually_running
       reject
       return
     end

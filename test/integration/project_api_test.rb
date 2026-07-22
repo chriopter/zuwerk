@@ -138,6 +138,50 @@ class ProjectApiTest < ActionDispatch::IntegrationTest
     assert todo.reload.completed?
   end
 
+  test "todo API create and update normalize positions in both sibling lists" do
+    parent = @project.todos.create!(creator: @agent, title: "Parent", position: 0)
+    first = @project.todos.create!(creator: @agent, title: "First", parent: parent, position: 4)
+    second = @project.todos.create!(creator: @agent, title: "Second", parent: parent, position: 4)
+    foreign_root = @other_project.todos.create!(creator: @agent, title: "Foreign root", position: 7)
+
+    post api_project_todos_path(@project), params: { title: "Inserted", parent_id: parent.id, position: 1 }, headers: @headers, as: :json
+    assert_response :created
+    inserted = Todo.find(response.parsed_body.fetch("id"))
+    assert_equal [ [ first.id, 0 ], [ inserted.id, 1 ], [ second.id, 2 ] ], parent.children.ordered.pluck(:id, :position)
+
+    patch api_project_todo_path(@project, inserted), params: { parent_id: "", position: 0 }, headers: @headers, as: :json
+    assert_response :success
+    assert_equal [ [ inserted.id, 0 ], [ parent.id, 1 ] ], @project.todos.roots.ordered.pluck(:id, :position)
+    assert_equal [ [ first.id, 0 ], [ second.id, 1 ] ], parent.children.ordered.pluck(:id, :position)
+    assert_equal [ [ foreign_root.id, 7 ] ], @other_project.todos.roots.ordered.pluck(:id, :position)
+  end
+
+  test "invalid todo API move rolls back accompanying updates" do
+    parent = @project.todos.create!(creator: @agent, title: "Parent", position: 0)
+    child = @project.todos.create!(creator: @agent, title: "Child", parent: parent, position: 0)
+
+    patch api_project_todo_path(@project, parent), params: { title: "Changed", parent_id: child.id, position: 0 }, headers: @headers, as: :json
+
+    assert_response :unprocessable_entity
+    assert_equal "Parent", parent.reload.title
+    assert_nil parent.parent
+    assert_equal [ [ child.id, 0 ] ], parent.children.ordered.pluck(:id, :position)
+  end
+
+  test "todo API rejects cross-project parents and non-integer positions" do
+    foreign_parent = @other_project.todos.create!(creator: @agent, title: "Foreign", position: 8)
+    todo = @project.todos.create!(creator: @agent, title: "Local", position: 3)
+
+    patch api_project_todo_path(@project, todo), params: { parent_id: foreign_parent.id, position: 0 }, headers: @headers, as: :json
+    assert_response :unprocessable_entity
+
+    patch api_project_todo_path(@project, todo), params: { position: "middle" }, headers: @headers, as: :json
+    assert_response :unprocessable_entity
+    assert_nil todo.reload.parent
+    assert_equal 3, todo.position
+    assert_equal 8, foreign_parent.reload.position
+  end
+
   test "todo validation errors are JSON and updates cannot change project or creator" do
     todo = @project.todos.create!(creator: @agent, title: "Prepare")
 
@@ -157,5 +201,30 @@ class ProjectApiTest < ActionDispatch::IntegrationTest
 
     patch "/api/todos/1", params: { status: "completed" }, headers: @headers, as: :json
     assert_response :not_found
+  end
+
+  test "assigned agent reads full todo context and publishes one event-correlated comment" do
+    human = User.create!(name: "Ada", email: "todo-context@example.com", password: "password1")
+    parent = @project.todos.create!(creator: human, title: "Launch")
+    todo = @project.todos.create!(creator: human, title: "Deploy", description: "Use the checklist", parent: parent)
+    todo.comments.create!(author: human, body: "Production at <strong>14:00</strong>")
+    assignment = todo.assignments.create!(agent: @agent, assigner: human)
+    event = assignment.agent_events.find_by!(recipient: @agent)
+
+    get api_project_todo_path(@project, todo), headers: @headers, as: :json
+    assert_response :success
+    assert_equal [ "Launch" ], response.parsed_body.fetch("ancestors").map { |item| item.fetch("title") }
+    assert_equal "Production at 14:00", response.parsed_body.fetch("comments").first.fetch("body")
+
+    assert_difference "TodoComment.count", 1 do
+      post api_project_todo_comments_path(@project, todo), params: { body: "Deployment complete", event_id: event.public_id }, headers: @headers, as: :json
+      assert_response :created
+    end
+
+    assert_no_difference "TodoComment.count" do
+      post api_project_todo_comments_path(@project, todo), params: { body: "Duplicate", event_id: event.public_id }, headers: @headers, as: :json
+      assert_response :success
+    end
+    assert_equal event, TodoComment.last.agent_event
   end
 end

@@ -42,4 +42,13 @@ class HostedAgents::AcpClientTest < ActiveSupport::TestCase
   ensure
     client&.close
   end
+
+  test "uses the Codex ACP agent mode instead of the unsupported auto mode" do
+    identity = User.create!(name: "Codex ACP agent", kind: :agent)
+    hosted_agent = HostedAgent.create!(user: identity, runtime: "codex", state: "running")
+    client = HostedAgents::AcpClient.allocate
+    client.instance_variable_set(:@hosted_agent, hosted_agent)
+
+    assert_equal "agent-full-access", client.send(:session_mode)
+  end
 end

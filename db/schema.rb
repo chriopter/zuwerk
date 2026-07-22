@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_22_122000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_22_132000) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
@@ -143,23 +143,41 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_122000) do
     t.index ["project_id"], name: "index_room_settings_on_project_id", unique: true
   end
 
+  create_table "todo_assignments", force: :cascade do |t|
+    t.integer "agent_id", null: false
+    t.integer "assigner_id", null: false
+    t.datetime "created_at", null: false
+    t.integer "todo_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["agent_id"], name: "index_todo_assignments_on_agent_id"
+    t.index ["assigner_id"], name: "index_todo_assignments_on_assigner_id"
+    t.index ["todo_id", "agent_id"], name: "index_todo_assignments_on_todo_id_and_agent_id", unique: true
+    t.index ["todo_id"], name: "index_todo_assignments_on_todo_id"
+  end
+
   create_table "todo_comments", force: :cascade do |t|
+    t.integer "agent_event_id"
     t.integer "author_id", null: false
     t.datetime "created_at", null: false
     t.integer "todo_id", null: false
     t.datetime "updated_at", null: false
+    t.index ["agent_event_id"], name: "index_todo_comments_on_agent_event_id", unique: true
     t.index ["author_id"], name: "index_todo_comments_on_author_id"
     t.index ["todo_id"], name: "index_todo_comments_on_todo_id"
   end
 
   create_table "todos", force: :cascade do |t|
+    t.string "ancestry"
     t.datetime "created_at", null: false
     t.integer "creator_id", null: false
+    t.integer "position", default: 0, null: false
     t.integer "project_id", null: false
     t.integer "status", default: 0, null: false
     t.string "title", null: false
     t.datetime "updated_at", null: false
+    t.index ["ancestry"], name: "index_todos_on_ancestry"
     t.index ["creator_id"], name: "index_todos_on_creator_id"
+    t.index ["project_id", "ancestry", "position"], name: "index_todos_on_project_id_and_ancestry_and_position"
     t.index ["project_id"], name: "index_todos_on_project_id"
   end
 
@@ -191,6 +209,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_122000) do
   add_foreign_key "reactions", "messages"
   add_foreign_key "reactions", "users"
   add_foreign_key "room_settings", "projects"
+  add_foreign_key "todo_assignments", "todos"
+  add_foreign_key "todo_assignments", "users", column: "agent_id"
+  add_foreign_key "todo_assignments", "users", column: "assigner_id"
+  add_foreign_key "todo_comments", "agent_events"
   add_foreign_key "todo_comments", "todos"
   add_foreign_key "todo_comments", "users", column: "author_id"
   add_foreign_key "todos", "projects"
