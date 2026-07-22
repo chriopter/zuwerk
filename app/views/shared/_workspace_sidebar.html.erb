@@ -1,36 +1,39 @@
 <aside class="workspace-sidebar">
   <%= render "messages/project_switcher", project: project, projects: projects %>
 
+  <section class="sidebar-agents" aria-labelledby="agents-heading">
+    <div class="sidebar-section-heading">
+      <%= link_to "Agents", agents_path, id: "agents-heading", class: active == :agents ? "sidebar-heading-active" : nil %>
+      <%= link_to "＋", new_agent_path, class: "sidebar-heading-action", aria: { label: "Create agent" }, title: "Create agent" %>
+    </div>
+    <div class="sidebar-agent-list">
+      <% agents.each do |agent| %>
+        <% hosted = agent.hosted_agent %>
+        <% online = hosted ? hosted.running? : agent.working? %>
+        <% status = hosted ? hosted.state.humanize : (agent.working? ? (agent.working_label.presence || "Working") : "Offline") %>
+        <%= link_to(hosted ? agent_path(agent) : agents_path, class: "agent-row #{'agent-row-active' if active_agent_id == agent.id}", data: { sidebar_agent_id: agent.id }) do %>
+          <div class="relative">
+            <div class="sidebar-avatar"><%= agent.name.first.upcase %></div>
+            <span class="agent-dot <%= online ? (agent.working? ? 'agent-dot-working' : 'agent-dot-online') : 'agent-dot-offline' %>"></span>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="truncate text-sm font-medium text-stone-800"><%= agent.name %></div>
+            <div class="truncate text-xs text-stone-400"><%= status %></div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+    <%= link_to new_agent_invitation_path, class: "sidebar-invite" do %>
+      <span aria-hidden="true">＋</span><span>Connect external agent</span>
+    <% end %>
+  </section>
+
   <nav class="sidebar-navigation" aria-label="Workspace navigation">
     <div class="sidebar-label">Conversation</div>
     <%= link_to chat_project_path(project), class: "sidebar-channel #{'sidebar-channel-active' if active == :chat}", aria: (active == :chat ? { current: "page" } : {}) do %>
       <span>Shared chat</span>
     <% end %>
-    <%= link_to agents_path, class: "sidebar-channel mt-1 #{'sidebar-channel-active' if active == :agents}", aria: (active == :agents ? { current: "page" } : {}) do %>
-      <span>Agents</span>
-    <% end %>
   </nav>
-
-  <section class="sidebar-agents" aria-labelledby="agents-heading">
-    <div id="agents-heading" class="sidebar-label">Agents</div>
-    <div class="sidebar-agent-list">
-      <% agents.each do |agent| %>
-        <div class="agent-row">
-          <div class="relative">
-            <div class="sidebar-avatar"><%= agent.name.first.upcase %></div>
-            <span class="agent-dot <%= agent.working? ? 'agent-dot-working' : 'agent-dot-idle' %>"></span>
-          </div>
-          <div class="min-w-0 flex-1">
-            <div class="truncate text-sm font-medium text-stone-800"><%= agent.name %></div>
-            <div class="truncate text-xs text-stone-400"><%= agent.working? ? (agent.working_label.presence || "Working") : "Available" %></div>
-          </div>
-        </div>
-      <% end %>
-    </div>
-    <%= link_to new_agent_invitation_path, class: "sidebar-invite" do %>
-      <span aria-hidden="true">＋</span><span>Invite agent</span>
-    <% end %>
-  </section>
 
   <div class="sidebar-footer">
     <div class="sidebar-avatar sidebar-avatar-human"><%= current_user.name.first.upcase %></div>

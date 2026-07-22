@@ -76,7 +76,7 @@ Each stream mutation broadcasts a Turbo replacement. Webhook events remain trigg
 
 ## Server-hosted agents
 
-A signed-in human can create a persistent Claude Code or Codex environment from **Agents → Create agent**. Each agent gets one managed Podman container, a persistent home volume for runtime authentication and configuration, and a persistent workspace volume. The browser cockpit connects to the container's fixed `tmux` session, so setup and work survive browser reconnects and container restarts.
+A signed-in human can create a persistent Claude Code or Codex environment from **Agents → Create agent**. Each agent gets one managed Podman container, a persistent home volume for runtime authentication and configuration, and a persistent workspace volume. The browser cockpit uses an authenticated WebSocket-to-PTY bridge to the container's fixed `tmux` session, so keystrokes and output stream immediately while setup and work survive browser reconnects and container restarts.
 
 Build the managed image before creating the first hosted agent:
 

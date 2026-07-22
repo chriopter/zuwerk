@@ -47,7 +47,7 @@ class AgentsController < ApplicationController
     def set_workspace_navigation
       @project = Project.default
       @projects = Project.order(:name)
-      @sidebar_agents = User.agent.order(:name)
+      @sidebar_agents = User.agent.includes(:hosted_agent).order(:name)
     end
 
     def set_agent

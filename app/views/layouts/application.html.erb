@@ -15,6 +15,7 @@
   </head>
   <% workspace_page = current_user && ((controller_name == "messages" && action_name == "index") || controller_name == "agents") %>
   <% chat_page = controller_name == "messages" && action_name == "index" %>
+  <% terminal_page = controller_name == "agents" && action_name == "show" %>
   <body class="<%= workspace_page ? 'h-dvh overflow-hidden bg-white' : 'min-h-screen bg-slate-50 text-slate-950 antialiased' %>">
     <% if workspace_page %>
       <div class="workspace-shell">
@@ -22,8 +23,15 @@
           project: @project,
           projects: @projects,
           agents: chat_page ? @agents : @sidebar_agents,
-          active: chat_page ? :chat : :agents %>
-        <main class="<%= chat_page ? 'h-full min-h-0 min-w-0' : 'min-h-0 min-w-0 overflow-y-auto p-4 sm:p-8' %>">
+          active: chat_page ? :chat : :agents,
+          active_agent_id: @agent&.id %>
+        <main class="<%= if chat_page
+          'h-full min-h-0 min-w-0'
+        elsif terminal_page
+          'h-full min-h-0 min-w-0 overflow-hidden'
+        else
+          'min-h-0 min-w-0 overflow-y-auto p-4 sm:p-8'
+        end %>">
           <% flash.each do |type, message| %><div class="alert <%= type == 'alert' ? 'alert-error' : 'alert-success' %> mb-4 shadow-sm" role="status"><span><%= message %></span></div><% end %>
           <%= yield %>
         </main>

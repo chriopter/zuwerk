@@ -9,3 +9,4 @@ pin "lexxy", to: "lexxy.js"
 pin "@rails/activestorage", to: "activestorage.esm.js"
 pin "@xterm/addon-fit", to: "@xterm--addon-fit.js" # @0.11.0
 pin "@xterm/xterm", to: "@xterm--xterm.js" # @6.0.0
+pin "@rails/actioncable", to: "@rails--actioncable.js" # @8.1.300

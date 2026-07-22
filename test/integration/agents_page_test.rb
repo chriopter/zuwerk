@@ -8,12 +8,17 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
   end
 
   test "lists connected CLI agents and previews server-hosted environments" do
+    hosted_identity = User.create!(name: "Builder", kind: :agent)
+    HostedAgent.create!(user: hosted_identity, runtime: "claude", state: "running", container_id: "container-id")
+
     get agents_path
 
     assert_response :success
     assert_select "h1", "Agents"
     assert_select ".workspace-sidebar"
-    assert_select ".sidebar-channel-active", text: /Agents/
+    assert_select "#agents-heading[href='#{agents_path}']", text: "Agents"
+    assert_select "[data-sidebar-agent-id='#{hosted_identity.id}'][href='#{agent_path(hosted_identity)}']", text: /Running/
+    assert_select ".sidebar-channel-active", count: 0
     assert_select "[data-agent-id='#{@agent.id}']", text: /Hermes/
     assert_select "[data-agent-origin='external']", text: /Connected via CLI/
     assert_select "[data-agent-origin='hosted']", text: /On this server/

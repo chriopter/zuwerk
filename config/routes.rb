@@ -12,7 +12,6 @@ Rails.application.routes.draw do
   end
   resources :agent_invitations, only: %i[new create show]
   resources :agents, only: %i[index new create show] do
-    resource :terminal, only: %i[show update], controller: "agent_terminals"
     post :start, on: :member
     post :stop, on: :member
     post :restart, on: :member

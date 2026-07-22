@@ -38,8 +38,10 @@ class HostedAgentsFlowTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "[data-terminal-agent-id='#{identity.id}']"
+    assert_select ".terminal-cockpit-fullscreen"
+    assert_select ".terminal-titlebar", text: /live websocket/
     assert_select "form[action='#{restart_agent_path(identity)}']"
-    assert_select "span", text: /Codex/
+    assert_select ".agent-terminal-header p", text: /Codex/
     assert_select "[data-chat-bridge-status]", text: /Not connected/
   end
 end
