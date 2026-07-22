@@ -10,16 +10,13 @@ import { FitAddon } from "@xterm/addon-fit"
 
 let cleanupAgentTerminal = () => {}
 
-const mountAgentTerminal = () => {
-  cleanupAgentTerminal()
-
-  const cockpit = document.querySelector("[data-terminal-agent-id]")
-  if (!cockpit || cockpit.dataset.terminalMounted === "true") return
+const mountAgentTerminal = (cockpit) => {
+  if (!cockpit || cockpit.dataset.terminalMounted === "true" || cockpit.dataset.terminalEnabled !== "true") return () => {}
 
   cockpit.dataset.terminalMounted = "true"
   const screen = cockpit.querySelector("[data-terminal-screen]")
   const terminal = new Terminal({
-    cursorBlink: true,
+    cursorBlink: !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     convertEol: false,
     fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
     fontSize: 14,
@@ -96,7 +93,7 @@ const mountAgentTerminal = () => {
   resizeObserver.observe(screen)
   connectTerminal()
 
-  cleanupAgentTerminal = () => {
+  return () => {
     if (disposed) return
     disposed = true
     clearTimeout(resizeTimer)
@@ -107,7 +104,6 @@ const mountAgentTerminal = () => {
     consumer.disconnect()
     cockpit.removeAttribute("data-terminal-mounted")
     terminal.dispose()
-    cleanupAgentTerminal = () => {}
   }
 }
 
@@ -116,18 +112,23 @@ const prepareAgentTerminal = () => {
 
   const cockpit = document.querySelector("[data-terminal-agent-id]")
   const disclosure = cockpit?.closest("details")
-  if (!cockpit || !disclosure || disclosure.open) return mountAgentTerminal()
-
-  const mountWhenOpened = () => {
-    if (!disclosure.open) return
-
-    disclosure.removeEventListener("toggle", mountWhenOpened)
-    mountAgentTerminal()
+  if (!cockpit) return
+  if (!disclosure) {
+    cleanupAgentTerminal = mountAgentTerminal(cockpit)
+    return
   }
 
-  disclosure.addEventListener("toggle", mountWhenOpened)
+  let cleanupMountedTerminal = () => {}
+  const syncTerminal = () => {
+    cleanupMountedTerminal()
+    cleanupMountedTerminal = disclosure.open ? mountAgentTerminal(cockpit) : () => {}
+  }
+
+  disclosure.addEventListener("toggle", syncTerminal)
+  syncTerminal()
   cleanupAgentTerminal = () => {
-    disclosure.removeEventListener("toggle", mountWhenOpened)
+    disclosure.removeEventListener("toggle", syncTerminal)
+    cleanupMountedTerminal()
     cleanupAgentTerminal = () => {}
   }
 }

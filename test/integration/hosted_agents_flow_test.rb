@@ -41,11 +41,15 @@ class HostedAgentsFlowTest < ActionDispatch::IntegrationTest
     assert_select ".terminal-cockpit-fullscreen", count: 0
     assert_select ".terminal-screen-compact"
     assert_select ".agent-overview-grid .agent-overview-card", count: 4
+    assert_select "[data-agent-summary='identity']:nth-child(1)"
+    assert_select "[data-agent-summary='runtime']:nth-child(2)"
+    assert_select "[data-agent-summary='connection']:nth-child(3)"
+    assert_select "[data-agent-summary='workspace']:nth-child(4)"
     assert_select ".agent-identity-card", text: /Reviewer.*Codex/m
     assert_select ".terminal-titlebar", text: /live websocket/
     assert_select "form[action='#{restart_agent_path(identity)}']"
     assert_select ".agent-terminal-disclosure:not([open])", count: 1
-    assert_select "[data-chat-bridge-status]", text: /Not connected/
+    assert_select "[data-chat-bridge-status][aria-live='polite']", text: /Not connected/
     assert_select "a[href='#{new_agent_invitation_path}']", text: /Create invitation/
 
     hosted_agent.update!(bridge_connected_at: Time.current, bridge_last_error: nil)

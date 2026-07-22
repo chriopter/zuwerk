@@ -9,9 +9,7 @@
     <% end %>
     <span><%= session.origin_type %> · <%= hosted_agent.runtime.humanize %></span>
   </div>
-  <div class="agent-session-state">
-    <span class="agent-session-badge"><%= session.external_session_id.present? ? "Resumable" : "Unavailable" %></span>
-    <time datetime="<%= session.last_used_at.iso8601 %>">Used <%= time_ago_in_words(session.last_used_at) %> ago</time>
-  </div>
+  <span class="agent-session-badge"><%= session.external_session_id.present? ? "Resumable" : "Unavailable" %></span>
+  <time datetime="<%= session.last_used_at.iso8601 %>"><%= time_ago_in_words(session.last_used_at) %> ago</time>
   <code title="<%= session.external_session_id %>"><%= session.external_session_id.presence || "No external session" %></code>
 </article>

@@ -46,6 +46,22 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
     assert_select "form[action*='resume']", count: 0
   end
 
+  test "keeps older cloud sessions in a closed archive" do
+    hosted = HostedAgent.create!(user: @agent, runtime: "codex", state: "running")
+    7.times do |index|
+      project = Project.create!(name: "Session archive #{index}")
+      hosted.sessions.create!(origin: project, external_session_id: "session-#{index}", last_used_at: index.hours.ago)
+    end
+
+    get agent_path(@agent)
+
+    assert_select ".agent-sessions > .agent-session-list > [data-cloud-session]", count: 5
+    assert_select "details.agent-session-archive:not([open])" do
+      assert_select "summary", text: /Show 2 older sessions/
+      assert_select "[data-cloud-session]", count: 2
+    end
+  end
+
   test "external agents redirect back to the agents list" do
     get agent_path(@agent)
 
