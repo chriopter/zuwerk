@@ -32,7 +32,7 @@
       <div class="workspace-top-shell">
         <%= render "shared/workspace_topbar", project: @project, active: active_section %>
         <main class="workspace-top-main <%= chat_page ? 'is-chat' : '' %>">
-          <% flash.each do |type, message| %><div class="alert <%= type == 'alert' ? 'alert-error' : 'alert-success' %> mb-4 shadow-sm" role="status"><span><%= message %></span></div><% end %>
+          <% flash.each do |type, message| %><div class="alert <%= type == 'alert' ? 'alert-error' : 'alert-success' %> mb-4 shadow-sm" role="<%= type == 'alert' ? 'alert' : 'status' %>"><span><%= message %></span></div><% end %>
           <%= yield %>
         </main>
       </div>
@@ -43,7 +43,7 @@
         </div>
       </header>
       <main class="mx-auto w-full max-w-6xl p-4 sm:p-8">
-        <% flash.each do |type, message| %><div class="alert <%= type == 'alert' ? 'alert-error' : 'alert-success' %> mb-4 shadow-sm" role="status"><span><%= message %></span></div><% end %>
+        <% flash.each do |type, message| %><div class="alert <%= type == 'alert' ? 'alert-error' : 'alert-success' %> mb-4 shadow-sm" role="<%= type == 'alert' ? 'alert' : 'status' %>"><span><%= message %></span></div><% end %>
         <%= yield %>
       </main>
     <% end %>

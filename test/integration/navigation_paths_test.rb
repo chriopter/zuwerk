@@ -23,7 +23,7 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
     post session_path, params: { email: @human.email.upcase, password: "wrong-password" }
     assert_response :unprocessable_entity
     assert_select "h1", text: "Sign in"
-    assert_select "[role='status']", text: /Email or password is incorrect/
+    assert_select "[role='alert']", text: /Email or password is incorrect/
 
     post session_path, params: { email: " #{@human.email.upcase} ", password: "password1" }
     assert_redirected_to root_path

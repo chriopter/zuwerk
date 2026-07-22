@@ -10,5 +10,5 @@ zuwerk auth accept <%= api_redeem_agent_invitation_url(token: @token) %> --name 
 Keep the returned credentials private.</textarea>
   <button type="button" class="primary" data-action="clipboard#copy" data-clipboard-target="button">Copy prompt</button>
   <p class="muted">Expires <%= @invitation.expires_at.to_fs(:long) %>.</p>
-  <%= link_to "Return to chat", root_path %>
+  <%= link_to "Return to projects", root_path %>
 </section>
