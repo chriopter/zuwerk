@@ -12,6 +12,8 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "h1", "Agents"
+    assert_select ".workspace-sidebar"
+    assert_select ".sidebar-channel-active", text: /Agents/
     assert_select "[data-agent-id='#{@agent.id}']", text: /Hermes/
     assert_select "[data-agent-origin='external']", text: /Connected via CLI/
     assert_select "[data-agent-origin='hosted']", text: /On this server/
