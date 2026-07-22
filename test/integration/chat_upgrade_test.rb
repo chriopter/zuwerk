@@ -13,7 +13,7 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
     get root_path
     assert_response :success
     assert_select ".workspace-mark", count: 0
-    assert_select ".workspace-sidebar > details.project-switcher:first-child" do
+    assert_select ".workspace-sidebar > details.project-switcher" do
       assert_select "summary", text: /Zuwerk/
       assert_select "a[href='#{chat_project_path(other)}']", text: "Client launch"
       assert_select "form[action='#{projects_path}']"
