@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_22_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_22_104000) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
@@ -57,12 +57,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_090000) do
     t.string "last_error"
     t.string "public_id", null: false
     t.integer "recipient_id", null: false
+    t.integer "response_message_id"
     t.integer "subject_id", null: false
     t.string "subject_type", null: false
     t.datetime "updated_at", null: false
     t.index ["event_type", "recipient_id", "subject_type", "subject_id"], name: "index_agent_events_on_unique_delivery", unique: true
     t.index ["public_id"], name: "index_agent_events_on_public_id", unique: true
     t.index ["recipient_id"], name: "index_agent_events_on_recipient_id"
+    t.index ["response_message_id"], name: "index_agent_events_on_response_message_id"
     t.index ["subject_type", "subject_id"], name: "index_agent_events_on_subject"
   end
 
@@ -77,7 +79,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_090000) do
     t.index ["token_digest"], name: "index_agent_invitations_on_token_digest", unique: true
   end
 
+  create_table "hosted_agent_sessions", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "external_session_id", null: false
+    t.integer "hosted_agent_id", null: false
+    t.integer "project_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["hosted_agent_id", "project_id"], name: "index_hosted_agent_sessions_on_hosted_agent_id_and_project_id", unique: true
+    t.index ["hosted_agent_id"], name: "index_hosted_agent_sessions_on_hosted_agent_id"
+    t.index ["project_id"], name: "index_hosted_agent_sessions_on_project_id"
+  end
+
   create_table "hosted_agents", force: :cascade do |t|
+    t.datetime "bridge_connected_at"
+    t.text "bridge_last_error"
     t.string "container_id"
     t.datetime "created_at", null: false
     t.text "last_error"
@@ -165,8 +180,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_090000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "agent_events", "messages", column: "response_message_id"
   add_foreign_key "agent_events", "users", column: "recipient_id"
   add_foreign_key "agent_invitations", "users", column: "inviter_id"
+  add_foreign_key "hosted_agent_sessions", "hosted_agents"
+  add_foreign_key "hosted_agent_sessions", "projects"
   add_foreign_key "hosted_agents", "users"
   add_foreign_key "messages", "projects"
   add_foreign_key "messages", "users", column: "author_id"

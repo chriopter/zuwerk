@@ -33,11 +33,16 @@
       <p><%= @hosted_agent.container_name %></p>
     </article>
 
-    <article class="agent-overview-card agent-overview-card-warning">
+    <article class="agent-overview-card <%= 'agent-overview-card-warning' unless @hosted_agent.bridge_connected? %>">
       <span>Zuwerk connection</span>
-      <strong data-chat-bridge-status><i class="status-light status-light-offline"></i>Not connected</strong>
-      <p>The runtime is available, but it does not receive messages from the shared chat yet.</p>
-      <%= link_to "Create invitation link", new_agent_invitation_path, class: "agent-connect-link" %>
+      <% if @hosted_agent.bridge_connected? %>
+        <strong data-chat-bridge-status><i class="status-light status-light-online"></i>Connected</strong>
+        <p>This agent receives mentions from the shared chat through a persistent ACP session.</p>
+      <% else %>
+        <strong data-chat-bridge-status><i class="status-light status-light-offline"></i>Not connected</strong>
+        <p>The runtime is available, but it does not receive messages from the shared chat yet.</p>
+        <%= link_to "Create invitation link", new_agent_invitation_path, class: "agent-connect-link" %>
+      <% end %>
     </article>
 
     <article class="agent-overview-card">

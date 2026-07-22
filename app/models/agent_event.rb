@@ -1,6 +1,7 @@
 class AgentEvent < ApplicationRecord
   belongs_to :recipient, class_name: "User"
   belongs_to :subject, polymorphic: true
+  belongs_to :response_message, class_name: "Message", optional: true
 
   before_validation :assign_public_id, on: :create
   after_create_commit -> { DeliverAgentEventJob.perform_later(self) }

@@ -46,5 +46,10 @@ class HostedAgentsFlowTest < ActionDispatch::IntegrationTest
     assert_select ".agent-detail-header p", text: /Codex/
     assert_select "[data-chat-bridge-status]", text: /Not connected/
     assert_select "a[href='#{new_agent_invitation_path}']", text: /Create invitation link/
+
+    hosted_agent.update!(bridge_connected_at: Time.current, bridge_last_error: nil)
+    get agent_path(identity)
+    assert_select "[data-chat-bridge-status]", text: /Connected/
+    assert_select ".agent-overview-card a[href='#{new_agent_invitation_path}']", count: 0
   end
 end

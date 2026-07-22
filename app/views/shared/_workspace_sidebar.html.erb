@@ -10,9 +10,15 @@
       <% agents.each do |agent| %>
         <% hosted = agent.hosted_agent %>
         <% if hosted %>
-          <% connected = false %>
-          <% status = hosted.running? ? "Runtime running · Not connected" : hosted.state.humanize %>
-          <% dot_class = hosted.running? ? "agent-dot-runtime" : "agent-dot-offline" %>
+          <% connected = hosted.bridge_connected? %>
+          <% status = if connected
+            "Connected"
+          elsif hosted.running?
+            "Runtime running · Not connected"
+          else
+            hosted.state.humanize
+          end %>
+          <% dot_class = connected ? "agent-dot-online" : (hosted.running? ? "agent-dot-runtime" : "agent-dot-offline") %>
         <% else %>
           <% connected = agent.working? %>
           <% status = connected ? (agent.working_label.presence || "Working") : "Offline" %>

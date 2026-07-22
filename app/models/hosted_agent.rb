@@ -3,6 +3,7 @@ class HostedAgent < ApplicationRecord
   STATES = %w[provisioning stopped starting running stopping error].freeze
 
   belongs_to :user
+  has_many :sessions, class_name: "HostedAgentSession", dependent: :destroy
 
   validates :runtime, inclusion: { in: RUNTIMES }
   validates :state, inclusion: { in: STATES }
@@ -16,6 +17,7 @@ class HostedAgent < ApplicationRecord
   def claude? = runtime == "claude"
   def running? = state == "running"
   def stopped? = state == "stopped"
+  def bridge_connected? = bridge_connected_at.present? && bridge_connected_at > 2.minutes.ago && bridge_last_error.blank?
 
   private
     def user_is_agent

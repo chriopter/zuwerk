@@ -56,7 +56,7 @@
   .sidebar-footer { @apply mb-5 mt-auto flex items-center gap-3 border-t border-stone-200 px-1 pt-5; }
   .sidebar-logout { @apply rounded-lg px-2 py-1 text-[10px] text-stone-400 transition hover:bg-stone-100 hover:text-stone-900; }
 
-  .chat-panel { @apply flex min-h-0 min-w-0 flex-col bg-[#fbfbf8]; }
+  .chat-panel { @apply flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-[#fbfbf8]; }
   .chat-header-bar { @apply flex h-16 shrink-0 items-center justify-between border-b border-stone-200 bg-white px-4 sm:px-6 lg:h-[72px] lg:px-8; }
   .chat-header-bar h1 { @apply truncate font-serif text-[19px] font-normal leading-tight text-stone-900; }
   .mobile-agent-presence { @apply flex h-8 shrink-0 items-center border-b border-stone-200 bg-white px-4 lg:hidden; }
@@ -180,6 +180,7 @@
   .agent-overview-card-warning { @apply border-amber-200 bg-amber-50/50; }
   .status-light { @apply h-2 w-2 rounded-full; }
   .status-light-runtime { @apply bg-amber-400; }
+  .status-light-online { @apply bg-emerald-500; }
   .status-light-offline { @apply bg-stone-400; }
   .agent-connect-link { @apply mt-4 inline-flex rounded-lg bg-stone-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-stone-700; }
   .agent-live-terminal { @apply mt-6; }
@@ -219,7 +220,7 @@
   .terminal-titlebar span { @apply mx-auto; }
   .terminal-titlebar button { @apply text-[10px] font-semibold uppercase tracking-wide hover:text-white; }
   .terminal-screen { @apply h-[min(68vh,720px)] min-h-96 p-3; }
-  .terminal-screen-compact { @apply h-[430px] min-h-0; }
+  .terminal-screen-compact { min-height: 430px; height: calc(100dvh - 28rem); }
   .terminal-screen-fullscreen { @apply h-auto min-h-0 flex-1; }
   .terminal-help { @apply border-t border-white/10 px-4 py-2 text-[10px] text-stone-500; }
 }

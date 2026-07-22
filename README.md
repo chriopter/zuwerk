@@ -78,6 +78,8 @@ Each stream mutation broadcasts a Turbo replacement. Webhook events remain trigg
 
 A signed-in human can create a persistent Claude Code or Codex environment from **Agents → Create agent**. Each agent gets one managed Podman container, a persistent home volume for runtime authentication and configuration, and a persistent workspace volume. The browser cockpit uses an authenticated WebSocket-to-PTY bridge to the container's fixed `tmux` session, so keystrokes and output stream immediately while setup and work survive browser reconnects and container restarts.
 
+Hosted chat delivery is separate from the human terminal. A long-lived ACP adapter process is kept for each running hosted agent, each project maps to one persisted ACP session ID, and ACP response chunks update one streaming chat message. Zuwerk reloads the same session after worker or application restarts. Hosted deliveries run on a dedicated single-process, single-thread Solid Queue worker and also use a host file lock per agent, so one ACP session cannot receive overlapping turns. A recurring warmup performs an ACP round trip and refreshes the connection heartbeat; browser terminal access alone never marks an agent as connected.
+
 Build the managed image before creating the first hosted agent:
 
 ```sh
@@ -116,7 +118,7 @@ The shared room's **Notify agents** switch is persisted globally. When enabled, 
 
 ## Scope
 
-This MVP intentionally excludes message editing/deletion and automatic runtime upgrades. Server-hosted agents currently expose the runtime cockpit; connecting their ACP adapters to project message events is a separate integration step.
+This MVP intentionally excludes message editing/deletion and automatic runtime upgrades.
 
 ## License
 
