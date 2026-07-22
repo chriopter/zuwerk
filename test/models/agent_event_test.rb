@@ -80,4 +80,29 @@ class AgentEventTest < ActiveSupport::TestCase
     assert_equal event.created_at.iso8601, payload[:occurred_at]
     assert_not_includes payload.to_json, message.body
   end
+
+  test "persists durable state timestamps and only permits valid transitions" do
+    event = Message.create!(author: @human, body: "@hermes state").agent_events.sole
+
+    assert_equal "queued", event.state
+    event.transition_to!("running")
+    assert event.started_at?
+    event.transition_to!("waiting_for_approval")
+    event.transition_to!("running")
+    event.transition_to!("completed")
+    assert event.finished_at?
+    assert_raises(AgentEvent::InvalidTransition) { event.transition_to!("running") }
+  end
+
+  test "atomically claims one event per recipient in FIFO order" do
+    first = Message.create!(author: @human, body: "@hermes first").agent_events.sole
+    second = Message.create!(author: @human, body: "@hermes second").agent_events.sole
+
+    assert_equal first, AgentEvent.claim_next_for!(@hermes)
+    assert_nil AgentEvent.claim_next_for!(@hermes)
+    assert_equal "queued", second.reload.state
+
+    first.transition_to!("completed")
+    assert_equal second, AgentEvent.claim_next_for!(@hermes)
+  end
 end

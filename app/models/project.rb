@@ -20,4 +20,8 @@ class Project < ApplicationRecord
   def message_stream
     "project_#{id}_messages"
   end
+
+  def agent_turn_stream
+    "project_#{id}_agent_turns"
+  end
 end

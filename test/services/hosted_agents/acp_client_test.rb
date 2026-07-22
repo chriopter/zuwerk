@@ -2,6 +2,21 @@ require "test_helper"
 require "open3"
 
 class HostedAgents::AcpClientTest < ActiveSupport::TestCase
+  class FakeTransport
+    attr_reader :writes
+
+    def initialize(responses)
+      @responses = Queue.new
+      responses.each { |response| @responses << JSON.generate(response) + "\n" }
+      @writes = []
+      @alive = true
+    end
+
+    def alive? = @alive
+    def read_line(timeout:) = @responses.pop
+    def write_line(line) = @writes << JSON.parse(line)
+    def disconnect = (@alive = false)
+  end
   ADAPTER = <<~'RUBY'
     require "json"
     $stdout.sync = true
@@ -50,5 +65,130 @@ class HostedAgents::AcpClientTest < ActiveSupport::TestCase
     client.instance_variable_set(:@hosted_agent, hosted_agent)
 
     assert_equal "agent-full-access", client.send(:session_mode)
+  end
+
+  test "accepts an injected transport uses protocol v2 and reports all updates" do
+    transport = FakeTransport.new([
+      { jsonrpc: "2.0", id: 1, result: {} },
+      { jsonrpc: "2.0", id: 2, result: { sessionId: "remote-session" } },
+      { jsonrpc: "2.0", method: "session/update", params: { update: { sessionUpdate: "tool_call", title: "Run tests" } } },
+      { jsonrpc: "2.0", id: 3, result: { stopReason: "end_turn" } }
+    ])
+    client = HostedAgents::AcpClient.new(nil, transport: transport)
+    updates = []
+
+    session_id = client.new_session
+    client.prompt(session_id, "Work", on_update: ->(update) { updates << update })
+
+    assert_equal 2, transport.writes.first.dig("params", "protocolVersion")
+    assert_equal "tool_call", updates.sole.fetch("sessionUpdate")
+  ensure
+    client&.close
+  end
+
+  test "retains capabilities and negotiates an advertised mode" do
+    transport = FakeTransport.new([
+      { jsonrpc: "2.0", id: 1, result: { protocolVersion: 2, agentCapabilities: { loadSession: true } } },
+      { jsonrpc: "2.0", id: 2, result: { sessionId: "remote-session", configOptions: [ { id: "mode", options: [ { value: "auto" } ] } ] } },
+      { jsonrpc: "2.0", id: 3, result: {} }
+    ])
+    client = HostedAgents::AcpClient.new(nil, transport: transport, session_mode: "auto")
+
+    assert_equal "remote-session", client.new_session
+    assert_equal({ "loadSession" => true }, client.agent_capabilities)
+    assert_equal [ { "id" => "mode", "options" => [ { "value" => "auto" } ] } ], client.session_capabilities.fetch("configOptions")
+    assert_equal "session/set_config_option", transport.writes.third.fetch("method")
+  ensure
+    client&.close
+  end
+
+  test "does not set or ping a mode unless session new advertises it" do
+    transport = FakeTransport.new([
+      { jsonrpc: "2.0", id: 1, result: { agentCapabilities: { promptCapabilities: { image: true } } } },
+      { jsonrpc: "2.0", id: 2, result: { sessionId: "claude-session", models: [ "sonnet" ] } }
+    ])
+    client = HostedAgents::AcpClient.new(nil, transport: transport, session_mode: "auto")
+
+    assert_equal "claude-session", client.new_session
+    assert client.ping("claude-session")
+    assert_equal %w[initialize session/new], transport.writes.map { |write| write.fetch("method") }
+  ensure
+    client&.close
+  end
+
+  test "raises a typed pending permission error without auto approval" do
+    transport = FakeTransport.new([
+      { jsonrpc: "2.0", id: 1, result: {} },
+      { jsonrpc: "2.0", id: "permission-id", method: "session/request_permission", params: { options: [ { optionId: "allow", kind: "allow_once" } ] } }
+    ])
+    client = HostedAgents::AcpClient.new(nil, transport: transport)
+
+    error = assert_raises(HostedAgents::AcpClient::PermissionPending) do
+      client.send(:request, "session/prompt", {}, timeout: 1)
+    end
+
+    assert_equal "permission-id", error.request_id
+    assert_equal 2, transport.writes.length
+  ensure
+    client&.close
+  end
+
+  test "cancelled permission stops the prompt cancels its session and poisons the client" do
+    transport = FakeTransport.new([
+      { jsonrpc: "2.0", id: 1, result: {} },
+      { jsonrpc: "2.0", id: "permission", method: "session/request_permission", params: { sessionId: "session-7", options: [ { optionId: "allow" } ] } },
+      { jsonrpc: "2.0", id: 2, result: { stopReason: "cancelled" } }
+    ])
+    client = HostedAgents::AcpClient.new(nil, transport: transport)
+
+    error = assert_raises(HostedAgents::AcpClient::Error) do
+      client.send(:request, "session/prompt", { sessionId: "session-7" }, timeout: 1,
+        on_permission: ->(*) { HostedAgents::AcpClient::PERMISSION_CANCELLED })
+    end
+
+    assert_match(/cancelled/, error.message)
+    assert_equal({ "outcome" => "cancelled" }, transport.writes.third.dig("result", "outcome"))
+    assert_equal "session/cancel", transport.writes.fourth.fetch("method")
+    assert_equal "session-7", transport.writes.fourth.dig("params", "sessionId")
+    assert_not client.alive?
+  end
+
+  test "sends an explicitly selected null option without cancelling the prompt" do
+    transport = FakeTransport.new([
+      { jsonrpc: "2.0", id: 1, result: {} },
+      { jsonrpc: "2.0", id: "permission", method: "session/request_permission", params: { sessionId: "session-7", options: [ { optionId: nil } ] } },
+      { jsonrpc: "2.0", id: 2, result: { stopReason: "end_turn" } }
+    ])
+    client = HostedAgents::AcpClient.new(nil, transport: transport)
+
+    result = client.send(:request, "session/prompt", { sessionId: "session-7" }, timeout: 1, on_permission: ->(*) { })
+
+    assert_equal({ "outcome" => "selected", "optionId" => nil }, transport.writes.third.dig("result", "outcome"))
+    assert_equal "end_turn", result.fetch("stopReason")
+    assert client.alive?
+  ensure
+    client&.close
+  end
+
+  test "returns the exact human option to the permission request and continues the same prompt" do
+    request_id = { "opaque" => [ 7, "permission" ] }
+    transport = FakeTransport.new([
+      { jsonrpc: "2.0", id: 1, result: {} },
+      { jsonrpc: "2.0", id: request_id, method: "session/request_permission", params: { options: [ { optionId: "reject-exactly" } ] } },
+      { jsonrpc: "2.0", id: 2, result: { stopReason: "end_turn" } }
+    ])
+    client = HostedAgents::AcpClient.new(nil, transport: transport)
+
+    result = client.send(:request, "session/prompt", {}, timeout: 1, on_permission: ->(id, _params) {
+      assert_equal request_id, id
+      "reject-exactly"
+    })
+
+    response = transport.writes.third
+    assert_equal request_id, response.fetch("id")
+    assert_equal({ "outcome" => "selected", "optionId" => "reject-exactly" }, response.dig("result", "outcome"))
+    assert_equal "end_turn", result.fetch("stopReason")
+  ensure
+    client&.close
   end
 end

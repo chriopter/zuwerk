@@ -17,6 +17,12 @@ class AgentEventDelivery
   end
 
   def deliver
+    @event.reload
+    return unless @event.state.in?(%w[queued running])
+
+    claimed = @event.state == "queued" ? AgentEvent.claim_next_for!(@event.recipient) : @event
+    return unless claimed == @event
+
     @event.with_lock do
       return if @event.delivered_at?
 
@@ -26,8 +32,9 @@ class AgentEventDelivery
       response = post(body, timestamp)
       raise DeliveryError, "Webhook returned HTTP #{response.code}" unless response.is_a?(Net::HTTPSuccess)
 
-      @event.update!(delivered_at: Time.current, last_error: nil)
+      @event.update!(delivered_at: Time.current, last_error: nil, state: "completed", finished_at: Time.current)
     end
+    AgentEvent.schedule_next_for!(@event.recipient)
   rescue => error
     record_failure(error)
     raise if error.is_a?(DeliveryError)

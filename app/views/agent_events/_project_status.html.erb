@@ -1,0 +1,4 @@
+<% event = AgentEvent.latest_for_project(project) %>
+<div id="project_agent_turn_status" class="agent-turn-strip" aria-live="polite">
+  <%= render "agent_events/status", event: event if event && event.state != "completed" %>
+</div>

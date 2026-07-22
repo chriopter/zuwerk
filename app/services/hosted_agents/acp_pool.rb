@@ -6,7 +6,7 @@ module HostedAgents
     Entry = Data.define(:client, :loaded_origins)
 
     class << self
-      def prompt(hosted_agent, origin, text, &on_chunk)
+      def prompt(hosted_agent, origin, text, event: nil, &on_chunk)
         with_agent_lock(hosted_agent.id) do
           entry = entry_for(hosted_agent)
           record = session_for(entry, hosted_agent, origin)

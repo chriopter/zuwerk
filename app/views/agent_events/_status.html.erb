@@ -1,0 +1,14 @@
+<% compact = local_assigns.fetch(:compact, false) %>
+<div class="agent-turn-state agent-turn-state-<%= event.state.dasherize %>" data-agent-event-id="<%= event.public_id %>" role="<%= event.failed? || event.state == 'failed' ? 'alert' : 'status' %>">
+  <% if event.state == "running" %><span class="agent-turn-spinner" role="status" aria-label="Agent working"></span><% end %>
+  <span><%= case event.state
+    when "queued" then "Queued for #{event.recipient.name}"
+    when "running" then "#{event.recipient.name} is working"
+    when "waiting_for_approval" then "Waiting for approval"
+    when "failed" then "#{event.recipient.name} failed"
+    when "cancelled" then "#{event.recipient.name} was cancelled"
+  end %></span>
+</div>
+<% if !compact && event.state == "waiting_for_approval" && (approval = event.agent_approvals.pending.order(:created_at).last) %>
+  <%= render "agent_approvals/card", approval: approval %>
+<% end %>

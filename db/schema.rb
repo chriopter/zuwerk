@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_22_193447) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_22_211000) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
@@ -49,25 +49,48 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_193447) do
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
+  create_table "agent_approvals", force: :cascade do |t|
+    t.integer "agent_event_id", null: false
+    t.datetime "cancelled_at"
+    t.datetime "created_at", null: false
+    t.json "details", default: {}, null: false
+    t.datetime "expired_at"
+    t.json "options", default: [], null: false
+    t.json "request_id", null: false
+    t.datetime "resolved_at"
+    t.integer "resolved_by_id"
+    t.json "selected_option_id"
+    t.string "state", default: "pending", null: false
+    t.datetime "updated_at", null: false
+    t.index ["agent_event_id"], name: "index_agent_approvals_on_agent_event_id"
+    t.index ["agent_event_id"], name: "index_agent_approvals_one_pending_per_event", unique: true, where: "state = 'pending'"
+    t.index ["resolved_by_id"], name: "index_agent_approvals_on_resolved_by_id"
+  end
+
   create_table "agent_events", force: :cascade do |t|
     t.datetime "accepted_at"
     t.integer "attempts", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "delivered_at"
     t.string "event_type", null: false
+    t.datetime "finished_at"
     t.string "last_error"
     t.string "public_id", null: false
     t.integer "recipient_id", null: false
     t.datetime "runtime_recovered_at"
+    t.datetime "started_at"
+    t.string "state", default: "queued", null: false
     t.integer "subject_id", null: false
     t.string "subject_type", null: false
     t.datetime "updated_at", null: false
+    t.datetime "waiting_at"
     t.integer "watchdog_attempts", default: 0, null: false
     t.datetime "watchdog_retry_at"
     t.index ["delivered_at", "watchdog_retry_at"], name: "index_agent_events_for_watchdog"
     t.index ["event_type", "recipient_id", "subject_type", "subject_id"], name: "index_agent_events_on_unique_delivery", unique: true
     t.index ["public_id"], name: "index_agent_events_on_public_id", unique: true
     t.index ["recipient_id", "accepted_at"], name: "index_agent_events_on_recipient_id_and_accepted_at"
+    t.index ["recipient_id", "state", "created_at"], name: "index_agent_events_on_recipient_state_created"
     t.index ["recipient_id"], name: "index_agent_events_on_recipient_id"
     t.index ["subject_type", "subject_id"], name: "index_agent_events_on_subject"
   end
@@ -216,6 +239,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_193447) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "agent_approvals", "agent_events"
+  add_foreign_key "agent_approvals", "users", column: "resolved_by_id"
   add_foreign_key "agent_events", "users", column: "recipient_id"
   add_foreign_key "agent_invitations", "users", column: "inviter_id"
   add_foreign_key "agent_subscriptions", "projects"

@@ -4,13 +4,20 @@ module HostedAgents
   class ChatBridge
     class DeliveryError < StandardError; end
 
-    def initialize(agent_event, pool: AcpPool)
+    def initialize(agent_event, pool: AcpPool, connector: false)
       @event = agent_event
       @pool = pool
       @hosted_agent = agent_event.recipient.hosted_agent
+      @connector = connector
     end
 
     def deliver
+      @event.reload
+      return unless @event.state.in?(%w[queued running])
+
+      claimed = @event.state == "queued" ? AgentEvent.claim_next_for!(@event.recipient) : @event
+      return unless claimed == @event
+
       with_event_lock do
         return if @event.reload.delivered_at?
 
@@ -20,15 +27,20 @@ module HostedAgents
 
     private
       def perform_delivery
-        raise DeliveryError, "Hosted agent runtime is not running" unless @hosted_agent&.running?
+        raise DeliveryError, "Agent runtime is not running" unless @connector || @hosted_agent&.running?
 
         @event.acknowledge!
         set_working(true)
-        @pool.prompt(@hosted_agent, origin, prompt_text) { |_chunk| }
+        if @connector
+          @pool.prompt(@event.recipient, origin, prompt_text, event: @event) { |_chunk| }
+        else
+          @pool.prompt(@hosted_agent, origin, prompt_text) { |_chunk| }
+        end
 
         validate_publication!
 
         @event.update!(delivered_at: Time.current, last_error: nil)
+        @event.transition_to!("completed")
       rescue => error
         record_failure(error)
         raise error if error.is_a?(DeliveryError)
@@ -36,6 +48,7 @@ module HostedAgents
         raise DeliveryError, "Hosted bridge failed: #{error.message}"
       ensure
         set_working(false) if @working
+        AgentEvent.schedule_next_for!(@event.recipient) if @event.reload.state.in?(AgentEvent::TERMINAL_STATES)
       end
 
       def with_event_lock
@@ -94,10 +107,11 @@ module HostedAgents
           updated_at: Time.current
         )
         @event.with_lock do
-          @event.update!(
+          attributes = {
             attempts: @event.attempts + 1,
             last_error: "Hosted bridge failed: #{error.class}: #{error.message}".truncate(255)
-          )
+          }
+          @event.update!(attributes)
         end
       rescue => bookkeeping_error
         Rails.logger.error("Hosted event #{@event.id} failure bookkeeping failed: #{bookkeeping_error.message}")

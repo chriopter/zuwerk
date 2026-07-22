@@ -60,33 +60,65 @@ class HostedAgents::EventWatchdogTest < ActiveSupport::TestCase
   end
 
   test "marks a correlated publication complete instead of prompting twice" do
+    queued = next_event
     @agent.messages.create!(project: @project, body: "Already answered", agent_event: @event)
     make_stale
 
     assert_equal :completed, watchdog.call
 
     assert @event.reload.delivered_at?
-    assert_empty @enqueued
+    assert_equal "completed", @event.state
+    assert_equal @now, @event.finished_at
+    assert_equal [ queued ], @enqueued
   end
 
-  test "ignores an event that delivery already completed" do
+  test "repairs working presence when delivery persisted before the bridge crashed" do
+    queued = next_event
     @event.update!(delivered_at: @now - 1.minute)
+    @agent.update!(working_status: true, working_label: "Still shown as working", heartbeat_at: @now - 30.seconds)
 
     assert_equal :completed, watchdog.call
-    assert_empty @enqueued
+
+    assert_equal "completed", @event.reload.state
+    assert_equal @now, @event.finished_at
+    assert_not @agent.reload.working_status?
+    assert_nil @agent.working_label
+    assert_nil @agent.heartbeat_at
+    assert_equal [ queued ], @enqueued
   end
 
   test "makes retry exhaustion visible and does not enqueue again" do
+    queued = next_event
     make_stale
     @event.update_columns(watchdog_attempts: 3, watchdog_retry_at: @now - 1.second)
     @agent.update!(working_status: true, working_label: "Stuck", heartbeat_at: @now - 10.minutes)
 
     assert_equal :failed, watchdog.call
 
-    assert_empty @enqueued
+    assert_equal [ queued ], @enqueued
     assert_match(/retry limit reached/, @event.reload.last_error)
+    assert_equal "failed", @event.state
+    assert_equal @now, @event.finished_at
     assert_nil @event.watchdog_retry_at
     assert_not @agent.reload.working_status?
+  end
+
+  test "retries the exact running event and ignores terminal events" do
+    make_stale
+    @event.transition_to!("running")
+    @event.update_columns(updated_at: @now - 10.minutes)
+
+    assert_equal :retried, watchdog.call
+    assert_same @event, @enqueued.sole
+    assert_equal "running", @event.reload.state
+
+    %w[completed failed cancelled].each do |state|
+      terminal = next_event
+      terminal.update_columns(state: state, finished_at: @now, updated_at: @now - 10.minutes)
+      @enqueued.clear
+      assert_equal state.to_sym, watchdog_for(terminal).call
+      assert_empty @enqueued
+    end
   end
 
   private
@@ -95,11 +127,19 @@ class HostedAgents::EventWatchdogTest < ActiveSupport::TestCase
     end
 
     def watchdog(runtime: FakeRuntime.new)
+      watchdog_for(@event, runtime: runtime)
+    end
+
+    def watchdog_for(event, runtime: FakeRuntime.new)
       HostedAgents::EventWatchdog.new(
-        @event,
+        event,
         clock: -> { @now },
         runtime_factory: ->(_hosted_agent) { runtime },
         enqueue: ->(event) { @enqueued << event }
       )
+    end
+
+    def next_event
+      @project.messages.create!(author: @human, body: "@watch-agent next").agent_events.find_by!(recipient: @agent)
     end
 end

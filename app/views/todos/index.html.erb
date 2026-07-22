@@ -1,4 +1,5 @@
 <% content_for :title, "Todos · #{@project.name} · Zuwerk" %>
+<%= turbo_stream_from @project.agent_turn_stream %>
 
 <section class="kanban-page" data-controller="kanban" data-kanban-project-id-value="<%= @project.id %>">
   <header class="workspace-page-header">
@@ -21,6 +22,7 @@
               <%= link_to project_todo_path(@project, todo), class: "kanban-card-link" do %>
                 <div class="kanban-card-topline"><span>#<%= todo.id %></span><% if todo.parent %><span class="kanban-parent" title="<%= todo.parent.title %>">↳ <%= todo.parent.title %></span><% end %></div>
                 <h3><%= todo.title %></h3>
+                <%= render "agent_events/kanban_status", todo: todo %>
                 <% if todo.description.present? %><p class="kanban-card-description"><%= truncate(todo.description.to_plain_text, length: 120) %></p><% end %>
                 <footer class="kanban-card-footer">
                   <div class="kanban-assignees"><% todo.assigned_agents.first(3).each do |agent| %><span title="<%= agent.name %>"><%= agent.name.first.upcase %></span><% end %><% if todo.assigned_agents.empty? %><span class="kanban-unassigned">–</span><% end %></div>

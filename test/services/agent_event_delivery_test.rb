@@ -59,6 +59,16 @@ class AgentEventDeliveryTest < ActiveSupport::TestCase
     assert_match(/Webhook delivery failed:/, @event.last_error)
   end
 
+  test "terminal events return without another request" do
+    %w[completed failed cancelled].each do |state|
+      @event.update_columns(state: state, finished_at: Time.current, delivered_at: nil)
+
+      assert_nil AgentEventDelivery.new(@event, url: "http://127.0.0.1:1", secret: "secret").deliver
+    end
+
+    assert_equal 0, @event.reload.attempts
+  end
+
   test "already delivered event returns without another request" do
     @event.update!(delivered_at: Time.current)
 

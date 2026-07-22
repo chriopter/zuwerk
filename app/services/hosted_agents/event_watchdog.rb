@@ -19,7 +19,8 @@ module HostedAgents
     def call
       @event.with_lock do
         @event.reload
-        return :completed if @event.delivered_at?
+        return @event.state.to_sym if @event.state.in?(AgentEvent::TERMINAL_STATES)
+        return complete_from_delivery if @event.delivered_at?
         return complete_from_publication if correlated_publication?
         return :running if running?
         return :waiting unless stale? && retry_due?
@@ -61,8 +62,16 @@ module HostedAgents
       end
 
       def complete_from_publication
-        @event.update!(delivered_at: now, last_error: nil, watchdog_retry_at: nil)
+        @event.update!(delivered_at: now, last_error: nil, watchdog_retry_at: nil, state: "completed", finished_at: now)
         clear_working!
+        schedule_next
+        :completed
+      end
+
+      def complete_from_delivery
+        @event.update!(state: "completed", finished_at: now) unless @event.state == "completed"
+        clear_working!
+        schedule_next
         :completed
       end
 
@@ -92,9 +101,12 @@ module HostedAgents
       def exhaust!
         @event.update!(
           last_error: "Agent watchdog retry limit reached after #{MAX_ATTEMPTS} attempts",
-          watchdog_retry_at: nil
+          watchdog_retry_at: nil,
+          state: "failed",
+          finished_at: now
         )
         clear_working!
+        schedule_next
         :failed
       end
 
@@ -102,6 +114,11 @@ module HostedAgents
         return unless @event.recipient.working_status? || @event.recipient.heartbeat_at? || @event.recipient.working_label?
 
         @event.recipient.update!(working_status: false, working_label: nil, heartbeat_at: nil)
+      end
+
+      def schedule_next
+        next_event = AgentEvent.where(recipient: @event.recipient, state: "queued").order(:created_at, :id).first
+        @enqueue.call(next_event) if next_event
       end
   end
 end

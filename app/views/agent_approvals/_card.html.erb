@@ -1,0 +1,17 @@
+<% details = approval.details.is_a?(Hash) ? approval.details : {} %>
+<% title = details["title"].presence || details["tool"].presence || "Agent request" %>
+<section id="agent_approval_<%= approval.id %>" class="agent-approval-card" role="alert" aria-labelledby="agent_approval_<%= approval.id %>_title">
+  <div>
+    <span>Approval required</span>
+    <h2 id="agent_approval_<%= approval.id %>_title"><%= truncate(title.to_s, length: 120) %></h2>
+    <% if details["tool"].present? && details["tool"] != title %><p><strong>Tool:</strong> <%= truncate(details["tool"].to_s, length: 120) %></p><% end %>
+    <% detail_text = details["description"].presence || details["details"].presence %>
+    <% if detail_text.present? %><p><%= truncate(detail_text.to_s, length: 500) %></p><% end %>
+  </div>
+  <div class="agent-approval-actions">
+    <% approval.options.first(8).each_with_index do |option, index| %>
+      <% label = option["name"].presence || option["title"].presence || option["kind"].presence || "Option #{index + 1}" %>
+      <%= button_to truncate(label.to_s, length: 80), agent_approval_path(approval), method: :patch, params: { option_index: index }, class: "agent-approval-button", aria: { label: "#{truncate(label.to_s, length: 80)} for #{truncate(title.to_s, length: 80)}" } %>
+    <% end %>
+  </div>
+</section>

@@ -1,4 +1,5 @@
 <%= turbo_stream_from @project.message_stream %>
+<%= turbo_stream_from @project.agent_turn_stream %>
 <%= turbo_stream_from "agent_presence" %>
 
 <section class="chat-panel" data-controller="chat-scroll">
@@ -29,6 +30,8 @@
         <%= button_to "Exit", session_path, method: :delete, class: "mobile-logout lg:hidden", title: "Log out", aria: { label: "Log out" } %>
       </div>
     </header>
+
+    <%= render "agent_events/project_status", project: @project %>
 
     <div class="mobile-agent-presence">
       <%= render "agent_presence", agents: @agents %>

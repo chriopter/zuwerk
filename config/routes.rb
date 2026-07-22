@@ -24,6 +24,7 @@ Rails.application.routes.draw do
     post :stop, on: :member
     post :restart, on: :member
   end
+  resources :agent_approvals, only: :update
   get "database", to: "database#index", as: :database
   get "database/:table", to: "database#show", as: :database_table
   get "database/:table/records/:id", to: "database#record", as: :database_record

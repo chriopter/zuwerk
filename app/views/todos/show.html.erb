@@ -1,11 +1,13 @@
 <% content_for :title, "#{@todo.title} · Todos · Zuwerk" %>
 <%= turbo_stream_from "todo_#{@todo.id}_status" %>
+<%= turbo_stream_from @project.agent_turn_stream %>
 <section class="todo-detail-page">
   <div class="todo-detail-shell">
     <header class="todo-detail-header">
       <div class="todo-detail-heading">
         <div class="todo-detail-eyebrow"><%= link_to "Todos", project_todos_path(@project) %><span aria-hidden="true">/</span><span>#<%= @todo.id %></span><span class="todo-status todo-status-<%= @todo.status.dasherize %>"><%= { "open" => "Offen", "in_progress" => "In Arbeit", "completed" => "Erledigt" }.fetch(@todo.status) %></span></div>
         <h1><%= @todo.title %></h1><%= render "todos/agent_acknowledgements", todo: @todo %>
+        <%= render "agent_events/todo_status", todo: @todo %>
       </div>
       <div class="todo-detail-actions"><%= button_to(@todo.completed? ? "Wieder öffnen" : "Erledigen", project_todo_path(@project, @todo), method: :patch, params: { todo: { status: @todo.completed? ? "open" : "completed" } }, class: "workspace-secondary-action") %><%= link_to "Bearbeiten", edit_project_todo_path(@project, @todo), class: "workspace-primary-action" %></div>
       <% if @todo.description.present? %><div class="todo-description lexxy-content"><%= @todo.description %></div><% end %>

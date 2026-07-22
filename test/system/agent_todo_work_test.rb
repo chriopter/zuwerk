@@ -68,19 +68,63 @@ class AgentTodoWorkTest < ApplicationSystemTestCase
 
     visit project_todo_path(@project, @todo)
     assert_text "👍 Codex Browser"
-    assert_no_selector ".agent-inline-work"
+    assert_selector "[data-agent-event-id='#{event.public_id}']", text: "Codex Browser is working"
+    assert_selector "[data-agent-event-id='#{event.public_id}'] .agent-turn-spinner", visible: :all
+
+    approval = event.agent_approvals.create!(
+      request_id: { "wire" => [ "todo", event.public_id ] },
+      details: { "title" => "Run todo checks" },
+      options: [ { "optionId" => { "decision" => "allow" }, "name" => "Allow" } ]
+    )
+    assert_selector "#agent_approval_#{approval.id}", text: "Run todo checks"
+    assert_selector "[data-agent-event-id='#{event.public_id}']", text: "Waiting for approval"
+    assert_no_selector "[data-agent-event-id='#{event.public_id}'] .agent-turn-spinner"
+
+    approval.resolve!({ "decision" => "allow" }, resolver: @human)
+    assert_selector "[data-agent-event-id='#{event.public_id}']", text: "Codex Browser is working"
+    assert_selector "[data-agent-event-id='#{event.public_id}'] .agent-turn-spinner", visible: :all
 
     pool.finish
     worker.value
-    visit project_todo_path(@project, @todo)
-
-    assert_text "Codex finished the browser task"
     assert_no_selector "[data-agent-event-id='#{event.public_id}']"
     assert event.reload.delivered_at?
     assert_not @agent.reload.working?
   ensure
     pool&.finish if worker&.alive?
     worker&.join
+  end
+
+  test "approval replaces the chat spinner and its exact indexed option resumes the turn" do
+    message = @project.messages.create!(author: @human, body: "@codex-browser approve deployment")
+    event = message.agent_events.find_by!(recipient: @agent)
+    event.transition_to!("running")
+
+    visit chat_project_path(@project)
+    assert_selector "[data-agent-event-id='#{event.public_id}']", text: "Codex Browser is working"
+    assert_selector "[data-agent-event-id='#{event.public_id}'] .agent-turn-spinner", visible: :all
+
+    approval = AgentApproval.create!(
+      agent_event: event,
+      request_id: "browser-permission",
+      details: { "title" => "Run deployment", "tool" => "shell" },
+      options: [ { "optionId" => { "decision" => "allow" }, "name" => "Allow once" }, { "optionId" => nil, "name" => "Reject" } ]
+    )
+
+    assert_selector "#agent_approval_#{approval.id}", text: "Run deployment"
+    assert_no_selector "[data-agent-event-id='#{event.public_id}'] .agent-turn-spinner"
+    within "#agent_approval_#{approval.id}" do
+      click_button "Allow once"
+    end
+    assert_no_selector "#agent_approval_#{approval.id}"
+
+    assert_equal({ "decision" => "allow" }, approval.reload.selected_option_id)
+    assert_equal "running", event.reload.state
+    assert_selector "[data-agent-event-id='#{event.public_id}']", text: "Codex Browser is working"
+    assert_selector "[data-agent-event-id='#{event.public_id}'] .agent-turn-spinner", visible: :all
+
+    event.transition_to!("completed")
+    visit chat_project_path(@project)
+    assert_no_selector "[data-agent-event-id='#{event.public_id}']"
   end
 
   test "watchdog recovers stale work and the awakened agent completes it" do
