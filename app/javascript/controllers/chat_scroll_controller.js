@@ -5,7 +5,7 @@ export default class extends Controller {
 
   connect() {
     this.nearBottom = true
-    requestAnimationFrame(() => this.scrollToBottom())
+    this.scrollToBottom()
     this.observer = new MutationObserver(() => this.contentChanged())
     this.observer.observe(this.viewportTarget, { childList: true, subtree: true, characterData: true })
   }

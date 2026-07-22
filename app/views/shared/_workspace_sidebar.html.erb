@@ -48,6 +48,15 @@
     <% end %>
   </nav>
 
+  <% if current_user.admin? %>
+    <nav class="sidebar-system-navigation" aria-label="System navigation">
+      <div class="sidebar-label">System</div>
+      <%= link_to database_path, class: "sidebar-channel #{'sidebar-channel-active' if active == :database}", aria: (active == :database ? { current: "page" } : {}) do %>
+        <span>DB</span>
+      <% end %>
+    </nav>
+  <% end %>
+
   <div class="sidebar-footer">
     <div class="sidebar-avatar sidebar-avatar-human"><%= current_user.name.first.upcase %></div>
     <div class="min-w-0 flex-1">

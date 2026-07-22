@@ -16,6 +16,8 @@ Rails.application.routes.draw do
     post :stop, on: :member
     post :restart, on: :member
   end
+  get "database", to: "database#index", as: :database
+  get "database/:table", to: "database#show", as: :database_table
   resource :room_setting, only: :update
   namespace :api do
     resources :projects, only: %i[index show] do

@@ -1,0 +1,64 @@
+require "test_helper"
+
+class DatabaseBrowserTest < ActionDispatch::IntegrationTest
+  setup do
+    @human = User.create!(name: "DB Admin", email: "db-admin@example.com", password: "password1", admin: true)
+    @agent = User.create!(name: "DB Agent", kind: :agent, api_token: "sensitive-agent-token")
+    post session_path, params: { email: @human.email, password: "password1" }
+  end
+
+  test "administrators browse tables from the workspace sidebar" do
+    get database_path
+
+    assert_response :success
+    assert_select ".workspace-sidebar a[href='#{database_path}']", text: "DB"
+    assert_select "h1", text: "Database"
+    assert_select "a[href='#{database_table_path("users")}']", text: /users/
+    assert_select "a[href='#{database_table_path("messages")}']", text: /messages/
+  end
+
+  test "table page shows structure indexes and redacted data" do
+    get database_table_path("users")
+
+    assert_response :success
+    assert_select "h1", text: "users"
+    assert_select "[data-database-section='structure']", text: /api_token_digest/
+    assert_select "[data-database-section='indexes']", minimum: 1
+    assert_select "[data-database-section='data']", text: /DB Agent/
+    assert_select "[data-database-section='data']", text: /\[REDACTED\]/
+    assert_select "[data-database-section='data']", text: /sensitive-agent-token/, count: 0
+  end
+
+  test "runtime session identifiers are redacted" do
+    hosted_agent = HostedAgent.create!(user: @agent, runtime: "claude")
+    project = Project.create!(name: "Sensitive session origin")
+    hosted_agent.sessions.create!(origin: project, external_session_id: "sensitive-cloud-session")
+
+    get database_table_path("hosted_agent_sessions")
+
+    assert_response :success
+    assert_select "[data-database-section='data']", text: /\[REDACTED\]/
+    assert_select "[data-database-section='data']", text: /sensitive-cloud-session/, count: 0
+  end
+
+  test "unknown tables are rejected and signed-out visitors cannot browse" do
+    get database_table_path("users; DROP TABLE users")
+    assert_response :not_found
+
+    delete session_path
+    get database_path
+    assert_redirected_to new_session_path
+  end
+
+  test "non-admin humans cannot access the database browser or see its navigation" do
+    delete session_path
+    human = User.create!(name: "DB Reader", email: "db-reader@example.com", password: "password1")
+    post session_path, params: { email: human.email, password: "password1" }
+
+    get database_path
+    assert_redirected_to root_path
+
+    follow_redirect!
+    assert_select ".workspace-sidebar a[href='#{database_path}']", count: 0
+  end
+end
