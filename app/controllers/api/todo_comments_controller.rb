@@ -23,7 +23,9 @@ module Api
 
     def create_for_event
       event = @current_agent.agent_events.find_by!(public_id: params[:event_id])
-      raise ActiveRecord::RecordNotFound, "AgentEvent" unless event.event_type == "todo_assigned" && event.subject.todo == todo
+      unless event.event_type == "todo_assigned" && event.subject.todo == todo
+        raise ActiveRecord::RecordNotFound.new("AgentEvent not found", "AgentEvent")
+      end
 
       event.with_lock do
         return render json: serialize(event.publication_comment), status: :ok if event.publication_comment

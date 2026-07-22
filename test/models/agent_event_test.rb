@@ -28,6 +28,36 @@ class AgentEventTest < ActiveSupport::TestCase
     assert_empty message.agent_events
   end
 
+  test "notify agents creates one project event per agent without an explicit mention" do
+    project = Project.create!(name: "Alerts")
+    project.room_setting.update!(notify_agents: true)
+
+    message = Message.create!(author: @human, project: project, body: "Status update")
+
+    assert_equal [ @hermes, @build_agent ].sort_by(&:id), message.agent_events.map(&:recipient).sort_by(&:id)
+    assert message.agent_events.all? { |event| event.payload.dig(:context, :project, :id) == project.id }
+  end
+
+  test "agent-authored messages never create mention events" do
+    project = Project.create!(name: "Agent chat")
+    project.room_setting.update!(notify_agents: true)
+
+    message = Message.create!(author: @hermes, project: project, body: "@build-agent status")
+
+    assert_empty message.agent_events
+  end
+
+  test "event-correlated messages must match the recipient event type and project" do
+    project = Project.create!(name: "Responses")
+    other_project = Project.create!(name: "Other responses")
+    source = Message.create!(author: @human, project: project, body: "@hermes respond")
+    event = source.agent_events.sole
+
+    assert Message.new(author: @hermes, project: project, body: "Done", agent_event: event).valid?
+    assert_not Message.new(author: @build_agent, project: project, body: "Wrong agent", agent_event: event).valid?
+    assert_not Message.new(author: @hermes, project: other_project, body: "Wrong project", agent_event: event).valid?
+  end
+
   test "event uniqueness prevents duplicate recipient and message events" do
     message = Message.create!(author: @human, body: "@hermes")
     duplicate = AgentEvent.new(event_type: "mentioned", recipient: @hermes, subject: message)

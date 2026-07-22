@@ -32,7 +32,9 @@ module Api
 
       def create_for_event
         event = @current_agent.agent_events.find_by!(public_id: params[:event_id])
-        raise ActiveRecord::RecordNotFound, "AgentEvent" unless event.subject.respond_to?(:project) && event.subject.project == project
+        unless event.event_type == "mentioned" && event.subject_type == "Message" && event.subject.project == project
+          raise ActiveRecord::RecordNotFound.new("AgentEvent not found", "AgentEvent")
+        end
 
         event.with_lock do
           if event.publication_message

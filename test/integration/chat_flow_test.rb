@@ -28,4 +28,20 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     post messages_path, params: { message: { body: "" } }
     assert_response :unprocessable_entity
   end
+
+  test "human messages are created only in the selected project" do
+    user = User.create!(name: "Human", email: "scoped@example.com", password: "password1", kind: :human)
+    selected = Project.create!(name: "Selected")
+    other = Project.create!(name: "Other")
+    post session_path, params: { email: user.email, password: "password1" }
+
+    assert_difference -> { selected.messages.count }, 1 do
+      assert_no_difference -> { other.messages.count } do
+        post project_messages_path(selected), params: { message: { body: "Selected only" } }
+      end
+    end
+
+    assert_redirected_to chat_project_path(selected)
+    assert_equal selected, Message.last.project
+  end
 end

@@ -86,6 +86,41 @@ class ProjectApiTest < ActionDispatch::IntegrationTest
     assert_nil event.reload.publication_message
   end
 
+  test "todo assignment events cannot be published as chat messages" do
+    human = User.create!(name: "Lin", email: "lin-event@example.com", password: "password1")
+    todo = @project.todos.create!(creator: human, title: "Stay in todo")
+    assignment = todo.assignments.create!(agent: @agent, assigner: human)
+    event = assignment.agent_events.find_by!(recipient: @agent)
+
+    assert_no_difference "Message.count" do
+      post api_project_messages_path(@project), params: { body: "Wrong channel", event_id: event.public_id }, headers: @headers, as: :json
+    end
+
+    assert_response :not_found
+    assert_equal "AgentEvent not found.", response.parsed_body.fetch("error")
+    assert_nil event.reload.publication_message
+  end
+
+  test "invalid event-correlated message can be retried and missing events return JSON" do
+    human = User.create!(name: "Mina", email: "mina-event@example.com", password: "password1")
+    source = Message.create!(author: human, project: @project, body: "@Helper respond")
+    event = source.agent_events.find_by!(recipient: @agent)
+
+    post api_project_messages_path(@project), params: { body: "", event_id: event.public_id }, headers: @headers, as: :json
+    assert_response :unprocessable_entity
+    assert_includes response.parsed_body.fetch("errors"), "Body can't be blank"
+    assert_nil event.reload.publication_message
+
+    assert_difference "Message.count", 1 do
+      post api_project_messages_path(@project), params: { body: "Valid retry", event_id: event.public_id }, headers: @headers, as: :json
+    end
+    assert_response :created
+
+    post api_project_messages_path(@project), params: { body: "Missing", event_id: SecureRandom.uuid }, headers: @headers, as: :json
+    assert_response :not_found
+    assert_equal "AgentEvent not found.", response.parsed_body.fetch("error")
+  end
+
   test "unscoped message and streaming API routes do not exist" do
     get "/api/messages", headers: @headers, as: :json
     assert_response :not_found
@@ -226,5 +261,21 @@ class ProjectApiTest < ActionDispatch::IntegrationTest
       assert_response :success
     end
     assert_equal event, TodoComment.last.agent_event
+  end
+
+  test "mention events and assignments for another todo cannot publish todo comments" do
+    human = User.create!(name: "Nora", email: "nora-context@example.com", password: "password1")
+    todo = @project.todos.create!(creator: human, title: "Expected todo")
+    other_todo = @project.todos.create!(creator: human, title: "Other todo")
+    assignment_event = other_todo.assignments.create!(agent: @agent, assigner: human).agent_events.sole
+    mention_event = Message.create!(author: human, project: @project, body: "@Helper hello").agent_events.sole
+
+    [ assignment_event, mention_event ].each do |event|
+      assert_no_difference "TodoComment.count" do
+        post api_project_todo_comments_path(@project, todo), params: { body: "Wrong context", event_id: event.public_id }, headers: @headers, as: :json
+      end
+      assert_response :not_found
+      assert_equal "AgentEvent not found.", response.parsed_body.fetch("error")
+    end
   end
 end

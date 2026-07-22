@@ -7,10 +7,20 @@ class Message < ApplicationRecord
   before_validation :assign_default_project, on: :create
   validates :body, presence: true
   validates :body, length: { maximum: 4_000 }
+  validate :agent_event_matches_message
   after_create :create_mention_events
   after_create_commit :broadcast_append
 
   private
+    def agent_event_matches_message
+      return unless agent_event
+
+      source = agent_event.subject if agent_event.event_type == "mentioned" && agent_event.subject_type == "Message"
+      return if source&.project == project && agent_event.recipient == author
+
+      errors.add(:agent_event, "must be the author's mention event for this project")
+    end
+
     def assign_default_project
       self.project ||= Project.default
     end
