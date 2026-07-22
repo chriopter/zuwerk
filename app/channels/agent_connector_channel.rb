@@ -19,7 +19,8 @@ class AgentConnectorChannel < ApplicationCable::Channel
       current_user.heartbeat_connector!(@connection_id)
       current_user.update_columns(heartbeat_at: Time.current, updated_at: Time.current) if current_user.heartbeat_at.nil? || current_user.heartbeat_at < 15.seconds.ago
     end
-  rescue AgentConnectors::Transport::Error
+  rescue AgentConnectors::Transport::Error => error
+    Rails.logger.warn("Agent connector #{current_user&.id} closed: #{error.class}: #{error.message}")
     stop_all_streams
     disconnect_connector
   end
