@@ -17,7 +17,7 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
     assert_select "h1", "Agents"
     assert_select ".workspace-sidebar"
     assert_select "#agents-heading[href='#{agents_path}']", text: "Agents"
-    assert_select "[data-sidebar-agent-id='#{hosted_identity.id}'][href='#{agent_path(hosted_identity)}']", text: /Running/
+    assert_select "[data-sidebar-agent-id='#{hosted_identity.id}'][href='#{agent_path(hosted_identity)}'][data-agent-connected='false']", text: /Runtime running.*Not connected/m
     assert_select ".sidebar-channel-active", count: 0
     assert_select "[data-agent-id='#{@agent.id}']", text: /Hermes/
     assert_select "[data-agent-origin='external']", text: /Connected via CLI/

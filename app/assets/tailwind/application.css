@@ -50,6 +50,7 @@
   .agent-dot { @apply absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white; }
   .agent-dot-working { @apply bg-[#e85f42]; }
   .agent-dot-idle, .agent-dot-online { @apply bg-emerald-500; }
+  .agent-dot-runtime { @apply bg-amber-400; }
   .agent-dot-offline { @apply bg-stone-300; }
   .sidebar-invite { @apply mt-2 flex h-10 items-center gap-2 rounded-[10px] px-2 text-sm text-stone-400 transition hover:bg-stone-100 hover:text-stone-900; }
   .sidebar-footer { @apply mb-5 mt-auto flex items-center gap-3 border-t border-stone-200 px-1 pt-5; }
