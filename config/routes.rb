@@ -2,17 +2,19 @@ Rails.application.routes.draw do
   root "messages#index"
   resource :onboarding, only: %i[new create]
   resource :session, only: %i[new create destroy]
-  resources :messages, only: :create do
-    resources :reactions, only: :create
-  end
+  resources :messages, only: :create
   resources :projects, only: :create do
     get :chat, on: :member, to: "messages#index"
-    resources :messages, only: :create
+    resources :messages, only: :create do
+      resources :reactions, only: :create
+    end
     resource :room_setting, only: :update
     resources :todos, except: :destroy do
       patch :reorder, on: :member
       resources :assignments, controller: "todo_assignments", only: %i[create destroy]
-      resources :comments, controller: "todo_comments", only: %i[create edit update destroy]
+      resources :comments, controller: "todo_comments", only: %i[create edit update destroy] do
+        resources :reactions, only: :create
+      end
     end
   end
   resources :agent_invitations, only: %i[new create show]

@@ -16,13 +16,6 @@
       <%= message.body %>
     </div>
 
-    <div class="message-actions">
-      <% Reaction::EMOJIS.each do |emoji| %>
-        <% matching = message.reactions.select { |reaction| reaction.emoji == emoji } %>
-        <%= button_to message_reactions_path(message), params: { emoji: emoji }, class: "reaction-chip #{'reaction-chip-active' if viewer && matching.any? { |reaction| reaction.user_id == viewer.id }}", title: "React with #{emoji}", aria: { label: "React with #{emoji}" } do %>
-          <span><%= emoji %></span><% if matching.any? %><span class="text-[11px] font-semibold"><%= matching.count %></span><% end %>
-        <% end %>
-      <% end %>
-    </div>
+    <%= render "reactions/reactions", reactable: message, current_user: viewer, path: project_message_reactions_path(message.project, message) %>
   </div>
 </article>

@@ -2,7 +2,7 @@ class Message < ApplicationRecord
   belongs_to :project
   belongs_to :author, class_name: "User"
   belongs_to :agent_event, optional: true
-  has_many :reactions, dependent: :destroy
+  has_many :reactions, as: :reactable, dependent: :destroy
   has_many :agent_events, as: :subject, dependent: :destroy
   before_validation :assign_default_project, on: :create
   validates :body, presence: true

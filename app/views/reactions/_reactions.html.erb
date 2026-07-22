@@ -1,0 +1,12 @@
+<% reactions = reactable.reactions.to_a %>
+<div class="reaction-actions" aria-label="Reactions">
+  <% Reaction::EMOJIS.each do |emoji| %>
+    <% matching = reactions.select { |reaction| reaction.emoji == emoji } %>
+    <% reacted = matching.any? { |reaction| reaction.author_id == current_user&.id } %>
+    <% names = matching.map { |reaction| reaction.author.name }.join(", ") %>
+    <%= button_to path, params: { emoji: emoji }, class: "reaction-chip #{'reaction-chip-active' if reacted}", title: names.presence || "React with #{emoji}", aria: { label: "React with #{emoji}" } do %>
+      <span><%= emoji %></span>
+      <% if matching.any? %><span class="text-[11px] font-semibold"><%= matching.count %></span><% end %>
+    <% end %>
+  <% end %>
+</div>

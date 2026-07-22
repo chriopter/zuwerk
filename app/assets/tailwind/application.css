@@ -89,7 +89,7 @@
 
   .message-copy { @apply mt-1 whitespace-pre-wrap break-words text-[15px] leading-6 text-stone-700; }
   .message-copy-agent { @apply text-stone-700; }
-  .message-actions { @apply mt-2 flex min-h-6 flex-wrap gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100; }
+  .reaction-actions { @apply mt-2 flex min-h-6 flex-wrap gap-1; }
   .reaction-chip { @apply inline-flex h-6 min-w-7 items-center justify-center gap-1 rounded-full border border-stone-200 bg-white px-1.5 text-xs transition hover:border-stone-300 hover:bg-stone-100; }
   .reaction-chip-active { @apply border-[#efaa9b] bg-[#fff3ef]; }
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_22_132000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_22_160000) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
@@ -125,14 +125,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_132000) do
   end
 
   create_table "reactions", force: :cascade do |t|
+    t.integer "author_id", null: false
     t.datetime "created_at", null: false
     t.string "emoji", null: false
-    t.integer "message_id", null: false
+    t.integer "reactable_id", null: false
+    t.string "reactable_type", null: false
     t.datetime "updated_at", null: false
-    t.integer "user_id", null: false
-    t.index ["message_id"], name: "index_reactions_on_message_id"
-    t.index ["user_id", "message_id", "emoji"], name: "index_reactions_on_user_id_and_message_id_and_emoji", unique: true
-    t.index ["user_id"], name: "index_reactions_on_user_id"
+    t.index ["author_id", "reactable_type", "reactable_id", "emoji"], name: "index_reactions_on_author_reactable_emoji", unique: true
+    t.index ["author_id"], name: "index_reactions_on_author_id"
+    t.index ["reactable_type", "reactable_id"], name: "index_reactions_on_reactable_type_and_reactable_id"
   end
 
   create_table "room_settings", force: :cascade do |t|
@@ -206,8 +207,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_132000) do
   add_foreign_key "messages", "agent_events"
   add_foreign_key "messages", "projects"
   add_foreign_key "messages", "users", column: "author_id"
-  add_foreign_key "reactions", "messages"
-  add_foreign_key "reactions", "users"
+  add_foreign_key "reactions", "users", column: "author_id"
   add_foreign_key "room_settings", "projects"
   add_foreign_key "todo_assignments", "todos"
   add_foreign_key "todo_assignments", "users", column: "agent_id"

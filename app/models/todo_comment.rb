@@ -2,6 +2,7 @@ class TodoComment < ApplicationRecord
   belongs_to :todo, touch: true
   belongs_to :author, class_name: "User"
   belongs_to :agent_event, optional: true
+  has_many :reactions, as: :reactable, dependent: :destroy
   has_rich_text :body
 
   validates :body, presence: true

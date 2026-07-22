@@ -4,7 +4,7 @@ class MessagesController < ApplicationController
   before_action :load_project
 
   def index
-    @messages = @project.messages.includes(:author, reactions: :user).order(:created_at).last(200)
+    @messages = @project.messages.includes(:author, reactions: :author).order(:created_at).last(200)
     @message = Message.new(project: @project)
     load_room
   end
@@ -14,7 +14,7 @@ class MessagesController < ApplicationController
     if @message.save
       redirect_to chat_path, status: :see_other
     else
-      @messages = @project.messages.includes(:author, reactions: :user).order(:created_at).last(200)
+      @messages = @project.messages.includes(:author, reactions: :author).order(:created_at).last(200)
       load_room
       render :index, status: :unprocessable_entity
     end

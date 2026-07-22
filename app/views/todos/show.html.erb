@@ -21,7 +21,7 @@
         <section class="min-w-0" aria-labelledby="comments-heading">
           <h2 id="comments-heading" class="text-sm font-semibold text-stone-900">Comments <span class="font-normal text-stone-400"><%= @todo.comments.count %></span></h2>
           <div class="mt-2">
-            <%= render partial: "todo_comments/comment", collection: @todo.comments.includes(:author, :rich_text_body).order(:created_at) %>
+            <%= render partial: "todo_comments/comment", collection: @todo.comments.includes(:author, :rich_text_body, reactions: :author).order(:created_at) %>
           </div>
           <%= form_with model: @comment, url: project_todo_comments_path(@project, @todo), class: "mt-6 border-t border-stone-200 pt-6" do |form| %>
             <% if @comment.errors.any? %><p class="mb-2 text-sm text-red-600"><%= @comment.errors.full_messages.to_sentence %></p><% end %>

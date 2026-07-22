@@ -10,4 +10,5 @@
     <% end %>
   </header>
   <div class="lexxy-content text-sm text-stone-700"><%= comment.body %></div>
+  <%= render "reactions/reactions", reactable: comment, current_user: current_user, path: project_todo_comment_reactions_path(@project, @todo, comment) %>
 </article>
