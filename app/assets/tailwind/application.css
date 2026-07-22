@@ -269,24 +269,27 @@
   .kanban-empty { @apply flex min-h-24 items-center justify-center rounded-xl border border-dashed border-stone-300 text-xs text-stone-400; }
 
   .todo-detail-page, .todo-form-page { @apply mx-auto max-w-6xl pb-12; }
-  .todo-detail-shell { @apply overflow-hidden rounded-2xl border border-stone-200 bg-white; }
-  .todo-detail-header { @apply grid gap-5 border-b border-stone-200 p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:p-8; }
+  .todo-detail-shell { @apply bg-transparent; }
+  .todo-detail-header { @apply grid gap-5 border-b border-stone-200 px-0 pb-8 pt-2 sm:grid-cols-[minmax(0,1fr)_auto]; }
   .todo-detail-eyebrow { @apply mb-3 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[.12em] text-stone-400; }
   .todo-detail-heading h1 { @apply max-w-4xl font-serif text-3xl font-normal leading-tight tracking-tight text-stone-950 sm:text-4xl; }
   .todo-detail-actions { @apply flex items-start gap-2; }
+  .icon-action { @apply inline-grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-stone-200 bg-transparent text-stone-600 transition hover:border-stone-300 hover:bg-white hover:text-stone-950; }
+  .icon-action svg { @apply h-[18px] w-[18px]; }
+  .icon-action-primary { @apply border-[#27332d] bg-[#27332d] text-white hover:border-stone-700 hover:bg-stone-700 hover:text-white; }
   .todo-description { @apply col-span-full max-w-4xl border-t border-stone-100 pt-5 text-sm leading-6 text-stone-600; }
   .todo-status { @apply rounded-full px-2 py-0.5 text-[9px] tracking-normal; }
   .todo-status-open { @apply bg-stone-100 text-stone-600; }
   .todo-status-in-progress { @apply bg-orange-50 text-[#c84b32]; }
   .todo-status-completed { @apply bg-emerald-50 text-emerald-700; }
-  .todo-detail-grid { @apply grid lg:grid-cols-[minmax(0,1fr)_280px]; }
-  .todo-conversation { @apply min-w-0 p-5 sm:p-8; }
+  .todo-detail-grid { @apply grid gap-10 lg:grid-cols-[minmax(0,1fr)_260px]; }
+  .todo-conversation { @apply min-w-0 py-8; }
   .todo-section-heading { @apply mb-4 flex items-center gap-2; }
   .todo-section-heading h2 { @apply text-sm font-semibold text-stone-900; }
   .todo-section-heading span { @apply rounded-full bg-stone-100 px-2 py-0.5 text-[10px] text-stone-500; }
   .todo-comments { @apply divide-y divide-stone-100; }
   .todo-comment-form { @apply mt-6 border-t border-stone-200 pt-6; }
-  .todo-properties { @apply border-t border-stone-200 bg-[#fbfbf8] p-5 lg:border-l lg:border-t-0 lg:p-6; }
+  .todo-properties { @apply border-t border-stone-200 py-8 lg:border-t-0; }
   .todo-properties > section { @apply border-b border-stone-200 py-5 first:pt-0 last:border-0 last:pb-0; }
   .todo-properties h2 { @apply mb-3 text-[10px] font-semibold uppercase tracking-[.13em] text-stone-400; }
   .todo-status-options { @apply grid grid-cols-3 gap-1 rounded-lg bg-stone-200/70 p-1 lg:grid-cols-1; }
@@ -298,6 +301,9 @@
   .todo-agent-list button { @apply text-stone-400 hover:text-red-600; }
   .todo-agent-avatar { @apply grid h-7 w-7 place-items-center rounded-full bg-[#27332d] text-[9px] font-semibold text-white; }
   .todo-agent-form { @apply mt-3 flex gap-2; }
+  .comment-actions { @apply ml-auto flex items-center gap-1; }
+  .comment-icon-action { @apply grid h-7 w-7 place-items-center rounded-md text-stone-400 transition hover:bg-stone-100 hover:text-stone-800; }
+  .comment-icon-action svg { @apply h-3.5 w-3.5; }
   .todo-context-list { @apply space-y-3 text-xs; }
   .todo-context-list div { @apply grid grid-cols-[82px_minmax(0,1fr)] gap-2; }
   .todo-context-list dt { @apply text-stone-400; }
