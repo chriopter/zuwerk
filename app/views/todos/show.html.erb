@@ -1,7 +1,6 @@
 <% content_for :title, "#{@todo.title} · Todos · Zuwerk" %>
 <%= turbo_stream_from "todo_#{@todo.id}_status" %>
 <section class="todo-detail-page">
-  <%= link_to "← Zurück zum Board", project_todos_path(@project), class: "workspace-back-link" %>
   <div class="todo-detail-shell">
     <header class="todo-detail-header">
       <div class="todo-detail-heading">
