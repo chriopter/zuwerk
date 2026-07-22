@@ -1,12 +1,15 @@
 class Message < ApplicationRecord
+  MAX_BODY_LENGTH = 4_000
+
   belongs_to :project
   belongs_to :author, class_name: "User"
   belongs_to :agent_event, optional: true
   has_many :reactions, as: :reactable, dependent: :destroy
   has_many :agent_events, as: :subject, dependent: :destroy
   before_validation :assign_default_project, on: :create
+
   validates :body, presence: true
-  validates :body, length: { maximum: 4_000 }
+  validates :body, length: { maximum: MAX_BODY_LENGTH }
   validate :agent_event_matches_message
   after_create :create_mention_events
   after_create_commit :broadcast_append

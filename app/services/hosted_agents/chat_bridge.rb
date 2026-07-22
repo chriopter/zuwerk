@@ -4,6 +4,8 @@ module HostedAgents
   class ChatBridge
     class DeliveryError < StandardError; end
 
+    MAX_AUTOMATIC_RESPONSE_BYTES = 1.megabyte
+
     def initialize(agent_event, pool: AcpPool, connector: false)
       @event = agent_event
       @pool = pool
@@ -31,12 +33,18 @@ module HostedAgents
 
         @event.acknowledge!
         set_working(true)
+        chunks = +""
+        capture = lambda do |chunk|
+          remaining = MAX_AUTOMATIC_RESPONSE_BYTES - chunks.bytesize
+          chunks << chunk.to_s.byteslice(0, remaining).to_s.scrub if remaining.positive?
+        end
         if @connector
-          @pool.prompt(@event.recipient, origin, prompt_text, event: @event) { |_chunk| }
+          @pool.prompt(@event.recipient, origin, prompt_text, event: @event, &capture)
         else
-          @pool.prompt(@hosted_agent, origin, prompt_text) { |_chunk| }
+          @pool.prompt(@hosted_agent, origin, prompt_text, &capture)
         end
 
+        publish_automatic_response(chunks)
         validate_publication!
 
         @event.update!(delivered_at: Time.current, last_error: nil)
@@ -76,6 +84,23 @@ module HostedAgents
 
       def todo_event?
         @event.event_type == "todo_assigned"
+      end
+
+      def publish_automatic_response(chunks)
+        @event.reload
+        return if @event.publication_message || @event.publication_comment
+
+        body = chunks.strip
+        return if body.blank?
+
+        if todo_event?
+          todo.comments.create!(author: @event.recipient, body: body, agent_event: @event)
+        else
+          body = body.truncate(Message::MAX_BODY_LENGTH, omission: "")
+          @event.recipient.messages.create!(project: project, body: body, agent_event: @event)
+        end
+      rescue ActiveRecord::RecordNotUnique
+        @event.reload
       end
 
       def validate_publication!
@@ -122,7 +147,8 @@ module HostedAgents
 
         <<~PROMPT
           You are #{@event.recipient.name}, a hosted agent participating in Zuwerk.
-          ACP output is invisible to Zuwerk users. ACP only wakes you; do not answer through ACP output.
+          ACP text output is automatically saved as the single correlated project response.
+          Do not publish the same final response through the Zuwerk CLI/API.
 
           Event ID: #{@event.public_id}
           Project ID: #{project.id}
@@ -132,10 +158,7 @@ module HostedAgents
           Read the conversation with:
           zuwerk messages list --project #{project.id}
 
-          Publish your response exclusively through the Zuwerk CLI/API with:
-          zuwerk messages create --project #{project.id} --event #{@event.public_id} --body "YOUR RESPONSE"
-
-          You must create a project message for this turn. There is no automatic ACP response fallback.
+          Use the Zuwerk CLI/API only for additional structured project actions. Return the final user-facing answer through ACP.
         PROMPT
       end
 
@@ -149,7 +172,8 @@ module HostedAgents
 
         <<~PROMPT
           You are #{@event.recipient.name}, a hosted agent assigned to a specific Zuwerk todo.
-          ACP output is invisible to Zuwerk users. ACP only wakes you; do not answer through ACP output.
+          ACP text output is automatically saved as the single correlated todo comment.
+          Do not publish the same final comment through the Zuwerk CLI/API.
 
           Event ID: #{@event.public_id}
           Project ID: #{project.id}
@@ -172,12 +196,9 @@ module HostedAgents
           You may update this todo with:
           zuwerk todos update #{todo.id} --project #{project.id} [--title ...] [--description ...] [--status open|completed]
 
-          When this todo changes repository files, run the relevant tests and commit the finished changes before reporting the outcome. Never commit credentials or unrelated work. Include the commit hash in your todo comment. Do not push unless the todo explicitly requires it.
+          When this todo changes repository files, run the relevant tests and commit the finished changes before reporting the outcome. Never commit credentials or unrelated work. Include the commit hash in the final ACP response. Do not push unless the todo explicitly requires it.
 
-          Publish the outcome exclusively as an event-correlated todo comment:
-          zuwerk todos comments create --project #{project.id} --todo #{todo.id} --event #{@event.public_id} --body "YOUR RESPONSE"
-
-          You must create that todo comment for this turn. There is no automatic ACP response fallback.
+          Return the final user-facing outcome through ACP; Zuwerk creates the correlated todo comment automatically.
         PROMPT
       end
   end

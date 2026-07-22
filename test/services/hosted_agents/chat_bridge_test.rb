@@ -18,6 +18,17 @@ class HostedAgents::ChatBridgeTest < ActiveSupport::TestCase
     end
   end
 
+  class ChunkPool
+    def initialize(*chunks)
+      @chunks = chunks
+    end
+
+    def prompt(*)
+      @chunks.each { |chunk| yield chunk }
+      { "stopReason" => "end_turn" }
+    end
+  end
+
   class SilentPool
     def prompt(*) = nil
   end
@@ -61,7 +72,58 @@ class HostedAgents::ChatBridgeTest < ActiveSupport::TestCase
     assert_includes pool.prompt_text, project.name
     assert_includes pool.prompt_text, source.body
     assert_includes pool.prompt_text, "zuwerk messages list --project #{project.id}"
-    assert_includes pool.prompt_text, "zuwerk messages create --project #{project.id} --event #{event.public_id} --body"
+    assert_includes pool.prompt_text, "ACP text output is automatically saved"
+    assert_includes pool.prompt_text, "Do not publish the same final response"
+  end
+
+  test "automatically publishes one correlated ACP response in project chat" do
+    human = User.create!(name: "ACP Human", email: "acp-human@example.com", password: "password1")
+    agent = User.create!(name: "ACP Agent", kind: :agent)
+    HostedAgent.create!(user: agent, runtime: "claude", state: "running")
+    project = Project.create!(name: "Automatic ACP Project")
+    source = Message.create!(author: human, project: project, body: "@ACP-Agent answer")
+    event = source.agent_events.find_by!(recipient: agent)
+
+    assert_difference -> { agent.messages.count }, 1 do
+      HostedAgents::ChatBridge.new(event, pool: ChunkPool.new("Automatic ", "answer")).deliver
+    end
+
+    assert_equal "Automatic answer", event.reload.publication_message.body
+    assert_equal "completed", event.state
+  end
+
+  test "truncates a long multibyte ACP chat response at the message character limit" do
+    human = User.create!(name: "Long ACP Human", email: "long-acp-human@example.com", password: "password1")
+    agent = User.create!(name: "Long ACP Agent", kind: :agent)
+    HostedAgent.create!(user: agent, runtime: "claude", state: "running")
+    project = Project.create!(name: "Long Automatic ACP Project")
+    source = Message.create!(author: human, project: project, body: "@Long-ACP-Agent answer")
+    event = source.agent_events.find_by!(recipient: agent)
+
+    HostedAgents::ChatBridge.new(event, pool: ChunkPool.new("🙂" * 4_001)).deliver
+
+    publication = event.reload.publication_message
+    assert_equal 4_000, publication.body.length
+    assert_equal "🙂" * 4_000, publication.body
+    assert publication.body.valid_encoding?
+    assert_equal "completed", event.state
+  end
+
+  test "automatically publishes one correlated ACP response as a todo comment" do
+    human = User.create!(name: "ACP Todo Human", email: "acp-todo-human@example.com", password: "password1")
+    agent = User.create!(name: "ACP Todo Agent", kind: :agent)
+    HostedAgent.create!(user: agent, runtime: "codex", state: "running")
+    project = Project.create!(name: "Automatic ACP Todo Project")
+    todo = project.todos.create!(creator: human, title: "Write result")
+    assignment = todo.assignments.create!(agent: agent, assigner: human)
+    event = assignment.agent_events.find_by!(recipient: agent)
+
+    assert_difference -> { todo.comments.count }, 1 do
+      HostedAgents::ChatBridge.new(event, pool: ChunkPool.new("Todo result")).deliver
+    end
+
+    assert_equal "Todo result", event.reload.publication_comment.body.to_plain_text
+    assert_equal "completed", event.state
   end
 
   test "records an error without creating a placeholder when no project message is published" do
@@ -107,9 +169,9 @@ class HostedAgents::ChatBridgeTest < ActiveSupport::TestCase
     assert_includes pool.prompt_text, "Release"
     assert_includes pool.prompt_text, "Remember the smoke test"
     assert_includes pool.prompt_text, "zuwerk todos show #{todo.id} --project #{project.id}"
-    assert_includes pool.prompt_text, "zuwerk todos comments create --project #{project.id} --todo #{todo.id} --event #{event.public_id}"
+    assert_includes pool.prompt_text, "Return the final user-facing outcome through ACP"
     assert_includes pool.prompt_text, "commit the finished changes before reporting the outcome"
-    assert_includes pool.prompt_text, "Include the commit hash in your todo comment"
+    assert_includes pool.prompt_text, "Include the commit hash in the final ACP response"
   end
 
   test "acknowledgement is idempotent when delivery is retried" do
