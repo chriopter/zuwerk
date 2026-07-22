@@ -14,8 +14,8 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select ".workspace-mark", count: 0
     assert_select ".workspace-sidebar .sidebar-project-tree" do
-      assert_select "details.sidebar-project summary", text: /Zuwerk/
-      assert_select "details.sidebar-project summary", text: /Client launch/
+      assert_select ".sidebar-project-heading", text: /Zuwerk/
+      assert_select ".sidebar-project-heading", text: /Client launch/
       assert_select "a[href='#{chat_project_path(other)}']", text: /Chat/
       assert_select ".sidebar-project-create form[action='#{projects_path}']"
     end

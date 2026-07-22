@@ -18,12 +18,11 @@
   <div class="sidebar-project-list">
     <% projects.each do |item| %>
       <% selected_project = item == project %>
-      <details class="sidebar-project" <%= "open" if selected_project %>>
-        <summary>
+      <section class="sidebar-project">
+        <div class="sidebar-project-heading">
           <span class="sidebar-project-mark" aria-hidden="true"><%= item.name.first.upcase %></span>
           <span class="sidebar-project-name"><%= item.name %></span>
-          <span class="sidebar-project-chevron" aria-hidden="true">›</span>
-        </summary>
+        </div>
         <div class="sidebar-project-objects">
           <span class="sidebar-object sidebar-object-disabled" aria-disabled="true">
             <span class="sidebar-object-icon" aria-hidden="true">#</span><span>Threads</span><span class="sr-only"> — not yet available</span>
@@ -38,7 +37,7 @@
             <span class="sidebar-object-icon" aria-hidden="true">◇</span><span>Files &amp; Memory</span><span class="sr-only"> — not yet available</span>
           </span>
         </div>
-      </details>
+      </section>
     <% end %>
   </div>
 </nav>
