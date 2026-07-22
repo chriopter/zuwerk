@@ -67,7 +67,7 @@
       </div>
       <% if @cloud_sessions.size > 5 %>
         <details class="agent-session-archive">
-          <summary>Show <%= @cloud_sessions.size - 5 %> older sessions <i aria-hidden="true">⌄</i></summary>
+          <summary><span class="agent-session-archive-open">Show <%= @cloud_sessions.size - 5 %> older sessions</span><span class="agent-session-archive-close">Hide older sessions</span><i aria-hidden="true">⌄</i></summary>
           <div class="agent-session-list">
             <%= render partial: "agents/cloud_session", collection: @cloud_sessions.drop(5), as: :session, locals: { hosted_agent: @hosted_agent } %>
           </div>

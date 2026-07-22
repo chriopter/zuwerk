@@ -209,19 +209,23 @@
   .agent-section-heading > small { @apply shrink-0 text-[10px] font-semibold uppercase tracking-[.1em] text-stone-400; }
   .agent-sessions { @apply mt-6 rounded-2xl border border-stone-200 bg-white p-5 sm:p-6; }
   .agent-session-list { @apply divide-y divide-stone-100 border-t border-stone-100; }
-  .agent-session-row { @apply grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-2.5 md:grid-cols-[minmax(0,1.25fr)_auto_auto_minmax(160px,.8fr)]; }
+  .agent-session-row { @apply grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 overflow-hidden py-2.5 md:grid-cols-[minmax(0,1.25fr)_auto_auto_minmax(160px,.8fr)]; }
   .agent-session-origin { @apply flex min-w-0 items-center gap-2; }
   .agent-session-origin > a, .agent-session-origin > strong { @apply min-w-0 truncate rounded-sm text-sm font-semibold text-stone-900 hover:text-[#d9563b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#27332d]; }
   .agent-session-origin > span { @apply hidden shrink-0 text-[11px] text-stone-400 lg:inline; }
   .agent-session-row > time { @apply hidden whitespace-nowrap text-[11px] text-stone-400 md:block; }
-  .agent-session-badge { @apply inline-flex rounded-full bg-[#eff0eb] px-2 py-1 text-[10px] font-semibold text-stone-700; }
+  .agent-session-badge { @apply inline-flex shrink-0 whitespace-nowrap rounded-full bg-[#eff0eb] px-2 py-1 text-[10px] font-semibold text-stone-700; }
   .agent-session-row code { @apply hidden min-w-0 truncate rounded-lg bg-stone-50 px-2.5 py-1.5 text-[11px] text-stone-500 md:block; }
   .agent-sessions-empty { @apply border-t border-stone-100 py-8 text-center text-sm text-stone-400; }
   .agent-session-archive { @apply border-t border-stone-100; }
   .agent-session-archive > summary { @apply flex min-h-11 cursor-pointer list-none items-center justify-center gap-2 py-3 text-xs font-semibold text-stone-500 transition hover:text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#27332d]; }
   .agent-session-archive > summary::-webkit-details-marker { display: none; }
+  .agent-session-archive-close { @apply hidden; }
+  .agent-session-archive[open] .agent-session-archive-open { @apply hidden; }
+  .agent-session-archive[open] .agent-session-archive-close { @apply inline; }
   .agent-session-archive > summary i { @apply not-italic transition-transform; }
   .agent-session-archive[open] > summary i { @apply rotate-180; }
+  .agent-session-archive > .agent-session-list { @apply border-t-0; }
   .agent-terminal-disclosure { @apply mt-6 overflow-hidden rounded-2xl border border-stone-200 bg-white; }
   .agent-terminal-disclosure > summary { @apply flex min-h-11 cursor-pointer list-none items-center gap-3 px-5 py-4 transition hover:bg-stone-50 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#27332d] sm:px-6; }
   .agent-terminal-disclosure > summary::-webkit-details-marker { display: none; }
