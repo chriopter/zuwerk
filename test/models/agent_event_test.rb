@@ -45,7 +45,7 @@ class AgentEventTest < ActiveSupport::TestCase
     assert_equal "mentioned", payload[:type]
     assert_equal({ id: @hermes.id, handle: "hermes" }, payload[:recipient])
     assert_equal({ type: "message", id: message.id }, payload[:subject])
-    assert_equal({ conversation: "shared" }, payload[:context])
+    assert_equal({ project: { id: message.project.id, name: message.project.name }, conversation: "chat" }, payload[:context])
     assert_equal event.created_at.iso8601, payload[:occurred_at]
     assert_not_includes payload.to_json, message.body
   end

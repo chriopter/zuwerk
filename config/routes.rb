@@ -5,7 +5,18 @@ Rails.application.routes.draw do
   resources :messages, only: :create do
     resources :reactions, only: :create
   end
+  resources :projects, only: :create do
+    get :chat, on: :member, to: "messages#index"
+    resources :messages, only: :create
+    resource :room_setting, only: :update
+  end
   resources :agent_invitations, only: %i[new create show]
+  resources :agents, only: %i[index new create show] do
+    resource :terminal, only: %i[show update], controller: "agent_terminals"
+    post :start, on: :member
+    post :stop, on: :member
+    post :restart, on: :member
+  end
   resource :room_setting, only: :update
   namespace :api do
     resources :messages, only: %i[index create]

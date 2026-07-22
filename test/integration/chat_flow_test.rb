@@ -11,7 +11,7 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     assert User.last.admin?
 
     post messages_path, params: { message: { body: "Hello team" } }
-    assert_redirected_to root_path
+    assert_redirected_to chat_project_path(Project.default)
     assert_equal "Hello team", Message.last.body
 
     delete session_path

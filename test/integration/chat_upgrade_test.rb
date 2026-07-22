@@ -7,10 +7,81 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
     post session_path, params: { email: @human.email, password: "password1" }
   end
 
+  test "project switcher lists projects and creates a new project" do
+    other = Project.create!(name: "Client launch")
+
+    get root_path
+    assert_response :success
+    assert_select ".workspace-mark", count: 0
+    assert_select ".workspace-sidebar > details.project-switcher:first-child" do
+      assert_select "summary", text: /Zuwerk/
+      assert_select "a[href='#{chat_project_path(other)}']", text: "Client launch"
+      assert_select "form[action='#{projects_path}']"
+    end
+
+    assert_difference "Project.count", 1 do
+      post projects_path, params: { project: { name: "Internal tools" } }
+    end
+    project = Project.find_by!(name: "Internal tools")
+    assert_redirected_to chat_project_path(project)
+    assert_equal project, project.room_setting.project
+  end
+
+  test "each project has one isolated chat and notify setting" do
+    first = Project.default
+    second = Project.create!(name: "Second project")
+    first.messages.create!(author: @human, body: "First-only message")
+    second.messages.create!(author: @human, body: "Second-only message")
+
+    get chat_project_path(first)
+    assert_response :success
+    assert_select "#messages", text: /First-only message/
+    assert_select "#messages", text: /Second-only message/, count: 0
+
+    get chat_project_path(second)
+    assert_response :success
+    assert_select "a.sidebar-channel[href='#{chat_project_path(second)}']", text: /Shared chat/
+    assert_select "#messages", text: /Second-only message/
+    assert_select "#messages", text: /First-only message/, count: 0
+
+    post project_messages_path(second), params: { message: { body: "Created in second" } }
+    assert_redirected_to chat_project_path(second)
+    assert_equal second, Message.order(:id).last.project
+
+    patch project_room_setting_path(second), params: { room_setting: { notify_agents: "1" } }
+    assert_redirected_to chat_project_path(second)
+    assert second.room_setting.reload.notify_agents?
+    assert_not first.room_setting.reload.notify_agents?
+  end
+
+  test "renders the focused shared chat shell without project mockup tools" do
+    get root_path
+
+    assert_response :success
+    assert_select ".workspace-sidebar"
+    assert_select ".sidebar-channel-active", text: /Shared chat/
+    assert_select ".chat-header-bar h1", text: "Shared chat"
+    assert_select "form.notify-control"
+    assert_select "a", text: /Invite agent/
+    assert_select "#message-viewport #messages"
+    assert_select "textarea[placeholder='Write a message…']"
+    assert_select "body", text: /Tasks|Decisions|Schedule|Project overview/, count: 0
+  end
+
+  test "room settings require a signed-in human" do
+    project = Project.default
+    delete session_path
+
+    patch project_room_setting_path(project), params: { room_setting: { notify_agents: "1" } }
+
+    assert_redirected_to new_session_path
+    assert_not project.room_setting.reload.notify_agents?
+  end
+
   test "authenticated humans toggle the shared room notify agents setting" do
     assert_not RoomSetting.current.notify_agents?
     patch room_setting_path, params: { room_setting: { notify_agents: "1" } }
-    assert_redirected_to root_path
+    assert_redirected_to chat_project_path(Project.default)
     assert RoomSetting.current.reload.notify_agents?
   end
 

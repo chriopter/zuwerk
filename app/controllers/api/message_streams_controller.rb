@@ -3,7 +3,7 @@ module Api
     MAX_CHUNK_SIZE = 1_000
 
     def create
-      message = @current_agent.messages.new(body: params[:body].to_s, state: :streaming)
+      message = @current_agent.messages.new(body: params[:body].to_s, state: :streaming, project: selected_project)
       save_or_error(message, :created)
     end
 
@@ -26,6 +26,10 @@ module Api
     end
 
     private
+      def selected_project
+        @selected_project ||= params[:project_id].present? ? Project.find(params[:project_id]) : Project.default
+      end
+
       def owned_stream
         message = @current_agent.messages.find_by(id: params[:id])
         unless message

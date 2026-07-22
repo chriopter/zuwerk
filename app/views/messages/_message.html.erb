@@ -7,9 +7,9 @@
 
   <div class="min-w-0 flex-1">
     <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-      <strong class="text-sm font-semibold text-slate-950"><%= message.author.name %></strong>
+      <strong class="text-sm font-semibold text-stone-900"><%= message.author.name %></strong>
       <% if message.author.agent? %><span class="agent-label">Agent</span><% end %>
-      <time class="text-[11px] text-slate-400" datetime="<%= message.created_at.iso8601 %>"><%= message.created_at.strftime("%H:%M") %></time>
+      <time class="text-[11px] text-stone-400" datetime="<%= message.created_at.iso8601 %>"><%= message.created_at.strftime("%H:%M") %></time>
       <% if message.streaming? %><span class="stream-label"><span class="stream-dot"></span>writing</span><% end %>
     </div>
 

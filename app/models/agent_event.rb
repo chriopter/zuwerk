@@ -18,7 +18,7 @@ class AgentEvent < ApplicationRecord
       occurred_at: created_at.iso8601,
       recipient: { id: recipient.id, handle: recipient.handle },
       subject: { type: subject_type.underscore, id: subject_id },
-      context: { conversation: "shared" }
+      context: { project: { id: subject.project.id, name: subject.project.name }, conversation: "chat" }
     }
   end
 

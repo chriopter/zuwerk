@@ -1,0 +1,61 @@
+<% content_for :title, "Agents · Zuwerk" %>
+
+<div class="agents-page">
+  <header class="agents-page-header">
+    <div>
+      <p class="agents-kicker">Workspace</p>
+      <h1>Agents</h1>
+      <p>Connect an existing agent or run Claude Code and Codex in persistent containers on this server.</p>
+    </div>
+    <%= link_to "Create agent", new_agent_path, class: "agents-primary-action" %>
+  </header>
+
+  <section class="agents-section" aria-labelledby="hosted-agents-heading" data-agent-origin="hosted">
+    <div class="agents-section-heading">
+      <div><h2 id="hosted-agents-heading">On this server</h2><p>Persistent isolated environments with a live terminal.</p></div>
+      <span><%= pluralize(@hosted_agents.size, "agent") %></span>
+    </div>
+    <div class="agents-list">
+      <% @hosted_agents.each do |hosted_agent| %>
+        <article class="agents-row" data-agent-id="<%= hosted_agent.user_id %>" data-agent-origin="hosted">
+          <div class="agents-avatar"><%= hosted_agent.user.name.first.upcase %></div>
+          <div class="agents-row-copy">
+            <div class="agents-name-line">
+              <h3><%= hosted_agent.user.name %></h3>
+              <span class="agents-status agents-status-<%= hosted_agent.state %>"><i></i><%= hosted_agent.state.humanize %></span>
+            </div>
+            <p><%= hosted_agent.claude? ? "Claude Code" : "Codex" %> · Persistent container</p>
+            <small><%= hosted_agent.container_name %></small>
+          </div>
+          <%= link_to "Open", agent_path(hosted_agent.user), class: "agents-secondary-action" %>
+        </article>
+      <% end %>
+      <% if @hosted_agents.empty? %>
+        <div class="agents-empty"><h3>No hosted agents</h3><p>Create a persistent Claude Code or Codex environment on this server.</p><%= link_to "Create agent", new_agent_path %></div>
+      <% end %>
+    </div>
+  </section>
+
+  <section class="agents-section" aria-labelledby="connected-agents-heading">
+    <div class="agents-section-heading">
+      <div><h2 id="connected-agents-heading">Connected agents</h2><p>Agents using the Zuwerk CLI from another machine.</p></div>
+      <span><%= pluralize(@agents.size, "agent") %></span>
+      <%= link_to "Add agent", new_agent_invitation_path, class: "agents-secondary-action" %>
+    </div>
+    <div class="agents-list">
+      <% @agents.each do |agent| %>
+        <article class="agents-row" data-agent-id="<%= agent.id %>" data-agent-origin="external">
+          <div class="agents-avatar"><%= agent.name.first.upcase %></div>
+          <div class="agents-row-copy">
+            <div class="agents-name-line"><h3><%= agent.name %></h3><span class="agents-status <%= agent.working? ? 'agents-status-working' : 'agents-status-online' %>"><i></i><%= agent.working? ? "Working" : "Online" %></span></div>
+            <p>Connected via CLI · External environment</p>
+            <% if agent.working? %><small><%= agent.working_label.presence || "Working" %></small><% end %>
+          </div>
+        </article>
+      <% end %>
+      <% if @agents.empty? %>
+        <div class="agents-empty"><h3>No connected agents</h3><p>Create an invitation and redeem it with the Zuwerk CLI.</p><%= link_to "Create invitation", new_agent_invitation_path %></div>
+      <% end %>
+    </div>
+  </section>
+</div>

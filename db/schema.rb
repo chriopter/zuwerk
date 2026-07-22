@@ -10,7 +10,45 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_21_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_22_090000) do
+  create_table "action_text_rich_texts", force: :cascade do |t|
+    t.text "body"
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.bigint "record_id", null: false
+    t.string "record_type", null: false
+    t.datetime "updated_at", null: false
+    t.index ["record_type", "record_id", "name"], name: "index_action_text_rich_texts_uniqueness", unique: true
+  end
+
+  create_table "active_storage_attachments", force: :cascade do |t|
+    t.bigint "blob_id", null: false
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.bigint "record_id", null: false
+    t.string "record_type", null: false
+    t.index ["blob_id"], name: "index_active_storage_attachments_on_blob_id"
+    t.index ["record_type", "record_id", "name", "blob_id"], name: "index_active_storage_attachments_uniqueness", unique: true
+  end
+
+  create_table "active_storage_blobs", force: :cascade do |t|
+    t.bigint "byte_size", null: false
+    t.string "checksum"
+    t.string "content_type"
+    t.datetime "created_at", null: false
+    t.string "filename", null: false
+    t.string "key", null: false
+    t.text "metadata"
+    t.string "service_name", null: false
+    t.index ["key"], name: "index_active_storage_blobs_on_key", unique: true
+  end
+
+  create_table "active_storage_variant_records", force: :cascade do |t|
+    t.bigint "blob_id", null: false
+    t.string "variation_digest", null: false
+    t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
   create_table "agent_events", force: :cascade do |t|
     t.integer "attempts", default: 0, null: false
     t.datetime "created_at", null: false
@@ -39,13 +77,35 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_130000) do
     t.index ["token_digest"], name: "index_agent_invitations_on_token_digest", unique: true
   end
 
+  create_table "hosted_agents", force: :cascade do |t|
+    t.string "container_id"
+    t.datetime "created_at", null: false
+    t.text "last_error"
+    t.datetime "last_started_at"
+    t.datetime "last_stopped_at"
+    t.string "runtime", null: false
+    t.string "state", default: "stopped", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["user_id"], name: "index_hosted_agents_on_user_id", unique: true
+  end
+
   create_table "messages", force: :cascade do |t|
     t.integer "author_id", null: false
     t.text "body", null: false
     t.datetime "created_at", null: false
+    t.integer "project_id", null: false
     t.integer "state", default: 0, null: false
     t.datetime "updated_at", null: false
     t.index ["author_id"], name: "index_messages_on_author_id"
+    t.index ["project_id"], name: "index_messages_on_project_id"
+  end
+
+  create_table "projects", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index "lower(name)", name: "index_projects_on_lower_name", unique: true
   end
 
   create_table "reactions", force: :cascade do |t|
@@ -62,9 +122,29 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_130000) do
   create_table "room_settings", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.boolean "notify_agents", default: false, null: false
-    t.string "room_key", default: "shared", null: false
+    t.integer "project_id", null: false
     t.datetime "updated_at", null: false
-    t.index ["room_key"], name: "index_room_settings_on_room_key", unique: true
+    t.index ["project_id"], name: "index_room_settings_on_project_id", unique: true
+  end
+
+  create_table "todo_comments", force: :cascade do |t|
+    t.integer "author_id", null: false
+    t.datetime "created_at", null: false
+    t.integer "todo_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["author_id"], name: "index_todo_comments_on_author_id"
+    t.index ["todo_id"], name: "index_todo_comments_on_todo_id"
+  end
+
+  create_table "todos", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "creator_id", null: false
+    t.integer "project_id", null: false
+    t.integer "status", default: 0, null: false
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.index ["creator_id"], name: "index_todos_on_creator_id"
+    t.index ["project_id"], name: "index_todos_on_project_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -83,9 +163,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_130000) do
     t.index ["email"], name: "index_users_on_email", unique: true
   end
 
+  add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "agent_events", "users", column: "recipient_id"
   add_foreign_key "agent_invitations", "users", column: "inviter_id"
+  add_foreign_key "hosted_agents", "users"
+  add_foreign_key "messages", "projects"
   add_foreign_key "messages", "users", column: "author_id"
   add_foreign_key "reactions", "messages"
   add_foreign_key "reactions", "users"
+  add_foreign_key "room_settings", "projects"
+  add_foreign_key "todo_comments", "todos"
+  add_foreign_key "todo_comments", "users", column: "author_id"
+  add_foreign_key "todos", "projects"
+  add_foreign_key "todos", "users", column: "creator_id"
 end

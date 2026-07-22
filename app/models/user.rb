@@ -5,6 +5,7 @@ class User < ApplicationRecord
   has_many :reactions, dependent: :destroy
   has_many :agent_invitations, foreign_key: :inviter_id, dependent: :restrict_with_error
   has_many :agent_events, foreign_key: :recipient_id, dependent: :restrict_with_error
+  has_one :hosted_agent, dependent: :destroy
 
   before_validation :normalize_email
   validates :name, presence: true, length: { maximum: 80 }

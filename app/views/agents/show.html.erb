@@ -1,0 +1,34 @@
+<% content_for :title, "#{@agent.name} · Zuwerk" %>
+
+<div class="agent-cockpit">
+  <header class="agent-cockpit-header">
+    <div>
+      <%= link_to "Agents", agents_path, class: "agents-back-link" %>
+      <p class="agents-kicker">On this server</p>
+      <h1><%= @agent.name %></h1>
+      <p><span><%= @hosted_agent.runtime == "claude" ? "Claude Code" : "Codex" %></span> · Persistent container · <%= @hosted_agent.container_name %></p>
+    </div>
+    <span class="agents-status agents-status-<%= @hosted_agent.state %>"><i></i><%= @hosted_agent.state.humanize %></span>
+  </header>
+
+  <% if @hosted_agent.last_error.present? %>
+    <div class="agents-form-errors"><strong>Container error:</strong> <%= @hosted_agent.last_error %></div>
+  <% end %>
+
+  <div class="agent-toolbar">
+    <%= button_to "Start", start_agent_path(@agent), disabled: @hosted_agent.running? %>
+    <%= button_to "Restart", restart_agent_path(@agent) %>
+    <%= button_to "Stop", stop_agent_path(@agent), disabled: @hosted_agent.stopped? %>
+    <span>Workspace and login data persist across restarts.</span>
+  </div>
+
+  <section class="terminal-cockpit" data-terminal-agent-id="<%= @agent.id %>" data-terminal-url="<%= agent_terminal_path(@agent) %>" data-terminal-enabled="<%= @hosted_agent.running? %>">
+    <div class="terminal-titlebar">
+      <div><i></i><i></i><i></i></div>
+      <span>agent · <%= @hosted_agent.runtime %> · tmux</span>
+      <button type="button" data-terminal-reconnect>Reconnect</button>
+    </div>
+    <div class="terminal-screen" data-terminal-screen tabindex="0" aria-label="Interactive agent terminal"></div>
+    <p class="terminal-help">Click the terminal and type. The session keeps running when this page closes.</p>
+  </section>
+</div>

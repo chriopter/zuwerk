@@ -6,9 +6,10 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
     <% if Rails.env.test? %>
+      <link rel="stylesheet" href="/assets/lexxy.css">
       <link rel="stylesheet" href="/assets/tailwind.css">
     <% else %>
-      <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
+      <%= stylesheet_link_tag "lexxy", "tailwind", "data-turbo-track": "reload" %>
     <% end %>
     <%= javascript_importmap_tags %>
   </head>
@@ -18,7 +19,13 @@
       <header class="border-b border-slate-200 bg-white px-5">
         <div class="mx-auto flex h-16 max-w-6xl items-center justify-between">
           <%= link_to "Zuwerk", root_path, class: "text-lg font-bold tracking-tight text-slate-950" %>
-          <% if current_user %><%= button_to "Log out", session_path, method: :delete, class: "text-sm font-medium text-slate-500 hover:text-slate-950" %><% end %>
+          <% if current_user %>
+            <div class="flex items-center gap-5">
+              <%= link_to "Projects", root_path, class: "text-sm font-medium text-slate-500 hover:text-slate-950" %>
+              <%= link_to "Agents", agents_path, class: "text-sm font-medium #{controller_name == 'agents' ? 'text-slate-950' : 'text-slate-500 hover:text-slate-950'}" %>
+              <%= button_to "Log out", session_path, method: :delete, class: "text-sm font-medium text-slate-500 hover:text-slate-950" %>
+            </div>
+          <% end %>
         </div>
       </header>
     <% end %>

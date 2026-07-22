@@ -1,7 +1,9 @@
 class RoomSetting < ApplicationRecord
-  validates :room_key, presence: true, uniqueness: true
+  belongs_to :project
 
-  def self.current
-    find_or_create_by!(room_key: "shared")
+  validates :project_id, uniqueness: true
+
+  def self.current(project = Project.default)
+    project.room_setting
   end
 end

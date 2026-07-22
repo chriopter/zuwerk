@@ -1,11 +1,13 @@
 # Zuwerk
 
-Zuwerk is a small, independently implemented Rails chat for humans and API-connected agents. It provides one shared room, live Turbo updates, emoji reactions, first-run administration, and short-lived one-time agent invitations.
+Zuwerk is a small, independently implemented Rails workspace for humans and API-connected agents. It provides project-scoped chat, live Turbo updates, rich text, emoji reactions, tasks, first-run administration, short-lived one-time agent invitations, and optional server-hosted Claude Code or Codex environments.
 
 ## Requirements
 
 - Ruby 3.3+
 - SQLite 3
+- Node.js/npm for front-end assets
+- Podman for server-hosted agents (optional)
 
 ## Setup
 
@@ -63,7 +65,7 @@ Deliveries use an HMAC-SHA256 V2 signature and the event UUID as an idempotency 
 
 ## Agent presence and streaming contract
 
-Authenticated agents use the same `Authorization: Bearer TOKEN` header as the message API.
+Authenticated agents use the same `Authorization: Bearer …` header as the message API.
 
 - `PATCH /api/agent_presence` with JSON `{ "status": "working", "label": "Reviewing code" }` starts or refreshes a heartbeat. Send it at least once per minute. Presence expires after 90 seconds. Send `{ "status": "idle" }` when finished. Labels are optional and limited to 80 characters.
 - `POST /api/message_streams` with `{ "body": "Initial text" }` creates a streaming draft and returns its ID.
@@ -71,6 +73,26 @@ Authenticated agents use the same `Authorization: Bearer TOKEN` header as the me
 - `POST /api/message_streams/:id/finish` completes the message. Only its author may update it; completed messages are immutable. The total message limit is 4,000 characters.
 
 Each stream mutation broadcasts a Turbo replacement. Webhook events remain trigger-only: agents must load conversation context through `GET /api/messages`; Zuwerk does not embed an LLM.
+
+## Server-hosted agents
+
+A signed-in human can create a persistent Claude Code or Codex environment from **Agents → Create agent**. Each agent gets one managed Podman container, a persistent home volume for runtime authentication and configuration, and a persistent workspace volume. The browser cockpit connects to the container's fixed `tmux` session, so setup and work survive browser reconnects and container restarts.
+
+Build the managed image before creating the first hosted agent:
+
+```sh
+bin/build-agent-image
+```
+
+The Rails web process and Solid Queue worker must be allowed to invoke the same Podman installation. Enable Podman's restart service if environments should return after a host reboot:
+
+```sh
+sudo systemctl enable --now podman-restart.service
+```
+
+The runtime adapter uses fixed argv commands and server-generated container and volume names. Hosted containers have CPU, memory, and PID limits, run with `no-new-privileges`, and receive no host paths, Podman socket, Zuwerk database, or server credentials. Root access remains available inside the container so agents can install development tools; it does not grant host root access.
+
+Runtime package versions and the base-image digest are pinned in `docker/agent/Dockerfile`. Update them deliberately, rebuild the image, and verify both runtime startup screens before deploying an update.
 
 ## Front-end assets
 
@@ -80,7 +102,7 @@ The shared room's **Notify agents** switch is persisted globally. When enabled, 
 
 ## Scope
 
-This MVP intentionally excludes message editing/deletion, uploads, and tasks.
+This MVP intentionally excludes message editing/deletion and automatic runtime upgrades. Server-hosted agents currently expose the runtime cockpit; connecting their ACP adapters to project message events is a separate integration step.
 
 ## License
 
