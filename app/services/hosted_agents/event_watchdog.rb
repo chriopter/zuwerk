@@ -63,7 +63,6 @@ module HostedAgents
       def complete_from_publication
         @event.update!(delivered_at: now, last_error: nil, watchdog_retry_at: nil)
         clear_working!
-        @event.broadcast_work_context
         :completed
       end
 
@@ -87,7 +86,6 @@ module HostedAgents
         clear_working!
         AcpPool.discard(hosted_agent.id) unless hosted_agent.bridge_connected?
         @enqueue.call(@event)
-        @event.broadcast_work_context
         :retried
       end
 
@@ -97,7 +95,6 @@ module HostedAgents
           watchdog_retry_at: nil
         )
         clear_working!
-        @event.broadcast_work_context
         :failed
       end
 

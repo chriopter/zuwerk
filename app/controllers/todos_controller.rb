@@ -66,8 +66,6 @@ class TodosController < ApplicationController
 
   def load_workspace
     @project = Project.find(params[:project_id])
-    @projects = Project.order(:name)
-    @sidebar_agents = User.agent.includes(:hosted_agent).order(:name)
     @agents = User.agent.order(:name)
     @todos = @project.todos.includes(:assigned_agents).ordered
   end

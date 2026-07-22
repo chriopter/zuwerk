@@ -23,7 +23,7 @@ class TodosFlowTest < ActionDispatch::IntegrationTest
     assert_equal 0, todo.position
     assert_equal "Useful context", todo.description.to_plain_text
     follow_redirect!
-    assert_select ".workspace-sidebar a[href='#{project_todos_path(@project)}']", text: /Tasks/
+    assert_select ".project-context-nav a[aria-current='page'][href='#{project_todos_path(@project)}']", text: "Board"
     assert_select "h1", text: "Ship hierarchy"
     assert_select "lexxy-editor"
   end

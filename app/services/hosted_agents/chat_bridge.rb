@@ -29,7 +29,6 @@ module HostedAgents
         validate_publication!
 
         @event.update!(delivered_at: Time.current, last_error: nil)
-        @event.broadcast_work_context
       rescue => error
         record_failure(error)
         raise error if error.is_a?(DeliveryError)
@@ -100,7 +99,6 @@ module HostedAgents
             last_error: "Hosted bridge failed: #{error.class}: #{error.message}".truncate(255)
           )
         end
-        @event.broadcast_work_context
       rescue => bookkeeping_error
         Rails.logger.error("Hosted event #{@event.id} failure bookkeeping failed: #{bookkeeping_error.message}")
       end

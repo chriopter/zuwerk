@@ -369,6 +369,72 @@
   .todo-context-list a { @apply hover:text-[#d9563b]; }
   .todo-form-card { @apply rounded-2xl border border-stone-200 bg-white p-5 sm:p-8; }
   .todo-form-card form { @apply mt-8; }
+
+  .workspace-top-shell { @apply grid h-dvh min-h-0 grid-rows-[64px_minmax(0,1fr)] overflow-hidden; }
+  .workspace-topbar { @apply relative z-40 border-b border-stone-200 bg-white/95 backdrop-blur; }
+  .workspace-topbar-inner { @apply mx-auto flex h-16 w-full items-center gap-2 px-4 lg:px-7; }
+  .topbar-brand { @apply flex shrink-0 items-center gap-2.5 pr-2 text-sm font-bold tracking-tight text-stone-950; }
+  .topbar-brand-mark { @apply grid h-8 w-8 place-items-center rounded-lg bg-[#27332d] text-[11px] font-bold text-white; }
+  .topbar-global-nav { @apply flex items-center gap-1; }
+  .topbar-nav-link { @apply inline-flex h-9 items-center rounded-lg px-3 text-sm font-semibold text-stone-500 transition hover:bg-stone-100 hover:text-stone-900; }
+  .topbar-nav-link.is-active { @apply bg-[#e4e7df] text-stone-950; }
+  .topbar-project-context { @apply ml-2 flex min-w-0 items-center gap-2 border-l border-stone-200 pl-4; }
+  .topbar-project-name { @apply max-w-48 truncate text-sm font-semibold text-stone-800; }
+  .project-context-nav { @apply flex items-center gap-1; }
+  .project-context-nav a { @apply inline-flex h-9 items-center rounded-lg px-3 text-sm font-semibold text-stone-500 transition hover:bg-stone-100 hover:text-stone-900; }
+  .project-context-nav a.is-active { @apply bg-[#27332d] text-white; }
+  .topbar-account { @apply ml-auto flex shrink-0 items-center gap-3; }
+  .topbar-account-name { @apply hidden max-w-32 truncate text-xs font-semibold text-stone-600 xl:inline; }
+  .topbar-utility-link, .topbar-logout { @apply text-xs font-semibold text-stone-400 hover:text-stone-900; }
+  .topbar-utility-link.is-active { @apply text-stone-900; }
+  .topbar-mobile-menu { @apply relative ml-auto hidden; }
+  .topbar-mobile-menu > summary { @apply grid h-9 w-9 cursor-pointer list-none place-items-center rounded-full bg-[#27332d] text-[10px] font-bold text-white; }
+  .topbar-mobile-menu > summary::-webkit-details-marker { display: none; }
+  .topbar-mobile-menu > div { @apply absolute right-0 top-11 z-50 flex w-48 flex-col rounded-xl border border-stone-200 bg-white p-2 shadow-xl; }
+  .topbar-mobile-menu strong { @apply border-b border-stone-100 px-3 py-2 text-xs text-stone-700; }
+  .topbar-mobile-menu a, .topbar-mobile-menu button { @apply block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-stone-600 hover:bg-stone-100; }
+  .workspace-top-main { @apply min-h-0 min-w-0 overflow-y-auto p-4 sm:p-8; }
+  .workspace-top-main.is-chat { @apply h-full overflow-hidden p-0; }
+
+  .projects-overview { @apply mx-auto w-full max-w-6xl pb-16; }
+  .projects-overview-header { @apply mb-8 flex items-end justify-between gap-4; }
+  .projects-overview-eyebrow { @apply mb-2 text-[10px] font-semibold uppercase tracking-[.14em] text-stone-400; }
+  .projects-overview-header h1 { @apply text-4xl font-semibold tracking-[-.04em] text-stone-950; }
+  .projects-create { @apply relative; }
+  .projects-create > summary { @apply inline-flex h-10 cursor-pointer list-none items-center rounded-lg bg-[#27332d] px-4 text-sm font-semibold text-white; }
+  .projects-create > summary::-webkit-details-marker { display: none; }
+  .projects-create-popover { @apply absolute right-0 top-12 z-30 w-72 rounded-xl border border-stone-200 bg-white p-4 shadow-xl; }
+  .projects-create-popover label { @apply mb-2 block text-xs font-semibold text-stone-600; }
+  .projects-create-popover form > div { @apply flex gap-2; }
+  .projects-create-popover input[type="text"] { @apply min-w-0 flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-500; }
+  .projects-create-popover input[type="submit"] { @apply rounded-lg bg-[#27332d] px-3 text-xs font-semibold text-white; }
+  .project-overview-grid { @apply grid gap-4 md:grid-cols-2 xl:grid-cols-3; }
+  .project-overview-card { @apply flex min-h-44 flex-col rounded-2xl border border-stone-200 bg-white p-5 shadow-[0_2px_0_rgba(39,51,45,.04)]; }
+  .project-overview-title { @apply flex min-w-0 items-center gap-3; }
+  .project-overview-mark { @apply grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#27332d] text-xs font-bold text-white; }
+  .project-overview-title h2 { @apply min-w-0 truncate text-lg font-semibold tracking-[-.025em] text-stone-950; }
+  .project-overview-facts { @apply mt-5 flex gap-5 text-xs text-stone-500; }
+  .project-overview-facts strong { @apply mr-1 text-sm font-semibold text-stone-900; }
+  .project-overview-actions { @apply mt-auto flex items-center gap-2 pt-5; }
+  .project-overview-actions a { @apply inline-flex h-9 items-center rounded-lg bg-stone-100 px-3 text-xs font-semibold text-stone-700 transition hover:bg-stone-200; }
+  .project-overview-actions .project-overview-primary { @apply bg-[#27332d] text-white hover:bg-stone-700; }
+  .project-overview-empty { @apply rounded-2xl border border-dashed border-stone-300 p-12 text-center; }
+  .project-overview-empty h2 { @apply text-lg font-semibold text-stone-900; }
+  .project-overview-empty p { @apply mt-2 text-sm text-stone-500; }
+
+  @media (max-width: 700px) {
+    .workspace-top-shell { @apply grid-rows-[60px_minmax(0,1fr)]; }
+    .workspace-topbar-inner { @apply h-[60px] gap-1 px-3; }
+    .topbar-brand { @apply pr-0; }
+    .topbar-brand > span:last-child, .topbar-account { @apply hidden; }
+    .workspace-topbar:has(.topbar-project-context) .topbar-global-nav .topbar-nav-link:nth-child(2), .topbar-project-name { @apply hidden; }
+    .topbar-mobile-menu { @apply block; }
+    .topbar-nav-link, .project-context-nav a { @apply px-2.5 text-xs; }
+    .topbar-project-context { @apply ml-1 gap-1 pl-2; }
+    .topbar-project-name { @apply max-w-24 text-xs; }
+    .topbar-logout { @apply text-[11px]; }
+    .projects-overview-header h1 { @apply text-3xl; }
+  }
 }
 
 .xterm { position: relative; cursor: text; user-select: none; }

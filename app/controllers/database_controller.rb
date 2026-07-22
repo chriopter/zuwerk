@@ -12,7 +12,7 @@ class DatabaseController < ApplicationController
 
   before_action :require_human!
   before_action :require_admin!
-  before_action :set_workspace_navigation
+
   before_action :set_tables
 
   def index
@@ -47,11 +47,6 @@ class DatabaseController < ApplicationController
     redirect_to root_path, alert: "Administrator access required." unless current_user.admin?
   end
 
-  def set_workspace_navigation
-    @project = Project.default
-    @projects = Project.order(:name)
-    @sidebar_agents = User.agent.includes(:hosted_agent).order(:name)
-  end
 
   def set_tables
     @tables = ActiveRecord::Base.connection.data_sources.sort

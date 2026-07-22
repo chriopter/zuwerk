@@ -35,35 +35,39 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_session_path
   end
 
-  test "project switcher and sidebar navigate to the selected project resources" do
+  test "project overview and top bar navigate to project resources" do
     sign_in
+    @first_project.todos.create!(creator: @human, title: "Open task", status: :open)
+    @first_project.todos.create!(creator: @human, title: "Active task", status: :in_progress)
 
-    get chat_project_path(@first_project)
+    get root_path
     assert_response :success
-    assert_select ".workspace-sidebar .sidebar-project-tree section.sidebar-project", count: 2
-    assert_select ".workspace-sidebar section.sidebar-project", text: /Alpha/ do
-      assert_select ".sidebar-project-heading", text: /Alpha/
-      assert_select "a[aria-current='page'][href='#{chat_project_path(@first_project)}']", text: /Chat/
-      assert_select "a[href='#{project_todos_path(@first_project)}']", text: /Tasks/
-      assert_select "[aria-disabled='true']", text: /Threads/, count: 1
-      assert_select "[aria-disabled='true']", text: /Files & Memory/, count: 1
+    assert_select ".workspace-sidebar", count: 0
+    assert_select ".workspace-topbar"
+    assert_select ".topbar-mobile-menu" do
+      assert_select "summary[aria-label='Open account menu']"
+      assert_select "a[href='#{agents_path}']", text: "Agents"
+      assert_select "form[action='#{session_path}']"
     end
-    assert_select ".workspace-sidebar section.sidebar-project", text: /Beta/ do
-      assert_select ".sidebar-project-heading", text: /Beta/
-      assert_select "a[href='#{chat_project_path(@second_project)}']", text: /Chat/
-      assert_select "a[href='#{project_todos_path(@second_project)}']", text: /Tasks/
+    assert_select ".project-overview-card", count: 2
+    assert_select ".project-overview-card[data-project-id='#{@first_project.id}']" do
+      assert_select "h2", text: "Alpha"
+      assert_select "[data-project-fact='open']", text: /1 open/
+      assert_select "[data-project-fact='in-progress']", text: /1 in progress/
+      assert_select "a[href='#{project_todos_path(@first_project)}']", text: "Board"
+      assert_select "a[href='#{chat_project_path(@first_project)}']", text: "Chat"
     end
 
     get chat_project_path(@second_project)
     assert_response :success
-    assert_select ".project-switcher strong", text: "Beta"
+    assert_select ".workspace-topbar", text: /Beta/
+    assert_select ".project-context-nav a[aria-current='page'][href='#{chat_project_path(@second_project)}']", text: "Chat"
     assert_select "form[action='#{project_messages_path(@second_project)}']"
 
     get project_todos_path(@second_project)
     assert_response :success
-    assert_select ".workspace-sidebar a[aria-current='page'][href='#{project_todos_path(@second_project)}']", text: /Tasks/
-    assert_select ".workspace-sidebar a[href='#{chat_project_path(@second_project)}']", text: /Chat/
-    assert_select ".workspace-mobile-header a[aria-current='page'][href='#{project_todos_path(@second_project)}']", text: "Tasks"
+    assert_select ".project-context-nav a[aria-current='page'][href='#{project_todos_path(@second_project)}']", text: "Board"
+    assert_select ".project-context-nav a[href='#{chat_project_path(@second_project)}']", text: "Chat"
   end
 
   test "empty chat todos and agents pages provide useful next actions" do

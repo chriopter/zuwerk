@@ -32,12 +32,6 @@ class AgentEvent < ApplicationRecord
       update!(accepted_at: Time.current, last_error: nil)
       acknowledgement_target.reactions.find_or_create_by!(author: recipient, emoji: "👍")
     end
-    broadcast_work_context
-  end
-
-  def broadcast_work_context
-    broadcast_replace_to "agent_work", target: "sidebar_agent_list", partial: "shared/sidebar_agent_list",
-      locals: { agents: User.agent.includes(:hosted_agent).order(:name), active_agent_id: nil }
   end
 
   def payload

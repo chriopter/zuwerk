@@ -24,7 +24,6 @@ class MessagesController < ApplicationController
     def load_project
       project_id = params[:project_id].presence || params[:id].presence
       @project = project_id ? Project.find(project_id) : Project.default
-      @projects = Project.order(:name)
     end
 
     def load_room

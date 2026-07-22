@@ -1,6 +1,6 @@
 class AgentsController < ApplicationController
   before_action :require_human!
-  before_action :set_workspace_navigation
+
   before_action :set_agent, only: %i[show start stop restart]
 
   def index
@@ -45,11 +45,6 @@ class AgentsController < ApplicationController
   end
 
   private
-    def set_workspace_navigation
-      @project = Project.default
-      @projects = Project.order(:name)
-      @sidebar_agents = User.agent.includes(:hosted_agent).order(:name)
-    end
 
     def set_agent
       @agent = User.agent.find(params[:id])

@@ -1,0 +1,41 @@
+<header class="workspace-topbar">
+  <div class="workspace-topbar-inner">
+    <%= link_to root_path, class: "topbar-brand", aria: { label: "Zuwerk projects" } do %>
+      <span class="topbar-brand-mark" aria-hidden="true">Z</span>
+      <span>Zuwerk</span>
+    <% end %>
+
+    <nav class="topbar-global-nav" aria-label="Workspace">
+      <%= link_to "Projects", root_path, class: "topbar-nav-link #{'is-active' if active == :projects}", aria: (active == :projects ? { current: "page" } : {}) %>
+      <%= link_to "Agents", agents_path, class: "topbar-nav-link #{'is-active' if active == :agents}", aria: (active == :agents ? { current: "page" } : {}) %>
+    </nav>
+
+    <% if project.present? %>
+      <div class="topbar-project-context">
+        <span class="topbar-project-name" title="<%= project.name %>"><%= project.name %></span>
+        <nav class="project-context-nav" aria-label="<%= project.name %> navigation">
+          <%= link_to "Board", project_todos_path(project), class: (active == :todos ? "is-active" : nil), aria: (active == :todos ? { current: "page" } : {}) %>
+          <%= link_to "Chat", chat_project_path(project), class: (active == :chat ? "is-active" : nil), aria: (active == :chat ? { current: "page" } : {}) %>
+        </nav>
+      </div>
+    <% end %>
+
+    <div class="topbar-account">
+      <% if current_user.admin? %>
+        <%= link_to "DB", database_path, class: "topbar-utility-link #{'is-active' if active == :database}", aria: (active == :database ? { current: "page" } : {}) %>
+      <% end %>
+      <span class="topbar-account-name"><%= current_user.name %></span>
+      <%= button_to "Log out", session_path, method: :delete, class: "topbar-logout" %>
+    </div>
+
+    <details class="topbar-mobile-menu">
+      <summary aria-label="Open account menu"><%= current_user.name.split.filter_map { |part| part.first }.first(2).join.upcase %></summary>
+      <div>
+        <strong><%= current_user.name %></strong>
+        <%= link_to "Agents", agents_path %>
+        <% if current_user.admin? %><%= link_to "Database", database_path %><% end %>
+        <%= button_to "Log out", session_path, method: :delete %>
+      </div>
+    </details>
+  </div>
+</header>

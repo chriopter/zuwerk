@@ -7,24 +7,22 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
     post session_path, params: { email: @human.email, password: "password1" }
   end
 
-  test "project tree lists projects and creates a new project" do
+  test "project overview lists projects and creates a new project" do
     other = Project.create!(name: "Client launch")
 
     get root_path
     assert_response :success
-    assert_select ".workspace-mark", count: 0
-    assert_select ".workspace-sidebar .sidebar-project-tree" do
-      assert_select ".sidebar-project-heading", text: /Zuwerk/
-      assert_select ".sidebar-project-heading", text: /Client launch/
+    assert_select ".project-overview-grid" do
+      assert_select ".project-overview-card", text: /Client launch/
       assert_select "a[href='#{chat_project_path(other)}']", text: /Chat/
-      assert_select ".sidebar-project-create form[action='#{projects_path}']"
     end
+    assert_select ".projects-create form[action='#{projects_path}']"
 
     assert_difference "Project.count", 1 do
       post projects_path, params: { project: { name: "Internal tools" } }
     end
     project = Project.find_by!(name: "Internal tools")
-    assert_redirected_to chat_project_path(project)
+    assert_redirected_to projects_path
     assert_equal project, project.room_setting.project
   end
 
@@ -41,7 +39,7 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
 
     get chat_project_path(second)
     assert_response :success
-    assert_select "a.sidebar-object[href='#{chat_project_path(second)}']", text: /Chat/
+    assert_select ".project-context-nav a[aria-current='page'][href='#{chat_project_path(second)}']", text: /Chat/
     assert_select "#messages", text: /Second-only message/
     assert_select "#messages", text: /First-only message/, count: 0
 
@@ -55,12 +53,13 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
     assert_not first.room_setting.reload.notify_agents?
   end
 
-  test "renders the focused shared chat shell with the active project object" do
-    get root_path
+  test "renders the focused shared chat shell with project navigation" do
+    project = Project.default
+    get chat_project_path(project)
 
     assert_response :success
-    assert_select ".workspace-sidebar"
-    assert_select ".sidebar-object-active", text: /Chat/
+    assert_select ".workspace-sidebar", count: 0
+    assert_select ".project-context-nav a[aria-current='page']", text: "Chat"
     assert_select ".chat-header-bar h1", text: "Shared chat"
     assert_select "form.notify-control"
     assert_select "a", text: /Invite agent/

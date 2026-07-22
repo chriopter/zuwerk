@@ -13,7 +13,7 @@ class DatabaseBrowserTest < ActionDispatch::IntegrationTest
     follow_redirect!
 
     assert_response :success
-    assert_select ".workspace-sidebar a[href='#{database_path}']", text: "DB"
+    assert_select ".workspace-topbar a[aria-current='page'][href='#{database_path}']", text: "DB"
     assert_select "h1", text: "users"
     assert_select "[data-table-navigation]" do
       assert_select "section > h2" do |headings|
@@ -113,6 +113,6 @@ class DatabaseBrowserTest < ActionDispatch::IntegrationTest
     assert_redirected_to root_path
 
     follow_redirect!
-    assert_select ".workspace-sidebar a[href='#{database_path}']", count: 0
+    assert_select ".workspace-topbar a[href='#{database_path}']", count: 0
   end
 end

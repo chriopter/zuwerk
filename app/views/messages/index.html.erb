@@ -3,11 +3,8 @@
 
 <section class="chat-panel" data-controller="chat-scroll">
     <header class="chat-header-bar">
-      <div class="min-w-0 lg:block">
-        <div class="mobile-project-context lg:hidden">
-          <%= render "project_switcher", project: @project, projects: @projects, compact: true %>
-        </div>
-        <h1 class="hidden lg:block">Shared chat</h1>
+      <div class="min-w-0">
+        <h1 class="sr-only">Shared chat</h1>
       </div>
 
       <div class="chat-header-actions">

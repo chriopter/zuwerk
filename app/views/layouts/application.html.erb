@@ -15,19 +15,23 @@
     <%= javascript_importmap_tags %>
   </head>
   <% todo_page = controller_name.in?([ "todos", "todo_comments", "todo_assignments" ]) %>
-  <% workspace_page = current_user && ((controller_name == "messages" && action_name == "index") || controller_name.in?([ "agents", "database" ]) || todo_page) %>
   <% chat_page = controller_name == "messages" && action_name == "index" %>
-  <body class="<%= workspace_page ? 'h-dvh overflow-hidden bg-white' : 'min-h-screen bg-slate-50 text-slate-950 antialiased' %>">
-    <% if workspace_page %>
-      <div class="workspace-shell">
-        <%= render "shared/workspace_sidebar",
-          project: @project,
-          projects: @projects,
-          agents: chat_page ? @agents : @sidebar_agents,
-          active: chat_page ? :chat : (controller_name == "database" ? :database : (todo_page ? :todos : :agents)),
-          active_agent_id: @agent&.id %>
-        <%= render "shared/workspace_mobile_header", project: @project, projects: @projects, active: (controller_name == "database" ? :database : (todo_page ? :todos : :agents)) unless chat_page %>
-        <main class="workspace-main <%= chat_page ? 'h-full min-h-0 min-w-0' : 'min-h-0 min-w-0 overflow-y-auto p-4 sm:p-8' %>">
+  <% active_section = if controller_name == "projects"
+    :projects
+  elsif controller_name == "database"
+    :database
+  elsif todo_page
+    :todos
+  elsif chat_page
+    :chat
+  else
+    :agents
+  end %>
+  <body class="<%= current_user ? 'h-dvh overflow-hidden bg-[#f7f7f3]' : 'min-h-screen bg-slate-50 text-slate-950 antialiased' %>">
+    <% if current_user %>
+      <div class="workspace-top-shell">
+        <%= render "shared/workspace_topbar", project: @project, active: active_section %>
+        <main class="workspace-top-main <%= chat_page ? 'is-chat' : '' %>">
           <% flash.each do |type, message| %><div class="alert <%= type == 'alert' ? 'alert-error' : 'alert-success' %> mb-4 shadow-sm" role="status"><span><%= message %></span></div><% end %>
           <%= yield %>
         </main>
@@ -36,13 +40,6 @@
       <header class="border-b border-slate-200 bg-white px-5">
         <div class="mx-auto flex h-16 max-w-6xl items-center justify-between">
           <%= link_to "Zuwerk", root_path, class: "text-lg font-bold tracking-tight text-slate-950" %>
-          <% if current_user %>
-            <div class="flex items-center gap-5">
-              <%= link_to "Projects", root_path, class: "text-sm font-medium text-slate-500 hover:text-slate-950" %>
-              <%= link_to "Agents", agents_path, class: "text-sm font-medium #{controller_name == 'agents' ? 'text-slate-950' : 'text-slate-500 hover:text-slate-950'}" %>
-              <%= button_to "Log out", session_path, method: :delete, class: "text-sm font-medium text-slate-500 hover:text-slate-950" %>
-            </div>
-          <% end %>
         </div>
       </header>
       <main class="mx-auto w-full max-w-6xl p-4 sm:p-8">

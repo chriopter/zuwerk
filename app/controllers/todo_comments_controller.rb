@@ -54,8 +54,6 @@ class TodoCommentsController < ApplicationController
   end
 
   def load_workspace
-    @projects = Project.order(:name)
-    @sidebar_agents = User.agent.includes(:hosted_agent).order(:name)
     @agents = User.agent.order(:name)
     @todos = @project.todos.ordered
   end

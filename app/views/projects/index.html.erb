@@ -1,0 +1,53 @@
+<% content_for :title, "Projects · Zuwerk" %>
+
+<section class="projects-overview" aria-labelledby="projects-title">
+  <header class="projects-overview-header">
+    <div>
+      <p class="projects-overview-eyebrow">Workspace</p>
+      <h1 id="projects-title">Projects</h1>
+    </div>
+
+    <details class="projects-create">
+      <summary>New project</summary>
+      <div class="projects-create-popover">
+        <%= form_with model: Project.new, url: projects_path do |form| %>
+          <%= form.label :name, "Project name" %>
+          <div>
+            <%= form.text_field :name, required: true, maxlength: 80, placeholder: "Project name" %>
+            <%= form.submit "Create" %>
+          </div>
+        <% end %>
+      </div>
+    </details>
+  </header>
+
+  <% if @projects.any? %>
+    <div class="project-overview-grid">
+      <% @projects.each do |project| %>
+        <% open_count = project.todos.count(&:open?) %>
+        <% in_progress_count = project.todos.count(&:in_progress?) %>
+        <article class="project-overview-card" data-project-id="<%= project.id %>">
+          <div class="project-overview-title">
+            <span class="project-overview-mark" aria-hidden="true"><%= project.name.first.upcase %></span>
+            <h2><%= project.name %></h2>
+          </div>
+
+          <div class="project-overview-facts" aria-label="Task status">
+            <span data-project-fact="open"><strong><%= open_count %></strong> open</span>
+            <span data-project-fact="in-progress"><strong><%= in_progress_count %></strong> in progress</span>
+          </div>
+
+          <nav class="project-overview-actions" aria-label="<%= project.name %> destinations">
+            <%= link_to "Board", project_todos_path(project), class: "project-overview-primary" %>
+            <%= link_to "Chat", chat_project_path(project) %>
+          </nav>
+        </article>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="project-overview-empty">
+      <h2>Create your first project</h2>
+      <p>Give work a home, then add tasks and conversations.</p>
+    </div>
+  <% end %>
+</section>

@@ -15,14 +15,8 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "h1", "Agents"
-    assert_select ".workspace-sidebar"
-    assert_select "#agents-heading[href='#{agents_path}']", text: "Agents"
-    assert_select "[data-sidebar-agent-id='#{hosted_identity.id}'][data-agent-connected='false']" do
-      assert_select "a[href='#{agent_path(hosted_identity)}']", text: /Builder/
-      assert_select ".agent-avatar-online", count: 0
-      assert_select ".agent-kind-mark", count: 0
-    end
-    assert_select ".sidebar-object-active", count: 0
+    assert_select ".workspace-sidebar", count: 0
+    assert_select ".workspace-topbar a[aria-current='page'][href='#{agents_path}']", text: "Agents"
     assert_select "[data-agent-id='#{@agent.id}']", text: /Hermes/
     assert_select "[data-agent-origin='external']", text: /Connected via CLI/
     assert_select "[data-agent-origin='hosted']", text: /On this server/
@@ -68,7 +62,7 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
     assert_redirected_to agents_path
   end
 
-  test "sidebar shows active work inline and hides failed work" do
+  test "global navigation does not present sidebar-only work indicators" do
     HostedAgent.create!(user: @agent, runtime: "codex", state: "running")
     project = Project.create!(name: "Sidebar work")
     todo = project.todos.create!(creator: @human, title: "A deliberately long todo title that must remain stable in the sidebar")
@@ -77,16 +71,13 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
 
     get project_todo_path(project, todo)
 
-    assert_select "turbo-cable-stream-source[channel='Turbo::StreamsChannel']"
-    assert_select ".agent-inline-work[href='#{project_todo_path(project, todo)}'][data-agent-event-id='#{event.public_id}'][aria-label='Arbeitet an #{todo.title}']" do
-      assert_select ".agent-work-spinner", count: 1
-    end
+    assert_select ".workspace-topbar"
+    assert_select ".agent-inline-work", count: 0
 
     event.update!(last_error: "Hosted bridge failed permanently")
     get project_todo_path(project, todo)
 
     assert_select ".agent-inline-work", count: 0
-    assert_select ".agent-work-spinner", count: 0
   end
 
   test "requires a signed-in human" do
