@@ -11,6 +11,8 @@ class ProjectsController < ApplicationController
     @task_counts = @project.todos.group(:status).count
     @recent_todos = @project.todos.where.not(status: :completed).order(updated_at: :desc, id: :desc).limit(4)
     @recent_messages = @project.messages.includes(:author).order(created_at: :desc, id: :desc).limit(3)
+    @recent_board_posts = @project.board_posts.published.includes(:author, :rich_text_body).limit(2)
+    @active_board_automations_count = @project.board_automations.where(active: true).count
   end
 
   def create

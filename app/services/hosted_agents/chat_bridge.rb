@@ -34,6 +34,12 @@ module HostedAgents
 
         return unless mutate_owned_event { @event.acknowledge! }
         set_working(true)
+        if correlated_publication?
+          validate_publication!
+          complete_delivery!
+          return
+        end
+
         chunks = +""
         capture = lambda do |chunk|
           remaining = MAX_AUTOMATIC_RESPONSE_BYTES - chunks.bytesize
@@ -53,11 +59,7 @@ module HostedAgents
 
         publish_automatic_response(chunks)
         validate_publication!
-
-        mutate_owned_event do
-          @event.update!(delivered_at: Time.current, last_error: nil)
-          @event.transition_to!("completed")
-        end
+        complete_delivery!
       rescue => error
         record_failure(error)
         raise error if error.is_a?(DeliveryError)
@@ -88,12 +90,27 @@ module HostedAgents
         @event.subject.todo if todo_event?
       end
 
+      def board_post
+        @event.subject if board_event?
+      end
+
+      def board_automation
+        board_post&.board_automation
+      end
+
       def origin
-        todo_event? ? todo : project
+        return todo if todo_event?
+        return board_automation if board_event?
+
+        project
       end
 
       def todo_event?
         @event.event_type == "todo_assigned"
+      end
+
+      def board_event?
+        @event.event_type == "board_scheduled"
       end
 
       def publish_automatic_response(chunks)
@@ -101,10 +118,12 @@ module HostedAgents
         return if body.blank?
         mutate_owned_event do
           @event.reload
-          next if @event.publication_message || @event.publication_comment
+          next if @event.publication_message || @event.publication_comment || @event.publication_board_post&.published_at?
 
           if todo_event?
             todo.comments.create!(author: @event.recipient, body: body, agent_event: @event)
+          elsif board_event?
+            board_post.publish!(body, event: @event)
           else
             body = body.truncate(Message::MAX_BODY_LENGTH, omission: "")
             @event.recipient.messages.create!(project: project, body: body, agent_event: @event)
@@ -114,12 +133,31 @@ module HostedAgents
         @event.reload
       end
 
+      def correlated_publication?
+        @event.reload
+        return @event.publication_comment.present? if todo_event?
+        return @event.publication_board_post&.published_at? if board_event?
+
+        @event.publication_message.present?
+      end
+
+      def complete_delivery!
+        mutate_owned_event do
+          @event.update!(delivered_at: Time.current, last_error: nil)
+          @event.transition_to!("completed")
+        end
+      end
+
       def validate_publication!
         @event.reload
         if todo_event?
           published = @event.publication_comment
           valid = published&.author == @event.recipient && published.todo == todo
           raise DeliveryError, "Recipient did not create an event-correlated todo comment" unless valid
+        elsif board_event?
+          published = @event.publication_board_post
+          valid = published == board_post && published&.author == @event.recipient && published.published_at?
+          raise DeliveryError, "Recipient did not create an event-correlated board post" unless valid
         else
           published = @event.publication_message
           valid = published&.author == @event.recipient && published.project == project
@@ -131,7 +169,7 @@ module HostedAgents
         return unless owned_event?
         @event.recipient.update!(
           working_status: value,
-          working_label: value ? (todo_event? ? "Working on #{todo.title}" : "Replying in shared chat").truncate(80) : nil,
+          working_label: value ? working_label : nil,
           heartbeat_at: value ? Time.current : nil
         )
         @working = value
@@ -176,6 +214,7 @@ module HostedAgents
 
       def prompt_text
         return todo_prompt_text if todo_event?
+        return board_prompt_text if board_event?
 
         <<~PROMPT
           You are #{@event.recipient.name}, a hosted agent participating in Zuwerk.
@@ -199,6 +238,42 @@ module HostedAgents
         PROMPT
       end
 
+
+      def working_label
+        label = if todo_event?
+          "Working on #{todo.title}"
+        elsif board_event?
+          "Writing #{board_automation.title}"
+        else
+          "Replying in shared chat"
+        end
+        label.truncate(80)
+      end
+
+      def board_prompt_text
+        <<~PROMPT
+          You are #{@event.recipient.name}, the selected agent for a recurring Zuwerk Board publication.
+          Complete the requested work now and return one polished, self-contained Board post.
+          ACP text output is automatically published as the single correlated Action Text Board post.
+          Do not publish the same result through the Zuwerk CLI/API or chat.
+
+          Event ID: #{@event.public_id}
+          Project ID: #{project.id}
+          Project name: #{project.name}
+          Board automation: #{board_automation.title}
+          Scheduled for: #{board_post.scheduled_for.iso8601}
+
+          Recurring prompt:
+          #{board_post.prompt_snapshot}
+
+          Refresh project context when needed with:
+          zuwerk messages list --project #{project.id}
+          zuwerk todos list --project #{project.id}
+          zuwerk search --project #{project.id} --query "<what you need to know>"
+
+          Format the final publication with Markdown when useful. Return only the reader-facing post through ACP.
+        PROMPT
+      end
 
       def todo_prompt_text
         ancestry = todo.ancestors.map(&:title).join(" > ").presence || "(top level)"

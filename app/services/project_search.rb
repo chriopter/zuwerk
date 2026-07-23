@@ -115,7 +115,7 @@ class ProjectSearch
     end
 
     def source_documents
-      [ *message_documents, *todo_documents, *comment_documents, *attachment_documents ]
+      [ *message_documents, *todo_documents, *comment_documents, *attachment_documents, *board_post_documents ]
     end
 
     def message_documents
@@ -149,6 +149,12 @@ class ProjectSearch
       end
     end
 
+    def board_post_documents
+      @project.board_posts.published.includes(:author, :rich_text_body).order(:id).map do |post|
+        result("board_post", post.id, "Board · #{post.title}", post.body.to_plain_text, project_board_post_path(@project, post), post.published_at)
+      end
+    end
+
     def result(type, source_id, title, content, url, created_at)
       Result.new(type:, source_id:, project_id: @project.id, title:, content: content.to_s.first(MAX_SOURCE_CHARACTERS), url:, score: 0.0, created_at:)
     end
@@ -174,5 +180,9 @@ class ProjectSearch
 
     def project_todo_path(...)
       Rails.application.routes.url_helpers.project_todo_path(...)
+    end
+
+    def project_board_post_path(...)
+      Rails.application.routes.url_helpers.project_board_post_path(...)
     end
 end

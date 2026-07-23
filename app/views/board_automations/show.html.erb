@@ -1,0 +1,35 @@
+<% content_for :title, "#{@automation.title} · Board · Zuwerk" %>
+<section class="board-automation-page">
+  <nav class="workspace-breadcrumb" aria-label="Breadcrumb"><%= link_to @project.name, project_path(@project) %><span aria-hidden="true">/</span><%= link_to "Board", project_board_posts_path(@project) %><span aria-hidden="true">/</span><span aria-current="page"><%= @automation.title %></span></nav>
+  <header class="board-automation-header">
+    <% retry_available = @posts.first&.agent_event&.state == "failed" %>
+    <div><p class="board-automation-kicker"><%= @automation.active? ? "Active automation" : "Paused automation" %></p><h1><%= @automation.title %></h1><p><%= @automation.agent.name %> · <%= @automation.cadence_label %></p></div>
+    <div class="board-automation-actions">
+      <%= button_to retry_available ? "Retry now" : "Run now", run_now_project_board_automation_path(@project, @automation), class: "btn bg-stone-900 text-white hover:bg-stone-700" %>
+      <%= link_to "Edit", edit_project_board_automation_path(@project, @automation), class: "btn btn-outline" %>
+      <%= button_to @automation.active? ? "Pause" : "Resume", toggle_project_board_automation_path(@project, @automation), method: :patch, class: "btn btn-ghost" %>
+    </div>
+  </header>
+
+  <div class="board-automation-summary">
+    <div><span>Next run</span><strong><%= @automation.active? ? @automation.next_run_at.to_fs(:long) : "Paused" %></strong></div>
+    <div><span>Agent</span><strong><%= @automation.agent.name %></strong></div>
+    <div><span>Frequency</span><strong><%= @automation.cadence_label %></strong></div>
+  </div>
+
+  <section class="board-prompt-card"><h2>Prompt</h2><div class="prose max-w-none"><%= @automation.prompt %></div></section>
+
+  <section class="board-run-history">
+    <div class="board-section-heading"><h2>Run history</h2></div>
+    <% if @posts.any? %>
+      <% @posts.each do |post| %>
+        <div class="board-run-row">
+          <span><strong><%= post.scheduled_for.to_fs(:long) %></strong><small><%= post.published_at? ? "Published #{post.published_at.to_fs(:long)}" : post.agent_event&.state&.humanize || "Queued" %></small><% if post.agent_event&.last_error.present? %><small class="board-run-error">Could not publish: <%= post.agent_event.last_error %>. Use Retry now to try again.</small><% end %></span>
+          <% if post.published_at? %><%= link_to "Open post", project_board_post_path(@project, post) %><% else %><span class="board-run-state"><%= post.agent_event&.state&.humanize || "Queued" %></span><% end %>
+        </div>
+      <% end %>
+    <% else %>
+      <p class="board-empty-compact">No runs yet.</p>
+    <% end %>
+  </section>
+</section>

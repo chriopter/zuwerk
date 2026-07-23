@@ -47,5 +47,22 @@
         <% end %>
       </div>
     <% end %>
+
+    <%= link_to project_board_posts_path(@project), class: "project-tool-card project-tool-board" do %>
+      <header>
+        <span class="project-tool-icon" aria-hidden="true">◫</span>
+        <span><strong>Board</strong><small><%= @active_board_automations_count %> active automations</small></span>
+        <span class="project-tool-arrow" aria-hidden="true">→</span>
+      </header>
+      <div class="project-tool-preview">
+        <% if @recent_board_posts.any? %>
+          <% @recent_board_posts.each do |post| %>
+            <span class="project-board-preview"><strong><%= post.title %></strong><small><%= truncate(post.body.to_plain_text.squish, length: 110) %></small><i><%= post.author.name %> · <%= time_ago_in_words(post.published_at) %> ago</i></span>
+          <% end %>
+        <% else %>
+          <span class="project-tool-empty">Recurring agent publications will appear here.</span>
+        <% end %>
+      </div>
+    <% end %>
   </div>
 </section>

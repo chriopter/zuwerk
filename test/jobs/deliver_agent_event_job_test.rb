@@ -76,6 +76,20 @@ class DeliverAgentEventJobTest < ActiveJob::TestCase
     AgentConnectors.registry = previous_registry if previous_registry
   end
 
+  test "does not complete a Board event through trigger-only webhook delivery" do
+    human = User.create!(name: "Board Human", email: "board-job-human@example.com", password: "password1")
+    agent = User.create!(name: "Board External", kind: :agent)
+    project = Project.create!(name: "Board Job Project")
+    automation = BoardAutomation.create!(project: project, creator: human, agent: agent, title: "Report", cadence: "daily", prompt: "Publish")
+    event = automation.run_now!.agent_event
+
+    error = assert_raises(HostedAgents::ChatBridge::DeliveryError) { DeliverAgentEventJob.new.perform(event) }
+
+    assert_match(/hosted or connected agent/, error.message)
+    assert_nil event.reload.delivered_at
+    assert_equal "running", event.state
+  end
+
   test "routes hosted deliveries to their dedicated serialized queue" do
     human = User.create!(name: "Queue Human", email: "queue-human@example.com", password: "password1")
     hosted_user = User.create!(name: "Hosted Queue Agent", kind: :agent)

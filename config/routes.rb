@@ -10,6 +10,11 @@ Rails.application.routes.draw do
     end
     resource :room_setting, only: :update
     resources :agent_subscriptions, only: :update
+    resources :board_posts, path: "board", only: %i[index show]
+    resources :board_automations, path: "board/automations", only: %i[new create show edit update] do
+      post :run_now, on: :member
+      patch :toggle, on: :member
+    end
     resources :todos, except: :destroy do
       patch :reorder, on: :member
       resources :assignments, controller: "todo_assignments", only: %i[create destroy]

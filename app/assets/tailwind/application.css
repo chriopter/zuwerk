@@ -489,7 +489,7 @@
   .project-home-mark { @apply grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-[#27332d] text-base font-bold text-white shadow-[0_8px_24px_rgba(39,51,45,.14)]; }
   .project-home-header h1 { @apply text-4xl font-semibold tracking-[-.04em] text-stone-950; }
   .project-home-header > div > p:last-child { @apply mt-2 text-sm text-stone-500; }
-  .project-tool-grid { @apply mt-8 grid gap-5 lg:grid-cols-2; }
+  .project-tool-grid { @apply mt-8 grid gap-5 lg:grid-cols-3; }
   .project-tool-card { @apply flex min-h-80 flex-col rounded-2xl border border-stone-200 bg-white p-5 shadow-[0_2px_0_rgba(39,51,45,.04)] transition hover:-translate-y-0.5 hover:border-stone-300 hover:shadow-[0_14px_36px_rgba(39,51,45,.08)]; }
   .project-tool-card > header { @apply flex items-center gap-3 border-b border-stone-100 pb-4; }
   .project-tool-icon { @apply grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#edf0eb] text-sm font-bold text-[#27332d]; }
@@ -518,6 +518,67 @@
   .workspace-breadcrumb a { @apply min-w-0 truncate text-stone-600 transition hover:text-stone-950; }
   .workspace-breadcrumb span[aria-current="page"] { @apply truncate text-stone-950; }
 
+  .project-board-preview { @apply rounded-xl px-2 py-2.5; }
+  .project-board-preview strong, .project-board-preview small, .project-board-preview i { @apply block; }
+  .project-board-preview strong { @apply truncate text-xs font-semibold text-stone-800; }
+  .project-board-preview small { @apply mt-1 line-clamp-2 text-xs leading-5 text-stone-500; }
+  .project-board-preview i { @apply mt-1 text-[10px] not-italic text-stone-400; }
+
+  .board-page, .board-form-page, .board-automation-page, .board-post-page { @apply mx-auto w-full max-w-5xl pb-20 pt-4; }
+  .board-page-header, .board-automation-header { @apply mt-5 flex items-start justify-between gap-6 border-b border-stone-200 pb-7; }
+  .board-page-header h1, .board-form-page h1, .board-automation-header h1, .board-post-header h1 { @apply mt-2 text-4xl font-semibold tracking-[-.04em] text-stone-950; }
+  .board-page-header p, .board-form-page > header p, .board-automation-header p { @apply mt-2 text-sm text-stone-500; }
+  .board-automations, .board-publications, .board-run-history { @apply mt-10; }
+  .board-section-heading { @apply mb-4 flex items-center gap-2 border-b border-stone-200 pb-3; }
+  .board-section-heading h2 { @apply text-sm font-semibold uppercase tracking-[.08em] text-stone-600; }
+  .board-section-heading > span { @apply rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-stone-500; }
+  .board-automation-list { @apply divide-y divide-stone-100 rounded-2xl border border-stone-200 bg-white; }
+  .board-automation-row { @apply flex items-center gap-3 px-4 py-3.5 transition hover:bg-stone-50; }
+  .board-automation-copy { @apply min-w-0 flex-1; }
+  .board-automation-copy strong, .board-automation-copy small { @apply block truncate; }
+  .board-automation-copy strong { @apply text-sm font-semibold text-stone-900; }
+  .board-automation-copy small { @apply mt-1 text-xs text-stone-500; }
+  .board-automation-state, .board-run-state { @apply rounded-full bg-stone-100 px-2.5 py-1 text-[10px] font-semibold text-stone-500; }
+  .board-automation-state.is-active { @apply bg-emerald-50 text-emerald-700; }
+  .project-avatar-small { @apply grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#edf0eb] text-[10px] font-bold text-[#27332d]; }
+  .board-post-list { @apply divide-y divide-stone-200; }
+  .board-post-entry { @apply py-8 first:pt-2; }
+  .board-post-meta { @apply flex items-center gap-2 text-xs text-stone-500; }
+  .board-post-entry h3 { @apply mt-4 text-2xl font-semibold tracking-[-.025em] text-stone-950; }
+  .board-post-entry h3 a { @apply hover:text-[#526257]; }
+  .board-post-excerpt { @apply mt-3 max-w-3xl text-sm leading-7 text-stone-600; }
+  .board-read-link { @apply mt-4 inline-block text-xs font-semibold text-stone-700 hover:text-stone-950; }
+  .board-empty-state { @apply rounded-2xl border border-dashed border-stone-300 px-6 py-12 text-center; }
+  .board-empty-state strong { @apply text-base font-semibold text-stone-800; }
+  .board-empty-state p, .board-empty-compact { @apply mt-2 text-sm text-stone-500; }
+  .board-form-page > header { @apply mb-7 mt-5; }
+  .board-automation-form { @apply space-y-6 rounded-2xl border border-stone-200 bg-white p-6; }
+  .board-automation-form label { @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-600; }
+  .board-form-grid { @apply grid gap-5 sm:grid-cols-2; }
+  .board-field-hint { @apply mb-3 text-xs text-stone-500; }
+  .board-field-error { @apply mt-1.5 text-xs font-medium text-red-700; }
+  .board-form-actions, .board-automation-actions { @apply flex flex-wrap justify-end gap-2; }
+  .board-form-errors { @apply rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700; }
+  .board-automation-kicker { @apply text-xs font-semibold uppercase tracking-[.08em] text-emerald-700; }
+  .board-automation-summary { @apply mt-7 grid gap-3 sm:grid-cols-3; }
+  .board-automation-summary > div { @apply rounded-xl border border-stone-200 bg-white p-4; }
+  .board-automation-summary span, .board-automation-summary strong { @apply block; }
+  .board-automation-summary span { @apply text-[10px] font-semibold uppercase tracking-wide text-stone-400; }
+  .board-automation-summary strong { @apply mt-1 text-sm text-stone-800; }
+  .board-prompt-card { @apply mt-7 rounded-2xl border border-stone-200 bg-white p-6; }
+  .board-prompt-card h2 { @apply mb-4 text-sm font-semibold uppercase tracking-[.08em] text-stone-500; }
+  .board-run-history { @apply mb-8; }
+  .board-run-row { @apply flex items-center justify-between gap-4 border-b border-stone-100 py-3; }
+  .board-run-row strong, .board-run-row small { @apply block; }
+  .board-run-row strong { @apply text-sm font-medium text-stone-800; }
+  .board-run-row small { @apply mt-1 text-xs text-stone-500; }
+  .board-run-row .board-run-error { @apply max-w-2xl text-red-700; }
+  .board-run-row a { @apply text-xs font-semibold text-stone-700 underline decoration-stone-300 underline-offset-4; }
+  .board-post-page { @apply max-w-3xl; }
+  .board-post-header { @apply mt-7 border-b border-stone-200 pb-7; }
+  .board-post-header .board-post-meta { @apply mt-4; }
+  .board-post-body { @apply py-9 text-stone-800; }
+
   @media (max-width: 700px) {
     .workspace-top-shell { @apply grid-rows-[60px_minmax(0,1fr)]; }
     .workspace-topbar-inner { @apply h-[60px] gap-1 px-3; }
@@ -538,6 +599,12 @@
     .project-home-mark { @apply h-11 w-11 rounded-xl; }
     .project-tool-card { @apply min-h-52 p-4; }
     .project-tool-preview { @apply min-h-32; }
+    .board-page-header, .board-automation-header { @apply flex-col; }
+    .board-page-header h1, .board-form-page h1, .board-automation-header h1, .board-post-header h1 { @apply text-3xl; }
+    .board-page-header > a { @apply w-full; }
+    .board-automation-form, .board-prompt-card { @apply p-4; }
+    .board-automation-actions { @apply w-full justify-start; }
+    .board-run-row { @apply items-start; }
   }
 }
 

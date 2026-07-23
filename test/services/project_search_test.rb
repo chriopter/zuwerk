@@ -31,17 +31,24 @@ class ProjectSearchTest < ActiveSupport::TestCase
     project.messages.create!(author: human, body: "Zum Mittag gibt es Kuchen.")
     matching_todo = project.todos.create!(creator: human, title: "Bridge stabilisieren", description: "Connection failure dauerhaft verhindern")
     matching_todo.comments.create!(author: human, body: "Der Socket braucht einen Heartbeat.")
+    agent = User.create!(name: "Search Reporter", kind: :agent)
+    automation = project.board_automations.create!(creator: human, agent: agent, title: "Board report", cadence: "weekly", prompt: "Report")
+    board_post = automation.run_now!
+    board_post.publish!("Die Dokumentation beschreibt den stabilen Betrieb.", event: board_post.agent_event)
     other_project.messages.create!(author: human, body: "Verbindungsproblem in einem anderen Projekt")
 
     embedder = SemanticFixtureEmbedder.new
     results = ProjectSearch.new(project, embedder: embedder).call("Verbindungsproblem", limit: 3)
 
-    assert_equal 4, SearchDocument.where(project: project).count
+    assert_equal 5, SearchDocument.where(project: project).count
     assert_equal [ "message", "todo" ], results.first(2).map(&:type).sort
     assert_equal matching_message.id, results.find { |result| result.type == "message" }.source_id
     assert_equal matching_todo.id, results.find { |result| result.type == "todo" }.source_id
     assert_equal project.id, results.first.project_id
     assert_equal "/projects/#{project.id}/chat#message_#{matching_message.id}", results.find { |result| result.type == "message" }.url
+    board_document = SearchDocument.find_by!(project: project, source_type: "board_post", source_id: board_post.id)
+    assert_equal "/projects/#{project.id}/board/#{board_post.id}", board_document.url
+    assert_includes board_document.content, "stabilen Betrieb"
     assert results.none? { |result| result.content.include?("anderen Projekt") }
 
     embedder.batches.clear

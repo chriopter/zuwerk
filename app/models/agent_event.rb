@@ -12,6 +12,7 @@ class AgentEvent < ApplicationRecord
   belongs_to :subject, polymorphic: true
   has_one :publication_message, class_name: "Message", dependent: :nullify
   has_one :publication_comment, class_name: "TodoComment", dependent: :nullify
+  has_one :publication_board_post, class_name: "BoardPost", dependent: :nullify
   has_many :agent_approvals, dependent: :destroy
 
   before_validation :assign_public_id, on: :create
@@ -22,7 +23,7 @@ class AgentEvent < ApplicationRecord
   attr_readonly :public_id
 
   validates :public_id, presence: true, uniqueness: true
-  validates :event_type, inclusion: { in: %w[mentioned todo_assigned] }
+  validates :event_type, inclusion: { in: %w[mentioned todo_assigned board_scheduled] }
   validates :state, inclusion: { in: STATES }
   validates :recipient_id, uniqueness: { scope: [ :event_type, :subject_type, :subject_id ] }
 
@@ -137,7 +138,8 @@ class AgentEvent < ApplicationRecord
   def acknowledge!
     transaction do
       update!(accepted_at: Time.current, last_error: nil)
-      acknowledgement_target.reactions.find_or_create_by!(author: recipient, emoji: "👍")
+      acknowledgement_target&.reactions&.find_or_create_by!(author: recipient, emoji: "👍")
+      true
     end
   end
 
@@ -162,7 +164,8 @@ class AgentEvent < ApplicationRecord
     end
 
     def acknowledgement_target
-      event_type == "todo_assigned" ? todo : subject
+      return todo if event_type == "todo_assigned"
+      subject if event_type == "mentioned"
     end
 
     def event_context
@@ -170,6 +173,9 @@ class AgentEvent < ApplicationRecord
       if event_type == "todo_assigned"
         todo = subject.todo
         context.merge(todo: { id: todo.id, title: todo.title }, origin: "todo")
+      elsif event_type == "board_scheduled"
+        automation = subject.board_automation
+        context.merge(board_automation: { id: automation.id, title: automation.title }, board_post: { id: subject.id, scheduled_for: subject.scheduled_for.iso8601 }, origin: "board")
       else
         context.merge(conversation: "chat")
       end

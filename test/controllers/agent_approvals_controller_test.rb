@@ -35,6 +35,20 @@ class AgentApprovalsControllerTest < ActionDispatch::IntegrationTest
     assert_equal option_id, @approval.reload.selected_option_id
   end
 
+  test "HTML resolution returns Board work to its automation" do
+    board_agent = User.create!(name: "Board Approval Bot", kind: :agent)
+    project = Project.create!(name: "Approval Board")
+    automation = BoardAutomation.create!(project: project, creator: @human, agent: board_agent, title: "Digest", cadence: "daily", prompt: "Publish")
+    event = automation.run_now!.agent_event
+    event.transition_to!("running")
+    approval = AgentApproval.create!(agent_event: event, request_id: "board-request", options: [ { "optionId" => "allow" } ], details: {})
+    post session_path, params: { email: @human.email, password: "password1" }
+
+    patch agent_approval_path(approval), params: { option_index: "0" }
+
+    assert_redirected_to project_board_automation_path(project, automation)
+  end
+
   test "rejects an invalid HTML option index" do
     post session_path, params: { email: @human.email, password: "password1" }
 

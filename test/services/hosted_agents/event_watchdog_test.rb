@@ -72,6 +72,19 @@ class HostedAgents::EventWatchdogTest < ActiveSupport::TestCase
     assert_equal [ queued ], @enqueued
   end
 
+  test "marks a correlated Board publication complete instead of prompting twice" do
+    automation = BoardAutomation.create!(project: @project, creator: @human, agent: @agent, title: "Digest", cadence: "daily", prompt: "Publish")
+    post = automation.run_now!
+    board_event = post.agent_event
+    post.publish!("Published Board result", event: board_event)
+    board_event.update_columns(created_at: @now - 10.minutes, updated_at: @now - 10.minutes)
+
+    assert_equal :completed, watchdog_for(board_event).call
+
+    assert board_event.reload.delivered_at?
+    assert_equal "completed", board_event.state
+  end
+
   test "repairs working presence when delivery persisted before the bridge crashed" do
     queued = next_event
     @event.update!(delivered_at: @now - 1.minute)

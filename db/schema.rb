@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_23_101500) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_23_114000) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
@@ -115,6 +115,39 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_23_101500) do
     t.index ["agent_id"], name: "index_agent_subscriptions_on_agent_id"
     t.index ["project_id", "agent_id"], name: "index_agent_subscriptions_on_project_id_and_agent_id", unique: true
     t.index ["project_id"], name: "index_agent_subscriptions_on_project_id"
+  end
+
+  create_table "board_automations", force: :cascade do |t|
+    t.boolean "active", default: true, null: false
+    t.integer "agent_id", null: false
+    t.string "cadence", null: false
+    t.datetime "created_at", null: false
+    t.integer "creator_id", null: false
+    t.datetime "next_run_at", null: false
+    t.integer "project_id", null: false
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.index ["active", "next_run_at"], name: "index_board_automations_on_active_and_next_run_at"
+    t.index ["agent_id"], name: "index_board_automations_on_agent_id"
+    t.index ["creator_id"], name: "index_board_automations_on_creator_id"
+    t.index ["project_id"], name: "index_board_automations_on_project_id"
+  end
+
+  create_table "board_posts", force: :cascade do |t|
+    t.integer "agent_event_id"
+    t.integer "author_id", null: false
+    t.integer "board_automation_id", null: false
+    t.datetime "created_at", null: false
+    t.text "prompt_snapshot", null: false
+    t.datetime "published_at"
+    t.datetime "scheduled_for", null: false
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.index ["agent_event_id"], name: "index_board_posts_on_agent_event_id", unique: true
+    t.index ["author_id"], name: "index_board_posts_on_author_id"
+    t.index ["board_automation_id", "scheduled_for"], name: "index_board_posts_on_board_automation_id_and_scheduled_for", unique: true
+    t.index ["board_automation_id"], name: "index_board_posts_on_board_automation_id"
+    t.index ["published_at"], name: "index_board_posts_on_published_at"
   end
 
   create_table "hosted_agent_sessions", force: :cascade do |t|
@@ -265,6 +298,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_23_101500) do
   add_foreign_key "agent_invitations", "users", column: "inviter_id"
   add_foreign_key "agent_subscriptions", "projects"
   add_foreign_key "agent_subscriptions", "users", column: "agent_id"
+  add_foreign_key "board_automations", "projects"
+  add_foreign_key "board_automations", "users", column: "agent_id"
+  add_foreign_key "board_automations", "users", column: "creator_id"
+  add_foreign_key "board_posts", "agent_events"
+  add_foreign_key "board_posts", "board_automations"
+  add_foreign_key "board_posts", "users", column: "author_id"
   add_foreign_key "hosted_agent_sessions", "hosted_agents"
   add_foreign_key "hosted_agents", "users"
   add_foreign_key "messages", "agent_events"

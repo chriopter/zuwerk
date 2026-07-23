@@ -51,11 +51,18 @@ module HostedAgents
       end
 
       def correlated_publication?
-        publication = @event.event_type == "todo_assigned" ? @event.publication_comment : @event.publication_message
+        publication = case @event.event_type
+        when "todo_assigned" then @event.publication_comment
+        when "board_scheduled" then @event.publication_board_post
+        else @event.publication_message
+        end
         return false unless publication&.author_id == @event.recipient_id
 
-        if @event.event_type == "todo_assigned"
+        case @event.event_type
+        when "todo_assigned"
           publication.todo_id == @event.todo.id
+        when "board_scheduled"
+          publication == @event.subject && publication.published_at?
         else
           publication.project_id == @event.subject.project_id
         end

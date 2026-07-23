@@ -1,0 +1,6 @@
+<% content_for :title, "Edit #{@automation.title} · Board · Zuwerk" %>
+<section class="board-form-page">
+  <nav class="workspace-breadcrumb" aria-label="Breadcrumb"><%= link_to @project.name, project_path(@project) %><span aria-hidden="true">/</span><%= link_to "Board", project_board_posts_path(@project) %><span aria-hidden="true">/</span><%= link_to @automation.title, project_board_automation_path(@project, @automation) %><span aria-hidden="true">/</span><span aria-current="page">Edit</span></nav>
+  <header><h1>Edit automation</h1><p>Changes apply to future runs.</p></header>
+  <%= render "form", automation: @automation %>
+</section>

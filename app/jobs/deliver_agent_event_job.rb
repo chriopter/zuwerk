@@ -18,6 +18,8 @@ class DeliverAgentEventJob < ApplicationJob
 
     if agent_event.recipient.hosted_agent
       HostedAgents::ChatBridge.new(agent_event).deliver
+    elsif agent_event.event_type == "board_scheduled"
+      raise HostedAgents::ChatBridge::DeliveryError, "Board automations require a hosted or connected agent"
     else
       fallback_delivery_factory.call(
         agent_event,

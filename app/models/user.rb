@@ -7,6 +7,9 @@ class User < ApplicationRecord
   has_many :agent_events, foreign_key: :recipient_id, dependent: :restrict_with_error
   has_many :todo_assignments, foreign_key: :agent_id, dependent: :destroy
   has_many :agent_subscriptions, foreign_key: :agent_id, dependent: :destroy
+  has_many :board_automations, foreign_key: :agent_id, dependent: :restrict_with_error
+  has_many :created_board_automations, class_name: "BoardAutomation", foreign_key: :creator_id, dependent: :restrict_with_error
+  has_many :authored_board_posts, class_name: "BoardPost", foreign_key: :author_id, dependent: :restrict_with_error
   has_many :assigned_todo_assignments, class_name: "TodoAssignment", foreign_key: :assigner_id, dependent: :destroy
   has_one :hosted_agent, dependent: :destroy
 

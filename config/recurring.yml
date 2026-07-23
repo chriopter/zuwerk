@@ -10,6 +10,10 @@
 #     schedule: at 5am every day
 
 production:
+  dispatch_due_board_automations:
+    class: DispatchDueBoardAutomationsJob
+    queue: default
+    schedule: every minute
   watch_stale_agent_events:
     class: WatchStaleAgentEventsJob
     queue: default

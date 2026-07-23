@@ -19,11 +19,14 @@ class HostedAgents::ChatBridgeTest < ActiveSupport::TestCase
   end
 
   class ChunkPool
+    attr_reader :prompt_text
+
     def initialize(*chunks)
       @chunks = chunks
     end
 
-    def prompt(*)
+    def prompt(*args)
+      @prompt_text = args[2]
       @chunks.each { |chunk| yield chunk }
       { "stopReason" => "end_turn" }
     end
@@ -179,6 +182,48 @@ class HostedAgents::ChatBridgeTest < ActiveSupport::TestCase
 
     assert_equal "Todo result", event.reload.publication_comment.body.to_plain_text
     assert_equal "completed", event.state
+  end
+
+  test "automatically publishes a scheduled board response as rich text" do
+    human = User.create!(name: "Board Human", email: "board-human@example.com", password: "password1")
+    agent = User.create!(name: "Board Writer", kind: :agent)
+    HostedAgent.create!(user: agent, runtime: "claude", state: "running")
+    project = Project.create!(name: "Board Publication Project")
+    automation = BoardAutomation.create!(project: project, creator: human, agent: agent, title: "Morning brief", cadence: "daily", prompt: "Summarize the project.")
+    post = automation.run_now!
+    event = post.agent_event
+    automation.update!(prompt: "Changed after the run was queued.")
+    pool = ChunkPool.new("**Strong** result")
+
+    HostedAgents::ChatBridge.new(event, pool: pool).deliver
+
+    assert_includes pool.prompt_text, "Summarize the project."
+    assert_not_includes pool.prompt_text, "Changed after the run was queued."
+    assert_equal "completed", event.reload.state
+    assert event.delivered_at?
+    assert post.reload.published_at?
+    assert_equal "Strong result", post.body.to_plain_text.squish
+    assert_includes post.body.to_s, "<strong>Strong</strong>"
+  end
+
+  test "does not overwrite an existing scheduled board publication on retry" do
+    human = User.create!(name: "Board Retry Human", email: "board-retry-human@example.com", password: "password1")
+    agent = User.create!(name: "Board Retry Agent", kind: :agent)
+    HostedAgent.create!(user: agent, runtime: "claude", state: "running")
+    project = Project.create!(name: "Board Retry Project")
+    automation = BoardAutomation.create!(project: project, creator: human, agent: agent, title: "Retry brief", cadence: "daily", prompt: "Summarize.")
+    post = automation.run_now!
+    event = post.agent_event
+    post.publish!("Original result", event: event)
+    original_published_at = post.published_at
+    pool = ChunkPool.new("Replacement result")
+
+    HostedAgents::ChatBridge.new(event, pool: pool).deliver
+
+    assert_nil pool.prompt_text
+    assert_equal "Original result", post.reload.body.to_plain_text
+    assert_equal original_published_at, post.published_at
+    assert_equal "completed", event.reload.state
   end
 
   test "records an error without creating a placeholder when no project message is published" do
