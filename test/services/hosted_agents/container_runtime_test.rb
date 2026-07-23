@@ -42,6 +42,7 @@ class HostedAgents::ContainerRuntimeTest < ActiveSupport::TestCase
     assert_includes command, @hosted_agent.container_name
     assert_includes command, "--restart=unless-stopped"
     assert_includes command, "--init"
+    assert_equal "IS_SANDBOX=1", command[command.index("--env") + 1]
     assert_includes command, "--memory=4g"
     assert_includes command, "--cpus=2"
     assert_includes command, "zuwerk-agent:latest"

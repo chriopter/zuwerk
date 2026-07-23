@@ -43,6 +43,10 @@ module HostedAgents
         "--cpus=2",
         "--pids-limit=2048",
         "--security-opt=no-new-privileges",
+        # The runtime runs as root inside this isolated container. Declaring it a
+        # sandbox lets the agent adapter offer its bypass-permissions mode, which
+        # it otherwise refuses for the root user.
+        "--env", "IS_SANDBOX=1",
         "--volume", "#{@hosted_agent.container_name}-home:/root",
         "--volume", "#{@hosted_agent.container_name}-workspace:/workspace",
         *shared_folder_argv,

@@ -39,10 +39,7 @@ module HostedAgents
       result = request("session/new", { cwd: working_directory, mcpServers: [] })
       session_id = result.fetch("sessionId")
       @session_capabilities = result.except("sessionId")
-      if mode_advertised?(@session_capabilities)
-        request("session/set_config_option", { sessionId: session_id, configId: "mode", value: session_mode })
-        @mode_sessions[session_id] = true
-      end
+      apply_session_mode(session_id, @session_capabilities)
       session_id
     end
 
@@ -56,7 +53,7 @@ module HostedAgents
     end
 
     def ping(session_id)
-      request("session/set_config_option", { sessionId: session_id, configId: "mode", value: session_mode }) if @mode_sessions[session_id]
+      reapply_session_mode(session_id)
       true
     end
 
@@ -69,6 +66,36 @@ module HostedAgents
     private
       def session_mode = (@requested_session_mode || @hosted_agent&.session_mode || "auto")
       def working_directory = (@hosted_agent&.working_directory || HostedAgent::WORKSPACE_PATH)
+
+      # Adapters advertise session modes in two dialects: newer builds list them
+      # under `modes.availableModes` and switch with `session/set_mode`, older
+      # ones expose a `mode` config option set with `session/set_config_option`.
+      # A mode the adapter does not advertise is left untouched.
+      def apply_session_mode(session_id, capabilities)
+        if mode_available?(capabilities)
+          request("session/set_mode", { sessionId: session_id, modeId: session_mode })
+          @mode_sessions[session_id] = :set_mode
+        elsif mode_advertised?(capabilities)
+          request("session/set_config_option", { sessionId: session_id, configId: "mode", value: session_mode })
+          @mode_sessions[session_id] = :config_option
+        end
+      end
+
+      def reapply_session_mode(session_id)
+        case @mode_sessions[session_id]
+        when :set_mode
+          request("session/set_mode", { sessionId: session_id, modeId: session_mode })
+        when :config_option
+          request("session/set_config_option", { sessionId: session_id, configId: "mode", value: session_mode })
+        end
+      end
+
+      def mode_available?(capabilities)
+        modes = capabilities["modes"]
+        return false unless modes.is_a?(Hash)
+
+        object_list(modes["availableModes"]).any? { |mode| mode["id"] == session_mode }
+      end
 
       def mode_advertised?(capabilities)
         object_list(capabilities["configOptions"]).any? do |option|

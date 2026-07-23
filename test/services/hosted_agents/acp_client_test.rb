@@ -131,6 +131,51 @@ class HostedAgents::AcpClientTest < ActiveSupport::TestCase
     client&.close
   end
 
+  test "switches an available mode through the newer set_mode protocol" do
+    transport = FakeTransport.new([
+      { jsonrpc: "2.0", id: 1, result: {} },
+      { jsonrpc: "2.0", id: 2, result: { sessionId: "remote-session", modes: { currentModeId: "default", availableModes: [ { id: "default", name: "Default" }, { id: "bypassPermissions", name: "Bypass Permissions" } ] } } },
+      { jsonrpc: "2.0", id: 3, result: {} }
+    ])
+    client = HostedAgents::AcpClient.new(nil, transport: transport, session_mode: "bypassPermissions")
+
+    assert_equal "remote-session", client.new_session
+    set_mode = transport.writes.third
+    assert_equal "session/set_mode", set_mode.fetch("method")
+    assert_equal "bypassPermissions", set_mode.dig("params", "modeId")
+  ensure
+    client&.close
+  end
+
+  test "reapplies the negotiated set_mode on ping" do
+    transport = FakeTransport.new([
+      { jsonrpc: "2.0", id: 1, result: {} },
+      { jsonrpc: "2.0", id: 2, result: { sessionId: "remote-session", modes: { currentModeId: "default", availableModes: [ { id: "bypassPermissions", name: "Bypass Permissions" } ] } } },
+      { jsonrpc: "2.0", id: 3, result: {} },
+      { jsonrpc: "2.0", id: 4, result: {} }
+    ])
+    client = HostedAgents::AcpClient.new(nil, transport: transport, session_mode: "bypassPermissions")
+    client.new_session
+
+    assert client.ping("remote-session")
+    assert_equal %w[initialize session/new session/set_mode session/set_mode], transport.writes.map { |write| write.fetch("method") }
+  ensure
+    client&.close
+  end
+
+  test "leaves the session untouched when the requested mode is not available" do
+    transport = FakeTransport.new([
+      { jsonrpc: "2.0", id: 1, result: {} },
+      { jsonrpc: "2.0", id: 2, result: { sessionId: "remote-session", modes: { currentModeId: "default", availableModes: [ { id: "default", name: "Default" } ] } } }
+    ])
+    client = HostedAgents::AcpClient.new(nil, transport: transport, session_mode: "bypassPermissions")
+
+    assert_equal "remote-session", client.new_session
+    assert_equal %w[initialize session/new], transport.writes.map { |write| write.fetch("method") }
+  ensure
+    client&.close
+  end
+
   test "accepts a single config option object without crashing mode negotiation" do
     transport = FakeTransport.new([
       { jsonrpc: "2.0", id: 1, result: {} },
