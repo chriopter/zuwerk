@@ -44,7 +44,11 @@ module HostedAgents
     end
 
     def load_session(session_id)
-      request("session/load", { sessionId: session_id, cwd: working_directory, mcpServers: [] })
+      result = request("session/load", { sessionId: session_id, cwd: working_directory, mcpServers: [] })
+      # A resumed session needs the mode reapplied just like a new one, otherwise
+      # every ongoing conversation silently keeps the adapter's default.
+      @session_capabilities = result.except("sessionId") if result.is_a?(Hash)
+      apply_session_mode(session_id, @session_capabilities || {})
       session_id
     end
 
