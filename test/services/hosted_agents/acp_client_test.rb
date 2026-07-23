@@ -102,6 +102,20 @@ class HostedAgents::AcpClientTest < ActiveSupport::TestCase
     client&.close
   end
 
+  test "accepts a single config option object without crashing mode negotiation" do
+    transport = FakeTransport.new([
+      { jsonrpc: "2.0", id: 1, result: {} },
+      { jsonrpc: "2.0", id: 2, result: { sessionId: "remote-session", configOptions: { id: "mode", options: { value: "auto" } } } },
+      { jsonrpc: "2.0", id: 3, result: {} }
+    ])
+    client = HostedAgents::AcpClient.new(nil, transport: transport, session_mode: "auto")
+
+    assert_equal "remote-session", client.new_session
+    assert_equal "session/set_config_option", transport.writes.third.fetch("method")
+  ensure
+    client&.close
+  end
+
   test "does not set or ping a mode unless session new advertises it" do
     transport = FakeTransport.new([
       { jsonrpc: "2.0", id: 1, result: { agentCapabilities: { promptCapabilities: { image: true } } } },

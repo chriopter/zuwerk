@@ -70,8 +70,16 @@ module HostedAgents
       def session_mode = (@requested_session_mode || (@hosted_agent&.runtime == "codex" ? "agent-full-access" : "auto"))
 
       def mode_advertised?(capabilities)
-        Array(capabilities["configOptions"]).any? do |option|
-          option["id"] == "mode" && Array(option["options"]).any? { |choice| choice["value"] == session_mode }
+        object_list(capabilities["configOptions"]).any? do |option|
+          option["id"] == "mode" && object_list(option["options"]).any? { |choice| choice["value"] == session_mode }
+        end
+      end
+
+      def object_list(value)
+        case value
+        when Hash then [ value ]
+        when Array then value.grep(Hash)
+        else []
         end
       end
 
