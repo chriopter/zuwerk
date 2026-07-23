@@ -190,6 +190,9 @@ module HostedAgents
           Read the conversation, including attachment metadata and authenticated download paths, with:
           zuwerk messages list --project #{project.id}
 
+          Search semantically across this project's chat, tasks, comments, and text attachments when earlier context may matter:
+          zuwerk search --project #{project.id} --query "<what you need to know>"
+
           Format the final response with Markdown when useful (bold, italics, lists, links, quotes, and fenced code render in chat). To publish additional file attachments, use the authenticated project messages API as multipart form data with `attachments[]`.
 
           Use the Zuwerk CLI/API only for additional structured project actions. Return the final user-facing answer through ACP.
@@ -226,6 +229,9 @@ module HostedAgents
 
           Refresh the complete todo context before acting:
           zuwerk todos show #{todo.id} --project #{project.id}
+
+          Search semantically across this project's chat, tasks, comments, and text attachments when earlier context may matter:
+          zuwerk search --project #{project.id} --query "<what you need to know>"
 
           You may update this todo with:
           zuwerk todos update #{todo.id} --project #{project.id} [--title ...] [--description ...] [--status open|completed]

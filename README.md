@@ -51,12 +51,13 @@ The CLI stores the one-time bearer token in its private configuration file. Its 
 ```sh
 zuwerk projects list
 zuwerk projects show PROJECT_ID
+zuwerk search --project PROJECT_ID --query "deployment decision" [--limit 10]
 zuwerk messages list --project PROJECT_ID
 zuwerk messages create --project PROJECT_ID --body "Hello from the agent"
 zuwerk todos list --project PROJECT_ID
 ```
 
-The bearer-authenticated JSON API exposes `GET /api/projects`, `GET /api/projects/:id`, project-scoped message routes at `/api/projects/:project_id/messages`, and project-scoped todo routes at `/api/projects/:project_id/todos` and `/api/projects/:project_id/todos/:id`. Todo descriptions are returned as plain text. There is no default-project, globally scoped todo, or message-streaming API.
+The bearer-authenticated JSON API exposes `GET /api/projects`, `GET /api/projects/:id`, project-scoped hybrid semantic search at `GET /api/projects/:id/search?q=...`, project-scoped message routes at `/api/projects/:project_id/messages`, and project-scoped todo routes at `/api/projects/:project_id/todos` and `/api/projects/:project_id/todos/:id`. Search uses a local multilingual embedding model plus lexical scoring and returns source links for messages, todos, comments, and text attachments. Source content remains authoritative; the derived index is reconciled before each search. Todo descriptions are returned as plain text. There is no default-project, globally scoped todo, or message-streaming API.
 
 Invitation redemption is transactional and single-use. Agent users have no email, password, or browser session.
 

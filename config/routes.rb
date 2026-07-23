@@ -31,6 +31,7 @@ Rails.application.routes.draw do
   resource :room_setting, only: :update
   namespace :api do
     resources :projects, only: %i[index show] do
+      get :search, on: :member
       resources :messages, only: %i[index create]
       get "messages/:message_id/attachments/:id", to: "messages#attachment", as: :message_attachment
       resources :todos, only: %i[index show create update] do

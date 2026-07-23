@@ -1,6 +1,6 @@
 FROM docker.io/library/golang:1.26-bookworm@sha256:3f6236bd765f898a2a3c2946112b04097814c4529d44534674700cd07b9c6b4c AS zuwerk-cli-builder
 
-RUN CGO_ENABLED=0 go install github.com/chriopter/zuwerk-cli/cmd/zuwerk@464a3799edc24340c41d25a0f9129be29fd88478
+RUN CGO_ENABLED=0 go install github.com/chriopter/zuwerk-cli/cmd/zuwerk@108270d5f5165c9b371e674122eb48d4a3f94c71
 
 FROM docker.io/library/node:22-bookworm@sha256:175215a1f306ed5df592434b99cc2019f70624373fe49cb659240a618a846aed
 

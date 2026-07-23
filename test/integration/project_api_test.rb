@@ -8,6 +8,61 @@ class ProjectApiTest < ActionDispatch::IntegrationTest
     @headers = { "Authorization" => "Bearer agent-token" }
   end
 
+  test "search rejects invalid queries and limits without loading the embedding model" do
+    get search_api_project_path(@project), params: { q: "x", limit: 10 }, headers: @headers, as: :json
+    assert_response :unprocessable_entity
+    assert_equal "Query must contain between 2 and 500 characters.", response.parsed_body.fetch("error")
+
+    get search_api_project_path(@project), params: { q: "valid query", limit: "many" }, headers: @headers, as: :json
+    assert_response :unprocessable_entity
+    assert_equal "Limit must be between 1 and 20.", response.parsed_body.fetch("error")
+  end
+
+  test "search reports an unavailable local embedding model without leaking internals" do
+    @project.messages.create!(author: @agent, body: "Searchable context")
+    failing_embedder = Object.new
+    failing_embedder.define_singleton_method(:call) { |_texts| raise ProjectSearch::Unavailable, "Semantic search is temporarily unavailable." }
+    original_factory = ProjectSearch.embedder_factory
+    ProjectSearch.embedder_factory = -> { failing_embedder }
+    begin
+      get search_api_project_path(@project), params: { q: "search context" }, headers: @headers, as: :json
+    ensure
+      ProjectSearch.embedder_factory = original_factory
+    end
+
+    assert_response :service_unavailable
+    assert_equal({ "error" => "Semantic search is temporarily unavailable." }, response.parsed_body)
+  end
+
+  test "agent semantically searches chat tasks comments and text attachments within a project" do
+    human = User.create!(name: "Search Author", email: "search-api@example.com", password: "password1")
+    message = @project.messages.create!(author: human, body: "Die Netzwerkverbindung wurde durch einen Neustart repariert.")
+    todo = @project.todos.create!(creator: human, title: "Unrelated title", description: "Connection failure dauerhaft verhindern")
+    todo.comments.create!(author: human, body: "Socket heartbeat ergänzen")
+    message.attachments.attach(io: StringIO.new("Proxy und Tunnel prüfen"), filename: "diagnose.txt", content_type: "text/plain")
+    @other_project.messages.create!(author: human, body: "Verbindungsproblem darf nicht sichtbar sein")
+    embedder = Object.new
+    embedder.define_singleton_method(:call) do |texts|
+      Array(texts).map { |text| text.match?(/Verbindungsproblem|Netzwerkverbindung|Connection failure/i) ? [ 1.0, 0.0 ] : [ 0.0, 1.0 ] }
+    end
+
+    original_factory = ProjectSearch.embedder_factory
+    ProjectSearch.embedder_factory = -> { embedder }
+    begin
+      get search_api_project_path(@project), params: { q: "Verbindungsproblem", limit: 4 }, headers: @headers, as: :json
+    ensure
+      ProjectSearch.embedder_factory = original_factory
+    end
+
+    assert_response :success
+    payload = response.parsed_body
+    assert_equal "Verbindungsproblem", payload.fetch("query")
+    assert_equal @project.id, payload.fetch("project_id")
+    assert_equal [ "message", "todo" ], payload.fetch("results").first(2).map { |result| result.fetch("type") }.sort
+    assert payload.fetch("results").all? { |result| result.fetch("url").start_with?("/projects/#{@project.id}/") }
+    assert payload.fetch("results").none? { |result| result.fetch("snippet").include?("nicht sichtbar") }
+  end
+
   test "agent lists projects and views room setting summary" do
     @project.room_setting.update!(notify_agents: true)
 

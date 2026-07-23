@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_22_221000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_23_101500) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
@@ -184,6 +184,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_221000) do
     t.index ["project_id"], name: "index_room_settings_on_project_id", unique: true
   end
 
+  create_table "search_documents", force: :cascade do |t|
+    t.text "content", null: false
+    t.string "content_digest", null: false
+    t.datetime "created_at", null: false
+    t.text "embedding", null: false
+    t.integer "project_id", null: false
+    t.datetime "source_created_at", null: false
+    t.integer "source_id", null: false
+    t.string "source_type", null: false
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.string "url", null: false
+    t.index ["project_id", "source_type", "source_id"], name: "idx_on_project_id_source_type_source_id_9cb8df3cfe", unique: true
+    t.index ["project_id"], name: "index_search_documents_on_project_id"
+  end
+
   create_table "todo_assignments", force: :cascade do |t|
     t.integer "agent_id", null: false
     t.integer "assigner_id", null: false
@@ -256,6 +272,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_221000) do
   add_foreign_key "messages", "users", column: "author_id"
   add_foreign_key "reactions", "users", column: "author_id"
   add_foreign_key "room_settings", "projects"
+  add_foreign_key "search_documents", "projects"
   add_foreign_key "todo_assignments", "todos"
   add_foreign_key "todo_assignments", "users", column: "agent_id"
   add_foreign_key "todo_assignments", "users", column: "assigner_id"

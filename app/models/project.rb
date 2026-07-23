@@ -1,4 +1,5 @@
 class Project < ApplicationRecord
+  has_many :search_documents, dependent: :destroy
   has_many :messages, dependent: :destroy
   has_many :agent_subscriptions, dependent: :destroy
   has_many :automatically_notified_agents, through: :agent_subscriptions, source: :agent

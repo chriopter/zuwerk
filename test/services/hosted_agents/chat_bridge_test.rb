@@ -86,6 +86,7 @@ class HostedAgents::ChatBridgeTest < ActiveSupport::TestCase
     assert_includes pool.prompt_text, project.name
     assert_includes pool.prompt_text, source.body
     assert_includes pool.prompt_text, "zuwerk messages list --project #{project.id}"
+    assert_includes pool.prompt_text, "zuwerk search --project #{project.id} --query"
     assert_includes pool.prompt_text, "ACP text output is automatically saved"
     assert_includes pool.prompt_text, "Do not publish the same final response"
   end
