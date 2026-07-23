@@ -92,7 +92,9 @@ fix_storage_ownership
 # digest each request, so the precompiled public/assets copies are ignored and
 # left in place — a plain restart of the production unit reverts cleanly.
 system("bin/rails", "tailwindcss:build")
-pids << spawn("bin/rails", "tailwindcss:watch")
+# The `always` variant polls instead of watching stdin, so it keeps running when
+# started detached (e.g. under systemd) instead of exiting at stdin EOF.
+pids << spawn("bin/rails", "tailwindcss:watch[always]")
 
 # Heal any hosted-agent container whose spec drifted, the same reconciliation the
 # production unit runs before boot.
