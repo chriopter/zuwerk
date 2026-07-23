@@ -4,6 +4,7 @@ class HostedAgent < ApplicationRecord
 
   belongs_to :user
   has_many :sessions, class_name: "HostedAgentSession", dependent: :destroy
+  has_many :terminal_panes, class_name: "AgentTerminalPane", dependent: :destroy
 
   validates :runtime, inclusion: { in: RUNTIMES }
   validates :state, inclusion: { in: STATES }

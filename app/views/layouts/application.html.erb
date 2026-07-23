@@ -17,6 +17,8 @@
   <% todo_page = controller_name.in?([ "todos", "todo_comments", "todo_assignments" ]) %>
   <% chat_page = controller_name == "messages" && action_name == "index" %>
   <% board_page = controller_name.in?([ "board_posts", "board_automations" ]) %>
+  <% files_page = controller_name == "file_entries" %>
+  <% project_agents_page = controller_name.in?([ "project_agents", "agent_terminal_panes" ]) %>
   <% active_section = if controller_name == "projects"
     :projects
   elsif controller_name == "database"
@@ -27,6 +29,10 @@
     :chat
   elsif board_page
     :board
+  elsif files_page
+    :files
+  elsif project_agents_page
+    :project_agents
   else
     :agents
   end %>

@@ -13,6 +13,8 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
       project_path(@first_project),
       chat_project_path(@first_project),
       project_todos_path(@first_project),
+      project_file_entries_path(@first_project),
+      agents_project_path(@first_project),
       agents_path
     ].each do |path|
       get path
@@ -61,10 +63,12 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
     end
     assert_select ".topbar-global-nav, .topbar-account", count: 0
     assert_select ".project-home h1", text: "Alpha"
-    assert_select ".project-tool-card", count: 3
+    assert_select ".project-tool-card", count: 5
     assert_select "a[href='#{project_todos_path(@first_project)}']", text: /Tasks/
     assert_select "a[href='#{chat_project_path(@first_project)}']", text: /Chat/
     assert_select "a[href='#{project_board_posts_path(@first_project)}']", text: /Board/
+    assert_select "a[href='#{project_file_entries_path(@first_project)}']", text: /Files/
+    assert_select "a[href='#{agents_project_path(@first_project)}']", text: /Agents/
     assert_select ".project-tool-card", text: /Latest project note/
 
     get chat_project_path(@first_project)

@@ -16,6 +16,10 @@ class AgentTerminalChannelTest < ActionCable::Channel::TestCase
     end
   end
 
+  class FakePaneRuntime
+    def exists? = true
+  end
+
   class FakeBridge
     attr_reader :writes, :sizes, :start_size
 
@@ -55,11 +59,13 @@ class AgentTerminalChannelTest < ActionCable::Channel::TestCase
     stub_connection current_user: @human
     AgentTerminalChannel.bridge_factory = ->(_hosted_agent) { @bridge }
     AgentTerminalChannel.runtime_factory = ->(_hosted_agent) { FakeRuntime.new }
+    AgentTerminalChannel.pane_runtime_factory = ->(_pane) { FakePaneRuntime.new }
   end
 
   teardown do
     AgentTerminalChannel.bridge_factory = ->(hosted_agent) { HostedAgents::TerminalBridge.new(hosted_agent) }
     AgentTerminalChannel.runtime_factory = ->(hosted_agent) { HostedAgents::ContainerRuntime.new(hosted_agent) }
+    AgentTerminalChannel.pane_runtime_factory = ->(pane) { HostedAgents::TerminalPaneRuntime.new(pane) }
   end
 
   test "streams terminal output and accepts input and resize messages" do
@@ -71,6 +77,48 @@ class AgentTerminalChannelTest < ActionCable::Channel::TestCase
     perform :receive, { "type" => "resize", "rows" => 40, "columns" => 120 }
     assert_equal [ "hello" ], @bridge.writes
     assert_equal [ [ 40, 120 ] ], @bridge.sizes
+  end
+
+  test "authorizes project panes and passes the selected pane to the bridge" do
+    project = Project.create!(name: "Terminal Project")
+    pane = project.agent_terminal_panes.create!(hosted_agent: @hosted_agent, creator: @human, name: "Project shell")
+    selected = nil
+    AgentTerminalChannel.bridge_factory = ->(_hosted_agent, terminal_pane) { selected = terminal_pane; @bridge }
+
+    subscribe agent_id: @identity.id, project_id: project.id, pane_id: pane.id, rows: 30, columns: 100
+
+    assert_not subscription.rejected?
+    assert_equal pane, selected
+  end
+
+  test "project pane attachment never provisions a stopped container" do
+    project = Project.create!(name: "Stopped Pane Project")
+    pane = project.agent_terminal_panes.create!(hosted_agent: @hosted_agent, creator: @human, name: "Stopped shell")
+    runtime = FakeRuntime.new(running: false)
+    AgentTerminalChannel.runtime_factory = ->(_hosted_agent) { runtime }
+
+    subscribe agent_id: @identity.id, project_id: project.id, pane_id: pane.id
+
+    assert subscription.rejected?
+    assert_not runtime.provisioned
+  end
+
+  test "rejects a pane from another project" do
+    project = Project.create!(name: "Expected Terminal Project")
+    other = Project.create!(name: "Other Terminal Project")
+    pane = other.agent_terminal_panes.create!(hosted_agent: @hosted_agent, creator: @human, name: "Private shell")
+
+    subscribe agent_id: @identity.id, project_id: project.id, pane_id: pane.id
+
+    assert subscription.rejected?
+  end
+
+  test "rejects agent identities from direct terminal access" do
+    stub_connection current_user: @identity
+
+    subscribe agent_id: @identity.id
+
+    assert subscription.rejected?
   end
 
   test "rejects stopped agents" do

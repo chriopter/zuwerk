@@ -115,7 +115,7 @@ class ProjectSearch
     end
 
     def source_documents
-      [ *message_documents, *todo_documents, *comment_documents, *attachment_documents, *board_post_documents ]
+      [ *message_documents, *todo_documents, *comment_documents, *attachment_documents, *board_post_documents, *project_file_documents ]
     end
 
     def message_documents
@@ -155,6 +155,18 @@ class ProjectSearch
       end
     end
 
+    def project_file_documents
+      @project.file_entries.file.includes(file_attachment: :blob).order(:id).filter_map do |entry|
+        next unless entry.file.attached?
+        next unless entry.file.byte_size <= MAX_ATTACHMENT_BYTES
+        next unless entry.file.content_type.to_s.start_with?("text/")
+
+        content = entry.file.download.force_encoding(Encoding::UTF_8).scrub
+        url = project_file_entries_path(@project, folder_id: entry.parent_id, anchor: "file_entry_#{entry.id}")
+        result("project_file", entry.id, "File · #{entry.name}", content, url, entry.created_at)
+      end
+    end
+
     def result(type, source_id, title, content, url, created_at)
       Result.new(type:, source_id:, project_id: @project.id, title:, content: content.to_s.first(MAX_SOURCE_CHARACTERS), url:, score: 0.0, created_at:)
     end
@@ -180,6 +192,10 @@ class ProjectSearch
 
     def project_todo_path(...)
       Rails.application.routes.url_helpers.project_todo_path(...)
+    end
+
+    def project_file_entries_path(...)
+      Rails.application.routes.url_helpers.project_file_entries_path(...)
     end
 
     def project_board_post_path(...)

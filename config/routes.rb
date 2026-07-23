@@ -5,6 +5,8 @@ Rails.application.routes.draw do
   resources :messages, only: :create
   resources :projects, only: [ :index, :show, :create ] do
     get :chat, on: :member, to: "messages#index"
+    get :agents, on: :member, to: "project_agents#index"
+    resources :agent_terminal_panes, path: "agents/panes", only: %i[create destroy]
     resources :messages, only: :create do
       resources :reactions, only: :create
     end
@@ -14,6 +16,9 @@ Rails.application.routes.draw do
     resources :board_automations, path: "board/automations", only: %i[new create show edit update] do
       post :run_now, on: :member
       patch :toggle, on: :member
+    end
+    resources :file_entries, path: "files", only: %i[index create destroy] do
+      get :download, on: :member
     end
     resources :todos, except: :destroy do
       patch :reorder, on: :member

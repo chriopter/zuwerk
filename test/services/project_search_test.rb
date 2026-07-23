@@ -35,12 +35,15 @@ class ProjectSearchTest < ActiveSupport::TestCase
     automation = project.board_automations.create!(creator: human, agent: agent, title: "Board report", cadence: "weekly", prompt: "Report")
     board_post = automation.run_now!
     board_post.publish!("Die Dokumentation beschreibt den stabilen Betrieb.", event: board_post.agent_event)
+    file_entry = project.file_entries.new(kind: "file", name: "network-notes.txt", creator: human)
+    file_entry.file.attach(io: StringIO.new("Network connection recovery notes"), filename: "network-notes.txt", content_type: "text/plain")
+    file_entry.save!
     other_project.messages.create!(author: human, body: "Verbindungsproblem in einem anderen Projekt")
 
     embedder = SemanticFixtureEmbedder.new
     results = ProjectSearch.new(project, embedder: embedder).call("Verbindungsproblem", limit: 3)
 
-    assert_equal 5, SearchDocument.where(project: project).count
+    assert_equal 6, SearchDocument.where(project: project).count
     assert_equal [ "message", "todo" ], results.first(2).map(&:type).sort
     assert_equal matching_message.id, results.find { |result| result.type == "message" }.source_id
     assert_equal matching_todo.id, results.find { |result| result.type == "todo" }.source_id
@@ -49,6 +52,9 @@ class ProjectSearchTest < ActiveSupport::TestCase
     board_document = SearchDocument.find_by!(project: project, source_type: "board_post", source_id: board_post.id)
     assert_equal "/projects/#{project.id}/board/#{board_post.id}", board_document.url
     assert_includes board_document.content, "stabilen Betrieb"
+    file_document = SearchDocument.find_by!(project: project, source_type: "project_file", source_id: file_entry.id)
+    assert_equal "/projects/#{project.id}/files#file_entry_#{file_entry.id}", file_document.url
+    assert_includes file_document.content, "Network connection"
     assert results.none? { |result| result.content.include?("anderen Projekt") }
 
     embedder.batches.clear

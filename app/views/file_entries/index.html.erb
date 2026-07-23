@@ -1,0 +1,55 @@
+<% content_for :title, "Files · #{@project.name} · Zuwerk" %>
+<section class="files-page">
+  <nav class="workspace-breadcrumb" aria-label="Breadcrumb">
+    <%= link_to @project.name, project_path(@project) %><span aria-hidden="true">/</span>
+    <% if @folder %>
+      <%= link_to "Files", project_file_entries_path(@project) %>
+      <% @folder.lineage.each do |folder| %><span aria-hidden="true">/</span><% if folder == @folder %><span aria-current="page"><%= folder.name %></span><% else %><%= link_to folder.name, project_file_entries_path(@project, folder_id: folder.id) %><% end %><% end %>
+    <% else %>
+      <span aria-current="page">Files</span>
+    <% end %>
+  </nav>
+
+  <header class="files-header">
+    <div><p class="files-kicker">Project files</p><h1>Files</h1><p>Organize shared project material in folders.</p></div>
+  </header>
+
+  <% if @errors.present? %><div class="board-form-errors" role="alert"><strong>Could not save this item.</strong><p><%= @errors.to_sentence %></p></div><% end %>
+
+  <div class="files-actions">
+    <%= form_with url: project_file_entries_path(@project, folder_id: @folder&.id), scope: :project_file_entry, class: "files-folder-form" do |form| %>
+      <%= form.hidden_field :kind, value: "folder" %>
+      <%= form.label :name, "New folder", class: "sr-only" %>
+      <%= form.text_field :name, required: true, maxlength: 160, placeholder: "Folder name", class: "input input-bordered bg-white" %>
+      <%= form.submit "Create folder", class: "btn btn-outline" %>
+    <% end %>
+
+    <%= form_with url: project_file_entries_path(@project, folder_id: @folder&.id), multipart: true, class: "files-upload-form" do |form| %>
+      <%= form.label :uploads, "Upload files", class: "sr-only" %>
+      <%= form.file_field :uploads, multiple: true, required: true, name: "uploads[]", class: "file-input file-input-bordered bg-white" %>
+      <%= form.submit "Upload", class: "btn bg-stone-900 text-white hover:bg-stone-700" %>
+    <% end %>
+  </div>
+
+  <section class="files-browser" aria-label="Folder contents">
+    <% if @folder %>
+      <%= link_to project_file_entries_path(@project, folder_id: @folder.parent_id), class: "file-row file-row-parent" do %><span class="file-icon" aria-hidden="true">↰</span><span><strong>Parent folder</strong><small>Go up one level</small></span><% end %>
+    <% end %>
+
+    <% @folders.each do |folder| %>
+      <div class="file-row-wrap">
+        <%= link_to project_file_entries_path(@project, folder_id: folder.id), class: "file-row" do %><span class="file-icon" aria-hidden="true">▰</span><span><strong><%= folder.name %></strong><small>Folder · <%= pluralize(folder.children.size, "item") %></small></span><% end %>
+        <%= button_to "Delete", project_file_entry_path(@project, folder), method: :delete, class: "file-delete", form: { data: { turbo_confirm: "Delete this folder and everything inside it?" } } %>
+      </div>
+    <% end %>
+
+    <% @files.each do |entry| %>
+      <div class="file-row-wrap" id="file_entry_<%= entry.id %>">
+        <%= link_to download_project_file_entry_path(@project, entry), class: "file-row" do %><span class="file-icon" aria-hidden="true">□</span><span><strong><%= entry.name %></strong><small><%= number_to_human_size(entry.file.byte_size) %> · <%= entry.file.content_type %></small></span><span class="file-download">Download</span><% end %>
+        <%= button_to "Delete", project_file_entry_path(@project, entry), method: :delete, class: "file-delete", form: { data: { turbo_confirm: "Delete #{entry.name}?" } } %>
+      </div>
+    <% end %>
+
+    <% if @folders.empty? && @files.empty? %><div class="files-empty"><strong>This folder is empty.</strong><p>Create a folder or upload files to begin.</p></div><% end %>
+  </section>
+</section>

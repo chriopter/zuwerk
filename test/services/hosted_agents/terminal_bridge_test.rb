@@ -18,6 +18,33 @@ class HostedAgents::TerminalBridgeTest < ActiveSupport::TestCase
     end
   end
 
+  class FakeCommandExecutor
+    attr_reader :commands
+
+    def initialize
+      @commands = []
+    end
+
+    def run(*argv)
+      @commands << argv
+      ""
+    end
+  end
+
+  test "attaches a project pane to its independent tmux session" do
+    human = User.create!(name: "Pane Human", email: "pane-human@example.com", password: "password1")
+    identity = User.create!(name: "Pane terminal agent", kind: :agent)
+    hosted_agent = HostedAgent.create!(user: identity, runtime: "codex", state: "running", container_id: "pane-container")
+    pane = Project.create!(name: "Pane Terminal Project").agent_terminal_panes.create!(hosted_agent:, creator: human, name: "Review pane")
+    interactive = FakeInteractiveExecutor.new
+    executor = FakeCommandExecutor.new
+
+    HostedAgents::TerminalBridge.new(hosted_agent, executor:, interactive_executor: interactive, terminal_pane: pane).start { }
+
+    command = interactive.argv.fetch(-2)
+    assert_includes command, "tmux attach-session -t #{pane.tmux_window}"
+  end
+
   test "starts a fresh tmux session when the runtime session disappeared" do
     identity = User.create!(name: "Terminal agent", kind: :agent)
     hosted_agent = HostedAgent.create!(user: identity, runtime: "codex", state: "running", container_id: "container-id")

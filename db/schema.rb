@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_23_114000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_23_131000) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
@@ -51,7 +51,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_23_114000) do
 
   create_table "agent_approvals", force: :cascade do |t|
     t.integer "agent_event_id", null: false
-    t.datetime "cancelled_at"
     t.datetime "created_at", null: false
     t.json "details", default: {}, null: false
     t.datetime "expired_at"
@@ -59,7 +58,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_23_114000) do
     t.json "request_id", null: false
     t.datetime "resolved_at"
     t.integer "resolved_by_id"
-    t.json "selected_option_id"
+    t.string "selected_option_id"
     t.string "state", default: "pending", null: false
     t.datetime "updated_at", null: false
     t.index ["agent_event_id"], name: "index_agent_approvals_on_agent_event_id"
@@ -115,6 +114,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_23_114000) do
     t.index ["agent_id"], name: "index_agent_subscriptions_on_agent_id"
     t.index ["project_id", "agent_id"], name: "index_agent_subscriptions_on_project_id_and_agent_id", unique: true
     t.index ["project_id"], name: "index_agent_subscriptions_on_project_id"
+  end
+
+  create_table "agent_terminal_panes", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "creator_id", null: false
+    t.integer "hosted_agent_id", null: false
+    t.string "name", null: false
+    t.integer "project_id", null: false
+    t.string "tmux_window", null: false
+    t.datetime "updated_at", null: false
+    t.index ["creator_id"], name: "index_agent_terminal_panes_on_creator_id"
+    t.index ["hosted_agent_id"], name: "index_agent_terminal_panes_on_hosted_agent_id"
+    t.index ["project_id"], name: "index_agent_terminal_panes_on_project_id"
+    t.index ["tmux_window"], name: "index_agent_terminal_panes_on_tmux_window", unique: true
   end
 
   create_table "board_automations", force: :cascade do |t|
@@ -188,6 +201,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_23_114000) do
     t.index ["agent_event_id"], name: "index_messages_on_agent_event_id", unique: true
     t.index ["author_id"], name: "index_messages_on_author_id"
     t.index ["project_id"], name: "index_messages_on_project_id"
+  end
+
+  create_table "project_file_entries", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "creator_id", null: false
+    t.string "kind", null: false
+    t.string "name", null: false
+    t.string "name_key", null: false
+    t.integer "parent_id"
+    t.integer "project_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["creator_id"], name: "index_project_file_entries_on_creator_id"
+    t.index ["parent_id"], name: "index_project_file_entries_on_parent_id"
+    t.index ["project_id", "name_key"], name: "index_root_file_entries_on_project_name", unique: true, where: "parent_id IS NULL"
+    t.index ["project_id", "parent_id", "name_key"], name: "index_file_entries_on_project_parent_name", unique: true, where: "parent_id IS NOT NULL"
+    t.index ["project_id"], name: "index_project_file_entries_on_project_id"
   end
 
   create_table "projects", force: :cascade do |t|
@@ -298,6 +327,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_23_114000) do
   add_foreign_key "agent_invitations", "users", column: "inviter_id"
   add_foreign_key "agent_subscriptions", "projects"
   add_foreign_key "agent_subscriptions", "users", column: "agent_id"
+  add_foreign_key "agent_terminal_panes", "hosted_agents"
+  add_foreign_key "agent_terminal_panes", "projects"
+  add_foreign_key "agent_terminal_panes", "users", column: "creator_id"
   add_foreign_key "board_automations", "projects"
   add_foreign_key "board_automations", "users", column: "agent_id"
   add_foreign_key "board_automations", "users", column: "creator_id"
@@ -309,6 +341,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_23_114000) do
   add_foreign_key "messages", "agent_events"
   add_foreign_key "messages", "projects"
   add_foreign_key "messages", "users", column: "author_id"
+  add_foreign_key "project_file_entries", "project_file_entries", column: "parent_id"
+  add_foreign_key "project_file_entries", "projects"
+  add_foreign_key "project_file_entries", "users", column: "creator_id"
   add_foreign_key "reactions", "users", column: "author_id"
   add_foreign_key "room_settings", "projects"
   add_foreign_key "search_documents", "projects"

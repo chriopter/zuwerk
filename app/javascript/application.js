@@ -8,6 +8,8 @@ import { createConsumer } from "@rails/actioncable"
 import { Terminal } from "@xterm/xterm"
 import { FitAddon } from "@xterm/addon-fit"
 
+const terminalConsumer = createConsumer()
+
 let cleanupAgentTerminal = () => {}
 
 const mountAgentTerminal = (cockpit) => {
@@ -33,7 +35,7 @@ const mountAgentTerminal = (cockpit) => {
   let subscription
   let resizeTimer
   let connectedSize = ""
-  const consumer = createConsumer()
+  const consumer = terminalConsumer
 
   const connectTerminal = () => {
     if (disposed) return
@@ -49,6 +51,8 @@ const mountAgentTerminal = (cockpit) => {
       {
         channel: "AgentTerminalChannel",
         agent_id: cockpit.dataset.terminalAgentId,
+        project_id: cockpit.dataset.terminalProjectId,
+        pane_id: cockpit.dataset.terminalPaneId,
         rows,
         columns
       },
@@ -101,7 +105,6 @@ const mountAgentTerminal = (cockpit) => {
     reconnectButton?.removeEventListener("click", reconnect)
     resizeObserver.disconnect()
     subscription?.unsubscribe()
-    consumer.disconnect()
     cockpit.removeAttribute("data-terminal-mounted")
     terminal.dispose()
   }
@@ -110,25 +113,26 @@ const mountAgentTerminal = (cockpit) => {
 const prepareAgentTerminal = () => {
   cleanupAgentTerminal()
 
-  const cockpit = document.querySelector("[data-terminal-agent-id]")
-  const disclosure = cockpit?.closest("details")
-  if (!cockpit) return
-  if (!disclosure) {
-    cleanupAgentTerminal = mountAgentTerminal(cockpit)
-    return
-  }
+  const cleanups = Array.from(document.querySelectorAll("[data-terminal-agent-id]")).map((cockpit) => {
+    const disclosure = cockpit.closest("details")
+    if (!disclosure) return mountAgentTerminal(cockpit)
 
-  let cleanupMountedTerminal = () => {}
-  const syncTerminal = () => {
-    cleanupMountedTerminal()
-    cleanupMountedTerminal = disclosure.open ? mountAgentTerminal(cockpit) : () => {}
-  }
+    let cleanupMountedTerminal = () => {}
+    const syncTerminal = () => {
+      cleanupMountedTerminal()
+      cleanupMountedTerminal = disclosure.open ? mountAgentTerminal(cockpit) : () => {}
+    }
 
-  disclosure.addEventListener("toggle", syncTerminal)
-  syncTerminal()
+    disclosure.addEventListener("toggle", syncTerminal)
+    syncTerminal()
+    return () => {
+      disclosure.removeEventListener("toggle", syncTerminal)
+      cleanupMountedTerminal()
+    }
+  })
+
   cleanupAgentTerminal = () => {
-    disclosure.removeEventListener("toggle", syncTerminal)
-    cleanupMountedTerminal()
+    cleanups.forEach((cleanup) => cleanup())
     cleanupAgentTerminal = () => {}
   }
 }

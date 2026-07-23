@@ -3,10 +3,11 @@ module HostedAgents
     MAX_INPUT = 4_096
     SESSION = "agent"
 
-    def initialize(hosted_agent, executor: CommandExecutor.new, interactive_executor: InteractiveCommandExecutor.new)
+    def initialize(hosted_agent, executor: CommandExecutor.new, interactive_executor: InteractiveCommandExecutor.new, terminal_pane: nil)
       @hosted_agent = hosted_agent
       @executor = executor
       @interactive_executor = interactive_executor
+      @terminal_pane = terminal_pane
     end
 
     def start(rows: 24, columns: 80, &on_output)
@@ -15,7 +16,11 @@ module HostedAgents
       rows = rows.to_i.clamp(10, 200)
       columns = columns.to_i.clamp(20, 400)
       runtime_command = @hosted_agent.runtime == "codex" ? "codex" : "claude"
-      attach_command = "tmux has-session -t agent 2>/dev/null || tmux new-session -d -s agent -c /workspace 'exec #{runtime_command}'; stty rows \"$ZUWERK_ROWS\" cols \"$ZUWERK_COLUMNS\"; exec tmux attach-session -t agent"
+      if @terminal_pane
+        attach_command = "stty rows \"$ZUWERK_ROWS\" cols \"$ZUWERK_COLUMNS\"; exec tmux attach-session -t #{terminal_target}"
+      else
+        attach_command = "tmux has-session -t agent 2>/dev/null || tmux new-session -d -s agent -c /workspace 'exec #{runtime_command}'; stty rows \"$ZUWERK_ROWS\" cols \"$ZUWERK_COLUMNS\"; exec tmux attach-session -t agent"
+      end
 
       argv = [
         "podman", "exec", "-i",
@@ -43,7 +48,7 @@ module HostedAgents
       columns = columns.to_i.clamp(20, 400)
       @executor.run(
         "podman", "exec", @hosted_agent.container_name,
-        "tmux", "resize-window", "-t", "#{SESSION}:0", "-x", columns.to_s, "-y", rows.to_s
+        "tmux", "resize-window", "-t", resize_target, "-x", columns.to_s, "-y", rows.to_s
       )
     end
 
@@ -58,6 +63,14 @@ module HostedAgents
     end
 
     private
+      def terminal_target
+        @terminal_pane ? @terminal_pane.tmux_window : SESSION
+      end
+
+      def resize_target
+        "#{terminal_target}:0"
+      end
+
       def read_output
         loop do
           chunk = @reader.readpartial(16_384)
