@@ -1,0 +1,23 @@
+[Unit]
+Description=Zuwerk dev server (live CSS preview on 3200)
+After=network.target zuwerk.service
+
+[Service]
+Type=simple
+WorkingDirectory=/root/git/zuwerk
+# Development mode keeps code reloading and the tailwind watcher on, so every
+# CSS edit an agent makes in the shared checkout is rebuilt and served live
+# without a precompile or restart. Pointed at the production database so it
+# mirrors the real chat instead of the empty development one.
+Environment=RAILS_ENV=development
+Environment=PORT=3200
+Environment=BINDING=0.0.0.0
+Environment=DATABASE_URL=sqlite3:storage/production.sqlite3
+Environment=HOME=/root
+Environment=RUBY_DEBUG_LAZY=true
+ExecStart=/root/git/zuwerk/bin/dev
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

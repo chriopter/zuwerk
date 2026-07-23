@@ -50,6 +50,24 @@ The endpoint touches `tmp/restart.txt`, which Puma's `tmp_restart` plugin picks
 up to reboot the process. It is only routed outside production, so a deployed
 server offers no restart route at all.
 
+### Live CSS preview beside production
+
+The production server (port 3100) serves fingerprinted, precompiled assets, so a
+CSS change only appears after `rails assets:precompile` and a restart. To see an
+agent's design work immediately, run the dev server permanently beside it. It
+watches `app/assets/tailwind/application.css` and serves the rebuilt stylesheet
+live, pointed at the production database so it mirrors the real workspace.
+
+```sh
+sudo cp deploy/zuwerk-dev.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now zuwerk-dev.service
+```
+
+The preview is then on port 3200. Production on 3100 is untouched; promote a
+reviewed change there with `RAILS_ENV=production bin/rails assets:precompile`
+followed by `systemctl restart zuwerk.service`.
+
 ## Test and security checks
 
 ```sh
