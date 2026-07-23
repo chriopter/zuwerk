@@ -7,8 +7,9 @@ class ProjectsController < ApplicationController
   end
 
   def show
-    @project = Project.includes(:todos).find(params[:id])
-    @recent_todos = @project.todos.reject(&:completed?).sort_by { |todo| [ todo.updated_at, todo.id ] }.reverse.first(4)
+    @project = Project.find(params[:id])
+    @task_counts = @project.todos.group(:status).count
+    @recent_todos = @project.todos.where.not(status: :completed).order(updated_at: :desc, id: :desc).limit(4)
     @recent_messages = @project.messages.includes(:author).order(created_at: :desc, id: :desc).limit(3)
   end
 

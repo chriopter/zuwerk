@@ -65,7 +65,8 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
     assert_select ".project-switcher summary", text: /#{Regexp.escape(project.name)}/
     assert_select ".workspace-breadcrumb span[aria-current='page']", text: "Chat"
     assert_select ".chat-header-bar .workspace-breadcrumb"
-    assert_select ".chat-header-bar h1.sr-only", text: "Chat"
+    assert_select ".chat-header-bar h1.sr-only", text: "Chat", count: 1
+    assert_select "h1", count: 1
     assert_select ".notify-menu form[action='#{project_agent_subscription_path(project, @agent)}'] button[aria-pressed='false']", text: /Hermes/
     assert_select "a", text: /Invite agent/
     assert_select "#message-viewport #messages"

@@ -14,7 +14,7 @@
     <%= link_to project_todos_path(@project), class: "project-tool-card project-tool-tasks" do %>
       <header>
         <span class="project-tool-icon" aria-hidden="true">✓</span>
-        <span><strong>Tasks</strong><small><%= @project.todos.count(&:open?) %> open · <%= @project.todos.count(&:in_progress?) %> in progress</small></span>
+        <span><strong>Tasks</strong><small><%= @task_counts.fetch("open", 0) %> open · <%= @task_counts.fetch("in_progress", 0) %> in progress</small></span>
         <span class="project-tool-arrow" aria-hidden="true">→</span>
       </header>
       <div class="project-tool-preview">
