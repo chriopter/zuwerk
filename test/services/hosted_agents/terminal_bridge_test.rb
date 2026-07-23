@@ -57,4 +57,14 @@ class HostedAgents::TerminalBridgeTest < ActiveSupport::TestCase
     assert_includes command, "tmux new-session -d -s agent -c /workspace 'exec codex'"
     assert_equal true, executor.options[:pgroup]
   end
+
+  test "a shared folder agent gets a terminal in the mounted checkout" do
+    identity = User.create!(name: "Shared terminal agent", kind: :agent)
+    hosted_agent = HostedAgent.create!(user: identity, runtime: "claude", state: "running", shared_folder: true)
+    executor = FakeInteractiveExecutor.new
+
+    HostedAgents::TerminalBridge.new(hosted_agent, interactive_executor: executor).start { }
+
+    assert_includes executor.argv.fetch(-2), "-c #{HostedAgents::ContainerRuntime::SHARED_MOUNT_PATH} 'exec claude'"
+  end
 end

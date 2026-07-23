@@ -36,7 +36,7 @@ module HostedAgents
     def alive? = @transport&.alive?
 
     def new_session
-      result = request("session/new", { cwd: "/workspace", mcpServers: [] })
+      result = request("session/new", { cwd: working_directory, mcpServers: [] })
       session_id = result.fetch("sessionId")
       @session_capabilities = result.except("sessionId")
       if mode_advertised?(@session_capabilities)
@@ -47,7 +47,7 @@ module HostedAgents
     end
 
     def load_session(session_id)
-      request("session/load", { sessionId: session_id, cwd: "/workspace", mcpServers: [] })
+      request("session/load", { sessionId: session_id, cwd: working_directory, mcpServers: [] })
       session_id
     end
 
@@ -68,6 +68,7 @@ module HostedAgents
 
     private
       def session_mode = (@requested_session_mode || (@hosted_agent&.runtime == "codex" ? "agent-full-access" : "auto"))
+      def working_directory = (@hosted_agent&.working_directory || HostedAgent::WORKSPACE_PATH)
 
       def mode_advertised?(capabilities)
         object_list(capabilities["configOptions"]).any? do |option|

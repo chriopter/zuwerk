@@ -29,7 +29,7 @@ Rails.application.routes.draw do
     end
   end
   resources :agent_invitations, only: %i[new create show]
-  resources :agents, only: %i[index new create show] do
+  resources :agents, only: %i[index new create show update] do
     post :start, on: :member
     post :stop, on: :member
     post :restart, on: :member
@@ -48,6 +48,7 @@ Rails.application.routes.draw do
         resources :comments, controller: "todo_comments", only: %i[index create]
       end
     end
+    post "restart", to: "restarts#create", as: :restart if Rails.env.local?
     post "agent/status", to: "agent_presences#update", as: :agent_status
     post "agent_invitations/:token/redeem", to: "agent_invitations#create", as: :redeem_agent_invitation
   end

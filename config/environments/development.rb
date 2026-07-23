@@ -1,10 +1,18 @@
 require "active_support/core_ext/integer/time"
+require "ipaddr"
 
 Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
 
   # Make code changes take effect immediately without server restart.
   config.enable_reloading = true
+
+  # Hosted agents call in through the container alias and humans through the LAN
+  # address, so accept both alongside the localhost defaults.
+  config.hosts << "host.containers.internal"
+  config.hosts << IPAddr.new("10.0.0.0/8")
+  config.hosts << IPAddr.new("172.16.0.0/12")
+  config.hosts << IPAddr.new("192.168.0.0/16")
 
   # Do not eager load code on boot.
   config.eager_load = false

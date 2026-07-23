@@ -2,14 +2,17 @@ require "test_helper"
 
 class HostedAgents::StartupReconcilerTest < ActiveSupport::TestCase
   class FakeRuntime
-    attr_reader :provisioned
+    attr_reader :provisioned, :recreated
 
-    def initialize(running:)
+    def initialize(running:, mounts_current: true)
       @running = running
+      @mounts_current = mounts_current
     end
 
     def running? = @running
+    def mounts_current? = @mounts_current
     def provision = @provisioned = true
+    def recreate = @recreated = true
   end
 
   class FakeProvisioner
@@ -45,6 +48,24 @@ class HostedAgents::StartupReconcilerTest < ActiveSupport::TestCase
       provisioner_factory: ->(_agent) { provisioner }
     )
 
+    assert_not runtime.provisioned
+    assert_not runtime.recreated
+    assert provisioner.called
+  end
+
+  test "recreates a running agent whose container no longer matches its shared folder" do
+    identity = User.create!(name: "Drifted agent", kind: :agent)
+    hosted_agent = HostedAgent.create!(user: identity, runtime: "claude", state: "running", shared_folder: true)
+    runtime = FakeRuntime.new(running: true, mounts_current: false)
+    provisioner = FakeProvisioner.new
+
+    HostedAgents::StartupReconciler.call(
+      scope: HostedAgent.where(id: hosted_agent.id),
+      runtime_factory: ->(_agent) { runtime },
+      provisioner_factory: ->(_agent) { provisioner }
+    )
+
+    assert runtime.recreated
     assert_not runtime.provisioned
     assert provisioner.called
   end

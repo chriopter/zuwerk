@@ -1,4 +1,5 @@
 class HostedAgent < ApplicationRecord
+  WORKSPACE_PATH = "/workspace".freeze
   RUNTIMES = %w[claude codex].freeze
   STATES = %w[provisioning stopped starting running stopping error].freeze
 
@@ -13,6 +14,12 @@ class HostedAgent < ApplicationRecord
 
   def container_name
     "zuwerk-agent-#{user_id}"
+  end
+
+  # Agents with the shared folder work on the mounted host checkout, everyone
+  # else stays in their own workspace volume.
+  def working_directory
+    shared_folder? ? HostedAgents::ContainerRuntime::SHARED_MOUNT_PATH : WORKSPACE_PATH
   end
 
   def claude? = runtime == "claude"

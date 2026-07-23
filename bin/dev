@@ -5,8 +5,12 @@ if ! gem list foreman -i --silent; then
   gem install foreman
 fi
 
-# Default to port 3000 if not specified
-export PORT="${PORT:-3000}"
+# Run beside the production server on 3100 instead of clashing with it.
+export PORT="${PORT:-3200}"
+
+# Hosted agents reach this server through host.containers.internal, so bind
+# every interface rather than loopback only.
+export BINDING="${BINDING:-0.0.0.0}"
 
 # Let the debug gem allow remote connections,
 # but avoid loading until `debugger` is called

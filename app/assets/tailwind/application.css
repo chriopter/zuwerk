@@ -334,6 +334,12 @@
   .agent-toolbar form { @apply inline-flex; }
   .agent-toolbar button { @apply min-h-11 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 transition hover:bg-stone-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#27332d] disabled:cursor-not-allowed disabled:opacity-40; }
   .agent-toolbar > span { @apply mr-auto pl-2 text-[10px] font-semibold uppercase tracking-[.12em] text-stone-400; }
+  .agent-shared-folder { @apply mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-stone-200 bg-white p-4; }
+  .agent-shared-folder > label { @apply flex flex-1 cursor-pointer items-start gap-3; }
+  .agent-shared-folder input[type="checkbox"] { @apply mt-1 accent-[#d9563b]; }
+  .agent-shared-folder strong { @apply block text-sm font-semibold text-stone-900; }
+  .agent-shared-folder small { @apply mt-1 block text-xs text-stone-500; }
+  .agent-shared-folder input[type="submit"] { @apply min-h-11 cursor-pointer rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 transition hover:bg-stone-50; }
   .agent-terminal-page { @apply flex h-full min-h-0 flex-col bg-[#111318]; }
   .agent-terminal-header { @apply flex shrink-0 items-center justify-between gap-4 border-b border-stone-800 bg-[#181b21] px-5 py-3 text-stone-200; }
   .agent-terminal-header h1 { @apply truncate text-base font-semibold text-white; }

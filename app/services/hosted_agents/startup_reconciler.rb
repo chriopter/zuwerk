@@ -9,7 +9,12 @@ module HostedAgents
     )
       scope.find_each do |hosted_agent|
         runtime = runtime_factory.call(hosted_agent)
-        runtime.provision unless runtime.running?
+        if !runtime.running?
+          runtime.provision
+        elsif !runtime.mounts_current?
+          Rails.logger.info("Hosted agent #{hosted_agent.id} is recreated to match its shared folder setting")
+          runtime.recreate
+        end
         provisioner_factory.call(hosted_agent).call
       rescue StandardError => error
         Rails.logger.error("Hosted agent #{hosted_agent.id} startup reconciliation failed: #{error.class}: #{error.message}")

@@ -19,7 +19,7 @@ module HostedAgents
       if @terminal_pane
         attach_command = "stty rows \"$ZUWERK_ROWS\" cols \"$ZUWERK_COLUMNS\"; exec tmux attach-session -t #{terminal_target}"
       else
-        attach_command = "tmux has-session -t agent 2>/dev/null || tmux new-session -d -s agent -c /workspace 'exec #{runtime_command}'; stty rows \"$ZUWERK_ROWS\" cols \"$ZUWERK_COLUMNS\"; exec tmux attach-session -t agent"
+        attach_command = "tmux has-session -t agent 2>/dev/null || tmux new-session -d -s agent -c #{@hosted_agent.working_directory} 'exec #{runtime_command}'; stty rows \"$ZUWERK_ROWS\" cols \"$ZUWERK_COLUMNS\"; exec tmux attach-session -t agent"
       end
 
       argv = [

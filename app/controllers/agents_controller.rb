@@ -1,7 +1,7 @@
 class AgentsController < ApplicationController
   before_action :require_human!
 
-  before_action :set_agent, only: %i[show start stop restart]
+  before_action :set_agent, only: %i[show update start stop restart]
 
   def index
     @hosted_agents = HostedAgent.includes(:user).order(:created_at)
@@ -20,7 +20,12 @@ class AgentsController < ApplicationController
     hosted_agent = nil
     HostedAgent.transaction do
       identity = User.create!(name: agent_params[:name], kind: :agent)
-      hosted_agent = HostedAgent.create!(user: identity, runtime: agent_params[:runtime], state: "provisioning")
+      hosted_agent = HostedAgent.create!(
+        user: identity,
+        runtime: agent_params[:runtime],
+        state: "provisioning",
+        shared_folder: shared_folder_param
+      )
     end
     ProvisionHostedAgentJob.perform_later(hosted_agent)
     redirect_to agent_path(hosted_agent.user), notice: "Agent environment is being created."
@@ -33,6 +38,14 @@ class AgentsController < ApplicationController
     @hosted_agent = @agent.hosted_agent
     redirect_to agents_path, alert: "This agent uses an external environment." unless @hosted_agent
     @cloud_sessions = @hosted_agent.sessions.includes(:origin).order(last_used_at: :desc, created_at: :desc) if @hosted_agent
+  end
+
+  def update
+    return redirect_to(agents_path, alert: "This agent uses an external environment.") unless @agent.hosted_agent
+
+    @agent.hosted_agent.update!(shared_folder: shared_folder_param)
+    ManageHostedAgentJob.perform_later(@agent.hosted_agent, "recreate")
+    redirect_to agent_path(@agent), notice: "Shared folder updated. The container is being recreated."
   end
 
   %i[start stop restart].each do |action|
@@ -51,6 +64,10 @@ class AgentsController < ApplicationController
     end
 
     def agent_params
-      params.require(:agent).permit(:name, :runtime)
+      params.require(:agent).permit(:name, :runtime, :shared_folder)
+    end
+
+    def shared_folder_param
+      ActiveModel::Type::Boolean.new.cast(agent_params[:shared_folder]) || false
     end
 end

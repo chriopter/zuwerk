@@ -16,7 +16,7 @@ module HostedAgents
       @executor.run(
         "podman", "exec", @hosted_agent.container_name,
         "tmux", "new-session", "-d", "-s", @pane.tmux_window,
-        "-c", "/workspace", runtime_command
+        "-c", @hosted_agent.working_directory, runtime_command
       )
       @pane
     end
@@ -39,6 +39,8 @@ module HostedAgents
 
     private
       def bootstrap_workspace
+        # The shared folder is already a checkout of the host repository.
+        return if @hosted_agent.shared_folder?
         return if @repository_url.blank? || workspace_repository?
 
         @executor.run(

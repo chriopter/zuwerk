@@ -37,7 +37,7 @@
     <article class="agent-overview-card" data-agent-summary="workspace">
       <span>Workspace</span>
       <strong>Persistent</strong>
-      <p>Home, login and files survive restarts.</p>
+      <p>Home, login and files survive restarts.<%= " Shared folder mounted at #{HostedAgents::ContainerRuntime::SHARED_MOUNT_PATH}." if @hosted_agent.shared_folder? %></p>
     </article>
   </section>
 
@@ -47,6 +47,17 @@
     <%= button_to "Restart", restart_agent_path(@agent) %>
     <%= button_to "Stop", stop_agent_path(@agent), disabled: @hosted_agent.stopped? %>
   </div>
+
+  <%= form_with url: agent_path(@agent), method: :patch, scope: :agent, class: "agent-shared-folder" do |form| %>
+    <label>
+      <%= form.check_box :shared_folder, checked: @hosted_agent.shared_folder? %>
+      <span>
+        <strong>Shared folder</strong>
+        <small>Read-write access to <%= HostedAgents::ContainerRuntime.shared_folder_source %> at <%= HostedAgents::ContainerRuntime::SHARED_MOUNT_PATH %>. Applying recreates the container; home and workspace are kept.</small>
+      </span>
+    </label>
+    <%= form.submit "Apply" %>
+  <% end %>
 
   <% if @hosted_agent.last_error.present? %>
     <div class="agents-form-errors"><strong>Container error:</strong> <%= @hosted_agent.last_error %></div>

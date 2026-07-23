@@ -50,4 +50,17 @@ class HostedAgents::TerminalPaneRuntimeTest < ActiveSupport::TestCase
     assert_includes executor.commands, [ "podman", "exec", hosted.container_name, "git", "-C", "/workspace", "rev-parse", "--is-inside-work-tree" ]
     assert_includes executor.commands, [ "podman", "exec", hosted.container_name, "git", "clone", repository_url, "/workspace" ]
   end
+
+  test "a shared folder agent works in the mounted checkout instead of cloning" do
+    human = User.create!(name: "Shared Human", email: "shared-human@example.com", password: "password1")
+    agent = User.create!(name: "Shared Agent", kind: :agent)
+    hosted = HostedAgent.create!(user: agent, runtime: "claude", state: "running", shared_folder: true)
+    pane = Project.create!(name: "Shared Project").agent_terminal_panes.create!(hosted_agent: hosted, creator: human, name: "Code")
+    executor = FakeExecutor.new
+
+    HostedAgents::TerminalPaneRuntime.new(pane, executor: executor, repository_url: "https://github.com/example/project.git").create
+
+    assert_includes executor.commands, [ "podman", "exec", hosted.container_name, "tmux", "new-session", "-d", "-s", pane.tmux_window, "-c", HostedAgents::ContainerRuntime::SHARED_MOUNT_PATH, "claude" ]
+    assert_not executor.commands.any? { |command| command.include?("clone") }
+  end
 end

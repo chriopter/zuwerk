@@ -30,6 +30,16 @@
         <span><strong>Codex</strong><small>OpenAI Codex CLI with a persistent workspace</small></span>
       </label>
     </fieldset>
+    <fieldset>
+      <legend>Shared folder</legend>
+      <label class="runtime-choice">
+        <%= form.check_box :shared_folder %>
+        <span>
+          <strong>Mount the host folder</strong>
+          <small>Gives the agent read-write access to <%= HostedAgents::ContainerRuntime.shared_folder_source %> at <%= HostedAgents::ContainerRuntime::SHARED_MOUNT_PATH %>.</small>
+        </span>
+      </label>
+    </fieldset>
     <div class="agents-form-actions">
       <%= link_to "Cancel", agents_path %>
       <%= form.submit "Create agent", class: "agents-primary-action" %>

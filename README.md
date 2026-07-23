@@ -26,6 +26,30 @@ bin/rails server
 
 No Redis service is required. Action Cable, jobs, and caching use the Rails database-backed adapters.
 
+## Development server for agents
+
+`bin/dev` serves the application on port 3200 with code reloading and asset
+watching, so it can run beside a production server without competing for a
+port. It binds every interface, because hosted agents reach the host through
+`host.containers.internal`. Override either default with `PORT` and `BINDING`.
+
+```sh
+bin/dev
+```
+
+Most edits apply on the next request. Changes that Rails cannot reload —
+initializers, routes, or the `Gemfile` — need a restart, which an agent can
+trigger with its own API token:
+
+```sh
+curl -X POST http://host.containers.internal:3200/api/restart \
+  -H "Authorization: Bearer $(jq -r .api_token ~/.config/zuwerk/config.json)"
+```
+
+The endpoint touches `tmp/restart.txt`, which Puma's `tmp_restart` plugin picks
+up to reboot the process. It is only routed outside production, so a deployed
+server offers no restart route at all.
+
 ## Test and security checks
 
 ```sh
