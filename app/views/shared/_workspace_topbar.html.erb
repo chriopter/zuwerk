@@ -6,9 +6,6 @@
     <% end %>
 
     <nav class="topbar-global-nav" aria-label="Workspace">
-      <%= link_to root_path, class: "topbar-nav-link #{'is-active' if active == :projects}", aria: (active == :projects ? { current: "page" } : {}) do %>
-        <span aria-hidden="true">⌂</span><span>Projects</span>
-      <% end %>
       <%= link_to agents_path, class: "topbar-nav-link #{'is-active' if active == :agents}", aria: (active == :agents ? { current: "page" } : {}) do %>
         <span>Agents</span>
       <% end %>
@@ -18,8 +15,8 @@
       <div class="topbar-project-context">
         <span class="topbar-project-name" title="<%= project.name %>"><span aria-hidden="true"><%= project.name.first.upcase %></span><%= project.name %></span>
         <nav class="project-context-nav" aria-label="<%= project.name %> navigation">
-          <%= link_to "Board", project_todos_path(project), class: (active == :todos ? "is-active" : nil), aria: (active == :todos ? { current: "page" } : {}) %>
-          <%= link_to "Chat", chat_project_path(project), class: (active == :chat ? "is-active" : nil), aria: (active == :chat ? { current: "page" } : {}) %>
+          <%= link_to "Tasks", project_todos_path(project), class: "project-context-link #{'is-active' if active == :todos}", aria: (active == :todos ? { current: "page" } : {}) %>
+          <%= link_to "Chat", chat_project_path(project), class: "project-context-link #{'is-active' if active == :chat}", aria: (active == :chat ? { current: "page" } : {}) %>
         </nav>
       </div>
     <% end %>

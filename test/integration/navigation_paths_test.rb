@@ -54,19 +54,24 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
       assert_select "h2", text: "Alpha"
       assert_select "[data-project-fact='open']", text: /1 open/
       assert_select "[data-project-fact='in-progress']", text: /1 in progress/
-      assert_select "a[href='#{project_todos_path(@first_project)}']", text: "Board"
+      assert_select "a[href='#{project_todos_path(@first_project)}']", text: "Tasks"
       assert_select "a[href='#{chat_project_path(@first_project)}']", text: "Chat"
     end
 
     get chat_project_path(@second_project)
     assert_response :success
-    assert_select ".workspace-topbar", text: /Beta/
-    assert_select ".project-context-nav a[aria-current='page'][href='#{chat_project_path(@second_project)}']", text: "Chat"
+    assert_select ".topbar-brand[href='#{root_path}']", text: /Zuwerk/
+    assert_select ".topbar-global-nav a[href='#{root_path}']", count: 0
+    assert_select ".project-context-nav" do
+      assert_select "a.project-context-link", count: 2
+      assert_select "a[aria-current='page'][href='#{chat_project_path(@second_project)}']", text: "Chat"
+      assert_select "a[href='#{project_todos_path(@second_project)}']", text: "Tasks"
+    end
     assert_select "form[action='#{project_messages_path(@second_project)}']"
 
     get project_todos_path(@second_project)
     assert_response :success
-    assert_select ".project-context-nav a[aria-current='page'][href='#{project_todos_path(@second_project)}']", text: "Board"
+    assert_select ".project-context-nav a[aria-current='page'][href='#{project_todos_path(@second_project)}']", text: "Tasks"
     assert_select ".project-context-nav a[href='#{chat_project_path(@second_project)}']", text: "Chat"
   end
 
