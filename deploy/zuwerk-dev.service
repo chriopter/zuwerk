@@ -1,20 +1,23 @@
 [Unit]
-Description=Zuwerk dev server (live CSS preview on 3200)
-After=network.target zuwerk.service
+Description=Zuwerk live server (port 3100, code + CSS reloading)
+After=network.target
+Wants=podman-restart.service
+After=podman-restart.service
 
 [Service]
 Type=simple
 WorkingDirectory=/root/git/zuwerk
-# Development mode keeps code reloading and the tailwind watcher on, so every
-# CSS edit an agent makes in the shared checkout is rebuilt and served live
-# without a precompile or restart. Pointed at the production database so it
-# mirrors the real chat instead of the empty development one.
+# Development mode keeps code and CSS reloading on, so every edit an agent makes
+# in the checkout is served live without a precompile or restart. The in-process
+# job and cable adapters carry the hosted-agent pipeline on a single process.
+# DATABASE_URL points at the production database so this serves the real
+# workspace rather than the empty development one.
 Environment=RAILS_ENV=development
-Environment=PORT=3200
-Environment=BINDING=0.0.0.0
+Environment=PORT=3100
 Environment=DATABASE_URL=sqlite3:storage/production.sqlite3
 Environment=HOME=/root
-Environment=RUBY_DEBUG_LAZY=true
+Environment=ZUWERK_AGENT_REPOSITORY_URL=https://github.com/chriopter/zuwerk.git
+EnvironmentFile=-/etc/zuwerk.env
 ExecStart=/root/git/zuwerk/bin/dev
 Restart=on-failure
 RestartSec=3

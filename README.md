@@ -26,47 +26,42 @@ bin/rails server
 
 No Redis service is required. Action Cable, jobs, and caching use the Rails database-backed adapters.
 
-## Development server for agents
+## Live server for agents
 
-`bin/dev` serves the application on port 3200 with code reloading and asset
-watching, so it can run beside a production server without competing for a
-port. It binds every interface, because hosted agents reach the host through
-`host.containers.internal`. Override either default with `PORT` and `BINDING`.
+`bin/dev` runs the application with code and CSS reloading, so any edit an agent
+makes in the checkout is served live without a precompile or a restart — the
+feedback loop that lets the app improve itself. It frees the port first, fixes
+storage ownership under root, builds and watches Tailwind, reconciles hosted
+agents, then serves on port 3100 bound to every interface.
 
 ```sh
 bin/dev
 ```
 
-Most edits apply on the next request. Changes that Rails cannot reload —
-initializers, routes, or the `Gemfile` — need a restart, which an agent can
-trigger with its own API token:
+Development uses the in-process job and cable adapters, so the hosted-agent
+pipeline keeps working on a single process. Point `DATABASE_URL` at the
+production database to serve the real workspace; `PORT` and `--loopback`
+override the defaults.
+
+Run it permanently — replacing the precompiled production server — with the
+bundled unit:
 
 ```sh
-curl -X POST http://host.containers.internal:3200/api/restart \
+sudo cp deploy/zuwerk-dev.service /etc/systemd/system/zuwerk.service
+sudo systemctl daemon-reload
+sudo systemctl restart zuwerk.service
+```
+
+Agents can still reboot the process for changes Rails cannot reload —
+initializers, routes, or the `Gemfile` — with their own API token:
+
+```sh
+curl -X POST http://host.containers.internal:3100/api/restart \
   -H "Authorization: Bearer $(jq -r .api_token ~/.config/zuwerk/config.json)"
 ```
 
 The endpoint touches `tmp/restart.txt`, which Puma's `tmp_restart` plugin picks
-up to reboot the process. It is only routed outside production, so a deployed
-server offers no restart route at all.
-
-### Live CSS preview beside production
-
-The production server (port 3100) serves fingerprinted, precompiled assets, so a
-CSS change only appears after `rails assets:precompile` and a restart. To see an
-agent's design work immediately, run the dev server permanently beside it. It
-watches `app/assets/tailwind/application.css` and serves the rebuilt stylesheet
-live, pointed at the production database so it mirrors the real workspace.
-
-```sh
-sudo cp deploy/zuwerk-dev.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now zuwerk-dev.service
-```
-
-The preview is then on port 3200. Production on 3100 is untouched; promote a
-reviewed change there with `RAILS_ENV=production bin/rails assets:precompile`
-followed by `systemctl restart zuwerk.service`.
+up. It is only routed outside production.
 
 ## Test and security checks
 

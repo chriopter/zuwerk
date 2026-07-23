@@ -1,20 +1,107 @@
-#!/usr/bin/env sh
+#!/usr/bin/env ruby
+# Zuwerk's live server. It runs the app with code reloading and a Tailwind
+# watcher, so an edit an agent makes in the checkout — Ruby or CSS — is served
+# live without a precompile or a restart. Development uses the in-process job
+# and cable adapters, so the hosted-agent pipeline keeps working on a single
+# process. Point DATABASE_URL at the production database to serve the real
+# workspace; without it the development database is used.
+require "fileutils"
 
-if ! gem list foreman -i --silent; then
-  echo "Installing foreman..."
-  gem install foreman
-fi
+port = ENV.fetch("PORT", "3100").to_i
 
-# Run beside the production server on 3100 instead of clashing with it.
-export PORT="${PORT:-3200}"
+def listener_pids(port)
+  IO.popen([ "lsof", "-nP", "-t", "-iTCP:#{port}", "-sTCP:LISTEN" ], err: File::NULL, &:read)
+    .lines
+    .filter_map { |line| Integer(line, exception: false) }
+    .uniq
+    .reject { |pid| pid == Process.pid }
+rescue Errno::ENOENT
+  abort "lsof is required to free port #{port} before starting."
+end
 
-# Hosted agents reach this server through host.containers.internal, so bind
-# every interface rather than loopback only.
-export BINDING="${BINDING:-0.0.0.0}"
+# Take over the port from whatever holds it (e.g. a previous instance or the
+# production Puma this replaces), escalating from TERM to KILL.
+def stop_listeners(port)
+  pids = listener_pids(port)
+  return if pids.empty?
 
-# Let the debug gem allow remote connections,
-# but avoid loading until `debugger` is called
-export RUBY_DEBUG_OPEN="true"
-export RUBY_DEBUG_LAZY="true"
+  puts "Freeing port #{port} (stopping #{pids.join(', ')})"
+  pids.each { |pid| Process.kill("TERM", pid) rescue Errno::ESRCH }
+  20.times { break if (listener_pids(port) & pids).empty?; sleep 0.1 }
+  (listener_pids(port) & pids).each { |pid| Process.kill("KILL", pid) rescue Errno::ESRCH }
+  20.times { return if listener_pids(port).empty?; sleep 0.1 }
+  abort "Could not free port #{port}."
+end
 
-exec foreman start -f Procfile.dev "$@"
+# SQLite databases must stay owned by the project user when this runs as root.
+def fix_storage_ownership
+  return unless Process.uid.zero?
+
+  project_dir = File.dirname(__dir__)
+  storage_dir = File.join(project_dir, "storage")
+  return unless Dir.exist?(storage_dir)
+
+  owner = File.stat(project_dir).uid
+  group = File.stat(project_dir).gid
+  Dir.glob("#{storage_dir}/**/*").each do |path|
+    stat = File.stat(path)
+    File.chown(owner, group, path) if stat.uid != owner || stat.gid != group
+  rescue Errno::ENOENT
+  end
+
+  pid_file = File.join(project_dir, "tmp", "pids", "server.pid")
+  return unless File.exist?(pid_file)
+
+  old_pid = File.read(pid_file).to_i
+  begin
+    Process.kill(0, old_pid)
+  rescue Errno::ESRCH
+    File.delete(pid_file)
+    puts "Cleaned up stale PID file"
+  rescue Errno::EPERM
+  end
+end
+
+args = ARGV.dup
+# This is the LAN- and agent-facing server, so bind every interface unless the
+# caller explicitly restricts it.
+bind = args.delete("--loopback") || ENV["LOOPBACK"] ? "127.0.0.1" : "0.0.0.0"
+
+pids = []
+
+def cleanup(pids)
+  pids.each do |pid|
+    Process.kill("TERM", pid)
+    Process.wait(pid)
+  rescue Errno::ESRCH, Errno::ECHILD
+  end
+end
+
+%w[INT TERM].each do |signal|
+  trap(signal) do
+    puts "\nShutting down..."
+    cleanup(pids)
+    exit
+  end
+end
+
+stop_listeners(port)
+fix_storage_ownership
+
+# Development resolves assets straight from app/assets/builds with a fresh
+# digest each request, so the precompiled public/assets copies are ignored and
+# left in place — a plain restart of the production unit reverts cleanly.
+system("bin/rails", "tailwindcss:build")
+pids << spawn("bin/rails", "tailwindcss:watch")
+
+# Heal any hosted-agent container whose spec drifted, the same reconciliation the
+# production unit runs before boot.
+system("bin/rails", "runner", "HostedAgents::StartupReconciler.call")
+
+puts "Zuwerk is live on port #{port} (#{bind}) with CSS and code reloading."
+
+server_args = [ "./bin/rails", "server", "-p", port.to_s, "-b", bind, *args ]
+server_pid = spawn(*server_args)
+pids << server_pid
+Process.wait(server_pid)
+cleanup(pids - [ server_pid ])
