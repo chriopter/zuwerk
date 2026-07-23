@@ -17,6 +17,7 @@ class ProjectSearch
 
     class << self
       def model
+        require "informers"
         @model ||= Informers.pipeline(
           "embedding",
           MODEL,

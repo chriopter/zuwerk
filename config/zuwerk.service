@@ -9,6 +9,7 @@ Environment=RAILS_ENV=production
 Environment=PORT=3100
 Environment=SOLID_QUEUE_IN_PUMA=1
 Environment=RAILS_LOG_TO_STDOUT=1
+Environment=HOME=/root
 EnvironmentFile=/etc/zuwerk.env
 ExecStart=/usr/local/bin/bundle exec puma -C config/puma.rb
 Restart=on-failure

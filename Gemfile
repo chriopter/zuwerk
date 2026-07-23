@@ -71,4 +71,4 @@ gem "ancestry", "~> 5.1"
 
 gem "commonmarker", "~> 2.0"
 
-gem "informers", "~> 1.3"
+gem "informers", "~> 1.3", require: false
