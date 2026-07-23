@@ -1,13 +1,16 @@
 module HostedAgents
   class TerminalPaneRuntime
-    def initialize(pane, executor: CommandExecutor.new)
+    def initialize(pane, executor: CommandExecutor.new, repository_url: ENV["ZUWERK_AGENT_REPOSITORY_URL"])
       @pane = pane
       @hosted_agent = pane.hosted_agent
       @executor = executor
+      @repository_url = repository_url.presence
     end
 
     def create
-      raise ArgumentError, "Agent is not running" unless @hosted_agent.running?
+      raise ArgumentError, "Hosted agent must be running" unless @hosted_agent.running?
+
+      bootstrap_workspace
       return @pane if exists?
 
       @executor.run(
@@ -35,6 +38,25 @@ module HostedAgents
     end
 
     private
+      def bootstrap_workspace
+        return if @repository_url.blank? || workspace_repository?
+
+        @executor.run(
+          "podman", "exec", @hosted_agent.container_name,
+          "git", "clone", @repository_url, "/workspace"
+        )
+      end
+
+      def workspace_repository?
+        @executor.run(
+          "podman", "exec", @hosted_agent.container_name,
+          "git", "-C", "/workspace", "rev-parse", "--is-inside-work-tree"
+        )
+        true
+      rescue CommandExecutor::CommandError
+        false
+      end
+
       def runtime_command
         @hosted_agent.runtime == "codex" ? "codex" : "claude"
       end
