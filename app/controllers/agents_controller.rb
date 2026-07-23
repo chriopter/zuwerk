@@ -24,7 +24,8 @@ class AgentsController < ApplicationController
         user: identity,
         runtime: agent_params[:runtime],
         state: "provisioning",
-        shared_folder: shared_folder_param
+        shared_folder: shared_folder_param,
+        autonomous: autonomous_param
       )
     end
     ProvisionHostedAgentJob.perform_later(hosted_agent)
@@ -43,9 +44,19 @@ class AgentsController < ApplicationController
   def update
     return redirect_to(agents_path, alert: "This agent uses an external environment.") unless @agent.hosted_agent
 
-    @agent.hosted_agent.update!(shared_folder: shared_folder_param)
-    ManageHostedAgentJob.perform_later(@agent.hosted_agent, "recreate")
-    redirect_to agent_path(@agent), notice: "Shared folder updated. The container is being recreated."
+    hosted_agent = @agent.hosted_agent
+    remount = hosted_agent.shared_folder? != shared_folder_param
+    hosted_agent.update!(shared_folder: shared_folder_param, autonomous: autonomous_param)
+
+    # Only the mount is baked into the container; the session mode is negotiated
+    # per session, so dropping the pooled client is enough to apply it.
+    if remount
+      ManageHostedAgentJob.perform_later(hosted_agent, "recreate")
+      redirect_to agent_path(@agent), notice: "Shared folder updated. The container is being recreated."
+    else
+      HostedAgents::AcpPool.discard(hosted_agent.id)
+      redirect_to agent_path(@agent), notice: "Agent settings updated."
+    end
   end
 
   %i[start stop restart].each do |action|
@@ -64,10 +75,14 @@ class AgentsController < ApplicationController
     end
 
     def agent_params
-      params.require(:agent).permit(:name, :runtime, :shared_folder)
+      params.require(:agent).permit(:name, :runtime, :shared_folder, :autonomous)
     end
 
     def shared_folder_param
       ActiveModel::Type::Boolean.new.cast(agent_params[:shared_folder]) || false
+    end
+
+    def autonomous_param
+      ActiveModel::Type::Boolean.new.cast(agent_params[:autonomous]) || false
     end
 end

@@ -25,6 +25,26 @@ class AgentsControllerTest < ActionDispatch::IntegrationTest
     assert @hosted_agent.reload.shared_folder?
   end
 
+  test "autonomy is granted without recreating the container" do
+    sign_in
+
+    assert_no_enqueued_jobs(only: ManageHostedAgentJob) do
+      patch agent_path(@agent), params: { agent: { shared_folder: "0", autonomous: "1" } }
+    end
+
+    assert @hosted_agent.reload.autonomous?
+    assert_equal "bypassPermissions", @hosted_agent.session_mode
+  end
+
+  test "a supervised agent keeps the negotiated runtime mode" do
+    sign_in
+
+    patch agent_path(@agent), params: { agent: { shared_folder: "0", autonomous: "0" } }
+
+    assert_not @hosted_agent.reload.autonomous?
+    assert_equal "auto", @hosted_agent.session_mode
+  end
+
   test "an unchecked box disables the shared folder" do
     @hosted_agent.update!(shared_folder: true)
     sign_in

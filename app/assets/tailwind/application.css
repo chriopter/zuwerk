@@ -97,7 +97,7 @@
   .sidebar-db-link-active { @apply bg-[#eff0eb] font-semibold text-stone-900; }
 
   .chat-panel { @apply relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-[#f7f8f6]; }
-  .chat-header-bar { @apply relative z-10 flex h-[72px] shrink-0 items-center justify-between border-b border-white/40 bg-white/70 px-4 backdrop-blur-xl sm:px-6 lg:px-8; }
+  .chat-header-bar { @apply relative z-10 flex h-[72px] shrink-0 items-center justify-between border-b border-white/40 bg-white/70 px-4 backdrop-blur-xl dark:border-white/10 dark:bg-white/5 sm:px-6 lg:px-8; }
   .chat-title-block { @apply flex min-w-0 items-center gap-3; }
   .chat-project-avatar { @apply grid h-9 w-9 shrink-0 place-items-center rounded-[11px] bg-[#27332d] text-xs font-bold text-white shadow-[0_1px_2px_rgba(28,25,23,.14)]; }
   .chat-header-bar h1 { @apply truncate text-[15px] font-semibold leading-tight tracking-[-.01em] text-stone-950; }
@@ -122,7 +122,7 @@
   .notify-menu { @apply relative; }
   .notify-menu > summary { @apply cursor-pointer list-none; }
   .notify-menu > summary::-webkit-details-marker { display: none; }
-  .notify-menu-popover { @apply absolute right-0 top-12 z-50 w-72 overflow-hidden rounded-2xl border border-white/50 bg-white/80 p-2 shadow-[0_20px_60px_rgba(28,25,23,.16)] backdrop-blur-xl; }
+  .notify-menu-popover { @apply absolute right-0 top-12 z-50 w-72 overflow-hidden rounded-2xl border border-white/50 bg-white/80 p-2 shadow-[0_20px_60px_rgba(28,25,23,.16)] backdrop-blur-xl dark:border-white/10 dark:bg-[#1c2420]/85 dark:shadow-[0_20px_60px_rgba(0,0,0,.5)]; }
   .notify-menu-popover > div { @apply border-b border-stone-100 px-2 pb-3 pt-2; }
   .notify-menu-popover > div strong, .notify-menu-popover > div small { @apply block; }
   .notify-menu-popover > div strong { @apply text-sm font-semibold text-stone-900; }
@@ -158,7 +158,7 @@
   .empty-conversation h2 { @apply mt-5 font-serif text-xl font-normal text-stone-900; }
   .empty-conversation p { @apply mt-2 max-w-sm text-sm leading-6 text-stone-500; }
 
-  .message-row { @apply relative mb-1.5 flex gap-3 rounded-2xl border border-white/50 bg-white/45 px-2 py-4 shadow-[0_1px_2px_rgba(28,25,23,.04)] backdrop-blur-md transition hover:border-white/70 hover:bg-white/70 hover:shadow-[0_10px_30px_rgba(28,25,23,.08)] sm:gap-3.5 sm:px-3; }
+  .message-row { @apply relative mb-1.5 flex gap-3 rounded-2xl border border-white/50 bg-white/45 px-2 py-4 shadow-[0_1px_2px_rgba(28,25,23,.04)] backdrop-blur-md transition hover:border-white/70 hover:bg-white/70 hover:shadow-[0_10px_30px_rgba(28,25,23,.08)] dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:bg-white/10 sm:gap-3.5 sm:px-3; }
   .message-row-agent { @apply bg-transparent; }
   .message-avatar { @apply relative grid h-9 w-9 shrink-0 place-items-center rounded-full text-xs font-semibold sm:h-10 sm:w-10; }
   .message-avatar-human { @apply bg-[#27332d] text-white; }
@@ -191,7 +191,7 @@
 
   .composer-dock { @apply pointer-events-none absolute inset-x-0 bottom-0 z-20 px-3 pb-4 sm:px-6 sm:pb-6; }
   .composer-form { @apply pointer-events-auto mx-auto w-full max-w-[820px]; }
-  .composer-box { @apply overflow-hidden rounded-2xl border border-white/60 bg-white/75 shadow-[0_18px_50px_rgba(28,25,23,.16)] backdrop-blur-xl transition focus-within:border-[#87968e] focus-within:ring-4 focus-within:ring-[#dfe6e1]; }
+  .composer-box { @apply overflow-hidden rounded-2xl border border-white/60 bg-white/75 shadow-[0_18px_50px_rgba(28,25,23,.16)] backdrop-blur-xl transition focus-within:border-[#87968e] focus-within:ring-4 focus-within:ring-[#dfe6e1] dark:border-white/10 dark:bg-white/5 dark:shadow-[0_18px_50px_rgba(0,0,0,.45)] dark:focus-within:border-[#5a6f63] dark:focus-within:ring-white/10; }
   .composer-input { @apply block max-h-40 min-h-14 w-full resize-none border-0 bg-transparent px-4 py-3 text-[15px] leading-6 text-stone-900 outline-none placeholder:text-stone-400; }
   .composer-footer { @apply flex items-center justify-between border-t border-stone-100 px-3 py-2 text-xs text-stone-400; }
   .composer-tools { @apply flex min-w-0 items-center gap-2; }
@@ -334,8 +334,8 @@
   .agent-toolbar form { @apply inline-flex; }
   .agent-toolbar button { @apply min-h-11 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 transition hover:bg-stone-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#27332d] disabled:cursor-not-allowed disabled:opacity-40; }
   .agent-toolbar > span { @apply mr-auto pl-2 text-[10px] font-semibold uppercase tracking-[.12em] text-stone-400; }
-  .agent-shared-folder { @apply mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-stone-200 bg-white p-4; }
-  .agent-shared-folder > label { @apply flex flex-1 cursor-pointer items-start gap-3; }
+  .agent-shared-folder { @apply mt-3 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-xl border border-stone-200 bg-white p-4; }
+  .agent-shared-folder > label { @apply flex min-w-64 flex-1 cursor-pointer items-start gap-3; }
   .agent-shared-folder input[type="checkbox"] { @apply mt-1 accent-[#d9563b]; }
   .agent-shared-folder strong { @apply block text-sm font-semibold text-stone-900; }
   .agent-shared-folder small { @apply mt-1 block text-xs text-stone-500; }

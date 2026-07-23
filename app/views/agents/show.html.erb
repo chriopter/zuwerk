@@ -53,7 +53,14 @@
       <%= form.check_box :shared_folder, checked: @hosted_agent.shared_folder? %>
       <span>
         <strong>Shared folder</strong>
-        <small>Read-write access to <%= HostedAgents::ContainerRuntime.shared_folder_source %> at <%= HostedAgents::ContainerRuntime::SHARED_MOUNT_PATH %>. Applying recreates the container; home and workspace are kept.</small>
+        <small>Read-write access to <%= HostedAgents::ContainerRuntime.shared_folder_source %> at <%= HostedAgents::ContainerRuntime::SHARED_MOUNT_PATH %>. Changing this recreates the container; home and workspace are kept.</small>
+      </span>
+    </label>
+    <label>
+      <%= form.check_box :autonomous, checked: @hosted_agent.autonomous? %>
+      <span>
+        <strong>Work without asking</strong>
+        <small>Skips the approval prompt before each action, so the agent changes files and runs commands on its own.</small>
       </span>
     </label>
     <%= form.submit "Apply" %>

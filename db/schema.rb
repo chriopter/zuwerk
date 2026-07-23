@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_23_140000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_23_170000) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
@@ -177,6 +177,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_23_140000) do
   end
 
   create_table "hosted_agents", force: :cascade do |t|
+    t.boolean "autonomous", default: false, null: false
     t.datetime "bridge_connected_at"
     t.text "bridge_last_error"
     t.string "container_id"

@@ -67,7 +67,7 @@ module HostedAgents
     def close = @transport&.disconnect
 
     private
-      def session_mode = (@requested_session_mode || (@hosted_agent&.runtime == "codex" ? "agent-full-access" : "auto"))
+      def session_mode = (@requested_session_mode || @hosted_agent&.session_mode || "auto")
       def working_directory = (@hosted_agent&.working_directory || HostedAgent::WORKSPACE_PATH)
 
       def mode_advertised?(capabilities)

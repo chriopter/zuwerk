@@ -67,6 +67,35 @@ class HostedAgents::AcpClientTest < ActiveSupport::TestCase
     assert_equal "agent-full-access", client.send(:session_mode)
   end
 
+  test "an autonomous agent stops asking before each action" do
+    claude = HostedAgent.create!(user: User.create!(name: "Yolo claude", kind: :agent), runtime: "claude", state: "running", autonomous: true)
+    codex = HostedAgent.create!(user: User.create!(name: "Yolo codex", kind: :agent), runtime: "codex", state: "running", autonomous: true)
+
+    [ claude, codex ].each do |hosted_agent|
+      client = HostedAgents::AcpClient.allocate
+      client.instance_variable_set(:@hosted_agent, hosted_agent)
+
+      assert_equal "bypassPermissions", client.send(:session_mode)
+    end
+  end
+
+  test "an explicitly requested mode still wins over the autonomous setting" do
+    hosted_agent = HostedAgent.create!(user: User.create!(name: "Explicit mode", kind: :agent), runtime: "claude", state: "running", autonomous: true)
+    client = HostedAgents::AcpClient.allocate
+    client.instance_variable_set(:@hosted_agent, hosted_agent)
+    client.instance_variable_set(:@requested_session_mode, "plan")
+
+    assert_equal "plan", client.send(:session_mode)
+  end
+
+  test "a supervised agent keeps the negotiated runtime mode" do
+    hosted_agent = HostedAgent.create!(user: User.create!(name: "Supervised", kind: :agent), runtime: "claude", state: "running")
+    client = HostedAgents::AcpClient.allocate
+    client.instance_variable_set(:@hosted_agent, hosted_agent)
+
+    assert_equal "auto", client.send(:session_mode)
+  end
+
   test "accepts an injected transport uses protocol v2 and reports all updates" do
     transport = FakeTransport.new([
       { jsonrpc: "2.0", id: 1, result: {} },

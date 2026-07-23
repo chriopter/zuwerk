@@ -1,6 +1,8 @@
 class HostedAgent < ApplicationRecord
   WORKSPACE_PATH = "/workspace".freeze
   RUNTIMES = %w[claude codex].freeze
+  SESSION_MODES = { "codex" => "agent-full-access", "claude" => "auto" }.freeze
+  AUTONOMOUS_SESSION_MODE = "bypassPermissions".freeze
   STATES = %w[provisioning stopped starting running stopping error].freeze
 
   belongs_to :user
@@ -20,6 +22,15 @@ class HostedAgent < ApplicationRecord
   # else stays in their own workspace volume.
   def working_directory
     shared_folder? ? HostedAgents::ContainerRuntime::SHARED_MOUNT_PATH : WORKSPACE_PATH
+  end
+
+  # An autonomous agent stops asking a human before each action. The adapter
+  # ignores a mode it does not advertise, so this widens nothing on a runtime
+  # that has no such mode.
+  def session_mode
+    return AUTONOMOUS_SESSION_MODE if autonomous?
+
+    SESSION_MODES.fetch(runtime, "auto")
   end
 
   def claude? = runtime == "claude"
