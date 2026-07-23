@@ -12,9 +12,9 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
 
     get root_path
     assert_response :success
-    assert_select ".project-overview-grid" do
-      assert_select ".project-overview-card", text: /Client launch/
-      assert_select "a[href='#{chat_project_path(other)}']", text: /Chat/
+    assert_select ".project-directory-grid" do
+      assert_select ".project-directory-card", text: /Client launch/
+      assert_select "a[href='#{project_path(other)}']", text: /Client launch/
     end
     assert_select ".projects-create form[action='#{projects_path}']"
 
@@ -39,7 +39,9 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
 
     get chat_project_path(second)
     assert_response :success
-    assert_select ".project-context-nav a[aria-current='page'][href='#{chat_project_path(second)}']", text: /Chat/
+    assert_select ".project-switcher summary", text: /Second project/
+    assert_select ".workspace-breadcrumb a[href='#{project_path(second)}']", text: "Second project"
+    assert_select ".workspace-breadcrumb span[aria-current='page']", text: "Chat"
     assert_select "#messages", text: /Second-only message/
     assert_select "#messages", text: /First-only message/, count: 0
 
@@ -59,8 +61,11 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select ".workspace-sidebar", count: 0
-    assert_select ".project-context-nav a[aria-current='page']", text: "Chat"
-    assert_select ".chat-header-bar h1", text: "Chat"
+    assert_select ".project-context-nav", count: 0
+    assert_select ".project-switcher summary", text: /#{Regexp.escape(project.name)}/
+    assert_select ".workspace-breadcrumb span[aria-current='page']", text: "Chat"
+    assert_select ".chat-header-bar .workspace-breadcrumb"
+    assert_select ".chat-header-bar h1.sr-only", text: "Chat"
     assert_select ".notify-menu form[action='#{project_agent_subscription_path(project, @agent)}'] button[aria-pressed='false']", text: /Hermes/
     assert_select "a", text: /Invite agent/
     assert_select "#message-viewport #messages"

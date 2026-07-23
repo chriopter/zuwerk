@@ -10,6 +10,7 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
   test "signed-out visitors are returned to login from every workspace section" do
     [
       root_path,
+      project_path(@first_project),
       chat_project_path(@first_project),
       project_todos_path(@first_project),
       agents_path
@@ -35,45 +36,52 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_session_path
   end
 
-  test "project overview and top bar navigate to project resources" do
+  test "project directory opens a project overview and tools use breadcrumbs" do
     sign_in
     @first_project.todos.create!(creator: @human, title: "Open task", status: :open)
     @first_project.todos.create!(creator: @human, title: "Active task", status: :in_progress)
+    @first_project.messages.create!(author: @human, body: "Latest project note")
 
     get root_path
     assert_response :success
     assert_select ".workspace-sidebar", count: 0
-    assert_select ".workspace-topbar"
-    assert_select ".topbar-mobile-menu" do
-      assert_select "summary[aria-label='Open account menu']"
-      assert_select "a[href='#{agents_path}']", text: "Agents"
-      assert_select "form[action='#{session_path}']"
-    end
-    assert_select ".project-overview-card", count: 2
-    assert_select ".project-overview-card[data-project-id='#{@first_project.id}']" do
-      assert_select "h2", text: "Alpha"
-      assert_select "[data-project-fact='open']", text: /1 open/
-      assert_select "[data-project-fact='in-progress']", text: /1 in progress/
-      assert_select "a[href='#{project_todos_path(@first_project)}']", text: "Tasks"
-      assert_select "a[href='#{chat_project_path(@first_project)}']", text: "Chat"
+    assert_select ".project-directory-card", count: 2
+    assert_select ".project-directory-card[data-project-id='#{@first_project.id}']" do
+      assert_select "a[href='#{project_path(@first_project)}']", text: /Alpha/
+      assert_select "a[href='#{project_todos_path(@first_project)}']", count: 0
+      assert_select "a[href='#{chat_project_path(@first_project)}']", count: 0
     end
 
-    get chat_project_path(@second_project)
+    get project_path(@first_project)
     assert_response :success
-    assert_select ".topbar-brand[href='#{root_path}']", text: /Zuwerk/
-    assert_select ".topbar-global-nav a[href='#{root_path}']", count: 0
-    assert_select ".topbar-project-name", count: 0
-    assert_select ".project-context-nav" do
-      assert_select "a.project-context-link", count: 2
-      assert_select "a[aria-current='page'][href='#{chat_project_path(@second_project)}']", text: "Chat"
-      assert_select "a[href='#{project_todos_path(@second_project)}']", text: "Tasks"
+    assert_select ".project-switcher" do
+      assert_select "summary", text: /Alpha/
+      assert_select "a[href='#{project_path(@second_project)}']", text: /Beta/
+      assert_select "a[href='#{root_path}']", text: /All projects/
     end
-    assert_select "form[action='#{project_messages_path(@second_project)}']"
+    assert_select ".topbar-global-nav, .topbar-account", count: 0
+    assert_select ".project-home h1", text: "Alpha"
+    assert_select ".project-tool-card", count: 2
+    assert_select "a[href='#{project_todos_path(@first_project)}']", text: /Tasks/
+    assert_select "a[href='#{chat_project_path(@first_project)}']", text: /Chat/
+    assert_select ".project-tool-card", text: /Latest project note/
 
-    get project_todos_path(@second_project)
+    get chat_project_path(@first_project)
     assert_response :success
-    assert_select ".project-context-nav a[aria-current='page'][href='#{project_todos_path(@second_project)}']", text: "Tasks"
-    assert_select ".project-context-nav a[href='#{chat_project_path(@second_project)}']", text: "Chat"
+    assert_select ".project-context-nav", count: 0
+    assert_select ".workspace-breadcrumb" do
+      assert_select "a[href='#{project_path(@first_project)}']", text: "Alpha"
+      assert_select "span[aria-current='page']", text: "Chat"
+    end
+    assert_select "form[action='#{project_messages_path(@first_project)}']"
+
+    get project_todos_path(@first_project)
+    assert_response :success
+    assert_select ".project-context-nav", count: 0
+    assert_select ".workspace-breadcrumb" do
+      assert_select "a[href='#{project_path(@first_project)}']", text: "Alpha"
+      assert_select "span[aria-current='page']", text: "Tasks"
+    end
   end
 
   test "empty chat todos and agents pages provide useful next actions" do
@@ -84,7 +92,7 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
     assert_select "a[href='#{new_agent_invitation_path}']"
 
     get project_todos_path(@first_project)
-    assert_select "h1", text: "Todos"
+    assert_select "h1", text: "Tasks"
     assert_select ".kanban-column", count: 3
     assert_select ".kanban-empty", text: "Todos hierher ziehen", count: 3
     assert_select "a[href='#{new_project_todo_path(@first_project)}']", text: "Neues Todo"
@@ -111,6 +119,9 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
     sign_in
 
     assert_no_difference [ "Project.count", "Todo.count" ] do
+      get project_path(-1)
+      assert_response :not_found
+
       get chat_project_path(-1)
       assert_response :not_found
 

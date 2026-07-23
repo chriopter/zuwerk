@@ -3,7 +3,7 @@ Rails.application.routes.draw do
   resource :onboarding, only: %i[new create]
   resource :session, only: %i[new create destroy]
   resources :messages, only: :create
-  resources :projects, only: [ :index, :create ] do
+  resources :projects, only: [ :index, :show, :create ] do
     get :chat, on: :member, to: "messages#index"
     resources :messages, only: :create do
       resources :reactions, only: :create

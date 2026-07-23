@@ -3,7 +3,10 @@
 
 <section class="kanban-page" data-controller="kanban" data-kanban-project-id-value="<%= @project.id %>">
   <header class="workspace-page-header">
-    <div><p class="workspace-kicker"><%= @project.name %></p><h1>Todos</h1><p>Arbeit übersichtlich vom Eingang bis zum Abschluss führen.</p></div>
+    <div>
+      <nav class="workspace-breadcrumb" aria-label="Breadcrumb"><%= link_to @project.name, project_path(@project) %><span aria-hidden="true">/</span><span aria-current="page">Tasks</span></nav>
+      <h1>Tasks</h1><p>Arbeit übersichtlich vom Eingang bis zum Abschluss führen.</p>
+    </div>
     <%= link_to "Neues Todo", new_project_todo_path(@project), class: "workspace-primary-action" %>
   </header>
 

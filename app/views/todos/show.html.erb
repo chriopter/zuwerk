@@ -5,7 +5,7 @@
   <div class="todo-detail-shell">
     <header class="todo-detail-header">
       <div class="todo-detail-heading">
-        <div class="todo-detail-eyebrow"><%= link_to "Todos", project_todos_path(@project) %><span aria-hidden="true">/</span><span>#<%= @todo.id %></span><span class="todo-status todo-status-<%= @todo.status.dasherize %>"><%= { "open" => "Offen", "in_progress" => "In Arbeit", "completed" => "Erledigt" }.fetch(@todo.status) %></span></div>
+        <div class="todo-detail-eyebrow workspace-breadcrumb" aria-label="Breadcrumb"><%= link_to @project.name, project_path(@project) %><span aria-hidden="true">/</span><%= link_to "Tasks", project_todos_path(@project) %><span aria-hidden="true">/</span><span aria-current="page">#<%= @todo.id %></span><span class="todo-status todo-status-<%= @todo.status.dasherize %>"><%= { "open" => "Offen", "in_progress" => "In Arbeit", "completed" => "Erledigt" }.fetch(@todo.status) %></span></div>
         <h1><%= @todo.title %></h1><%= render "todos/agent_acknowledgements", todo: @todo %>
         <%= render "agent_events/todo_status", todo: @todo %>
       </div>

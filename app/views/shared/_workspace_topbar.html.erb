@@ -1,41 +1,40 @@
 <header class="workspace-topbar">
   <div class="workspace-topbar-inner">
-    <%= link_to root_path, class: "topbar-brand", aria: { label: "Zuwerk projects" } do %>
-      <span class="topbar-brand-mark" aria-hidden="true">Z</span>
-      <span>Zuwerk</span>
-    <% end %>
-
-    <nav class="topbar-global-nav" aria-label="Workspace">
-      <%= link_to agents_path, class: "topbar-nav-link #{'is-active' if active == :agents}", aria: (active == :agents ? { current: "page" } : {}) do %>
-        <span>Agents</span>
-      <% end %>
-    </nav>
-
     <% if project.present? %>
-      <div class="topbar-project-context">
-        <nav class="project-context-nav" aria-label="<%= project.name %> navigation">
-          <%= link_to "Tasks", project_todos_path(project), class: "project-context-link #{'is-active' if active == :todos}", aria: (active == :todos ? { current: "page" } : {}) %>
-          <%= link_to "Chat", chat_project_path(project), class: "project-context-link #{'is-active' if active == :chat}", aria: (active == :chat ? { current: "page" } : {}) %>
-        </nav>
-      </div>
+      <details class="project-switcher">
+        <summary aria-label="Switch project">
+          <span class="project-switcher-mark" aria-hidden="true"><%= project.name.first.upcase %></span>
+          <span class="project-switcher-name"><%= project.name %></span>
+          <span class="project-switcher-chevron" aria-hidden="true">⌄</span>
+        </summary>
+        <div class="project-switcher-menu">
+          <%= link_to root_path, class: "project-switcher-all" do %><span aria-hidden="true">←</span><span>All projects</span><% end %>
+          <span class="project-switcher-menu-label">Switch project</span>
+          <div class="project-switcher-list">
+            <% workspace_projects.each do |option| %>
+              <%= link_to project_path(option), class: "project-switcher-option #{'is-active' if option == project}" do %>
+                <span class="project-switcher-option-mark" aria-hidden="true"><%= option.name.first.upcase %></span>
+                <span><%= option.name %></span>
+                <% if option == project %><i aria-hidden="true">✓</i><% end %>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      </details>
+    <% else %>
+      <%= link_to root_path, class: "topbar-brand", aria: { label: "Zuwerk projects" } do %>
+        <span class="topbar-brand-mark" aria-hidden="true">Z</span>
+        <span>Zuwerk</span>
+      <% end %>
     <% end %>
 
-    <div class="topbar-account">
-      <% if current_user.admin? %>
-        <%= link_to "Database", database_path, class: "topbar-utility-link #{'is-active' if active == :database}", aria: (active == :database ? { current: "page" } : {}) %>
-      <% end %>
-      <span class="topbar-account-avatar" aria-hidden="true"><%= current_user.name.split.filter_map { |part| part.first }.first(2).join.upcase %></span>
-      <span class="topbar-account-name"><%= current_user.name %></span>
-      <%= button_to "Log out", session_path, method: :delete, class: "topbar-logout" %>
-    </div>
-
-    <details class="topbar-mobile-menu">
+    <details class="topbar-mobile-menu topbar-account-menu">
       <summary aria-label="Open account menu"><%= current_user.name.split.filter_map { |part| part.first }.first(2).join.upcase %></summary>
       <div>
         <strong><%= current_user.name %></strong>
-        <%= link_to "Projects", root_path %>
-        <%= link_to "Agents", agents_path %>
-        <% if current_user.admin? %><%= link_to "Database", database_path %><% end %>
+        <%= link_to "All projects", root_path, aria: (active == :projects && project.blank? ? { current: "page" } : {}) %>
+        <%= link_to "Agents", agents_path, aria: (active == :agents ? { current: "page" } : {}) %>
+        <% if current_user.admin? %><%= link_to "Database", database_path, aria: (active == :database ? { current: "page" } : {}) %><% end %>
         <%= button_to "Log out", session_path, method: :delete %>
       </div>
     </details>

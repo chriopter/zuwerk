@@ -1,10 +1,11 @@
 <% content_for :title, "Projects · Zuwerk" %>
 
-<section class="projects-overview" aria-labelledby="projects-title">
-  <header class="projects-overview-header">
+<section class="project-directory" aria-labelledby="projects-title">
+  <header class="project-directory-header">
     <div>
       <p class="projects-overview-eyebrow">Workspace</p>
       <h1 id="projects-title">Projects</h1>
+      <p>Choose a project to see its shared work.</p>
     </div>
 
     <details class="projects-create">
@@ -22,25 +23,19 @@
   </header>
 
   <% if @projects.any? %>
-    <div class="project-overview-grid">
+    <div class="project-directory-grid">
       <% @projects.each do |project| %>
         <% open_count = project.todos.count(&:open?) %>
         <% in_progress_count = project.todos.count(&:in_progress?) %>
-        <article class="project-overview-card" data-project-id="<%= project.id %>">
-          <div class="project-overview-title">
-            <span class="project-overview-mark" aria-hidden="true"><%= project.name.first.upcase %></span>
-            <h2><%= project.name %></h2>
-          </div>
-
-          <div class="project-overview-facts" aria-label="Task status">
-            <span data-project-fact="open"><strong><%= open_count %></strong> open</span>
-            <span data-project-fact="in-progress"><strong><%= in_progress_count %></strong> in progress</span>
-          </div>
-
-          <nav class="project-overview-actions" aria-label="<%= project.name %> destinations">
-            <%= link_to "Tasks", project_todos_path(project), class: "project-overview-primary" %>
-            <%= link_to "Chat", chat_project_path(project) %>
-          </nav>
+        <article class="project-directory-card" data-project-id="<%= project.id %>">
+          <%= link_to project_path(project), class: "project-directory-link" do %>
+            <span class="project-directory-mark" aria-hidden="true"><%= project.name.first.upcase %></span>
+            <span class="project-directory-copy">
+              <strong><%= project.name %></strong>
+              <span><%= pluralize(open_count, "open task") %> · <%= in_progress_count %> in progress</span>
+            </span>
+            <span class="project-directory-arrow" aria-hidden="true">→</span>
+          <% end %>
         </article>
       <% end %>
     </div>

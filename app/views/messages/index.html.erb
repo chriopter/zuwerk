@@ -5,10 +5,12 @@
 <section class="chat-panel" data-controller="chat-scroll">
     <header class="chat-header-bar">
       <div class="chat-title-block">
-        <span class="chat-project-avatar" aria-hidden="true"><%= @project.name.first.upcase %></span>
         <div class="min-w-0">
-          <h1>Chat</h1>
-          <p><%= @project.name %> · <%= pluralize(@agents.count, "agent") %> available</p>
+          <nav class="workspace-breadcrumb" aria-label="Breadcrumb">
+            <%= link_to @project.name, project_path(@project) %><span aria-hidden="true">/</span><span aria-current="page">Chat</span>
+          </nav>
+          <h1 class="sr-only">Chat</h1>
+          <p><%= pluralize(@agents.count, "agent") %> available</p>
         </div>
       </div>
 
