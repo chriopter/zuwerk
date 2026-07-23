@@ -436,9 +436,7 @@
   .topbar-global-nav { @apply flex items-center; }
   .topbar-nav-link { @apply inline-flex h-9 items-center rounded-lg px-3 text-xs font-semibold text-stone-500 transition hover:bg-stone-100 hover:text-stone-900; }
   .topbar-nav-link.is-active { @apply bg-stone-100 text-stone-950; }
-  .topbar-project-context { @apply absolute left-1/2 flex min-w-0 -translate-x-1/2 items-center gap-3; }
-  .topbar-project-name { @apply flex max-w-48 items-center gap-2 truncate text-xs font-semibold text-stone-600; }
-  .topbar-project-name > span { @apply grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[#edf0eb] text-[9px] font-bold text-[#27332d]; }
+  .topbar-project-context { @apply absolute left-1/2 flex min-w-0 -translate-x-1/2 items-center; }
   .project-context-nav { @apply grid w-48 grid-cols-2 rounded-xl border border-stone-200 bg-stone-100/70 p-1 shadow-[0_1px_2px_rgba(28,25,23,.03)]; }
   .project-context-nav a { @apply inline-flex h-8 items-center justify-center rounded-lg px-3 text-xs font-semibold text-stone-500 transition hover:text-stone-900; }
   .project-context-nav a.is-active { @apply bg-white text-stone-950 shadow-[0_1px_4px_rgba(28,25,23,.1)]; }
@@ -487,7 +485,7 @@
     .workspace-topbar-inner { @apply h-[60px] gap-1 px-3; }
     .topbar-brand { @apply pr-0; }
     .topbar-brand > span:last-child, .topbar-account { @apply hidden; }
-    .workspace-topbar:has(.topbar-project-context) .topbar-global-nav, .topbar-project-name { @apply hidden; }
+    .workspace-topbar:has(.topbar-project-context) .topbar-global-nav { @apply hidden; }
     .topbar-mobile-menu { @apply block; }
     .topbar-nav-link, .project-context-nav a { @apply px-2.5 text-xs; }
     .topbar-project-context { @apply gap-0; }

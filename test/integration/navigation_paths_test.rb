@@ -62,6 +62,7 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select ".topbar-brand[href='#{root_path}']", text: /Zuwerk/
     assert_select ".topbar-global-nav a[href='#{root_path}']", count: 0
+    assert_select ".topbar-project-name", count: 0
     assert_select ".project-context-nav" do
       assert_select "a.project-context-link", count: 2
       assert_select "a[aria-current='page'][href='#{chat_project_path(@second_project)}']", text: "Chat"

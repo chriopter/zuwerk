@@ -13,7 +13,6 @@
 
     <% if project.present? %>
       <div class="topbar-project-context">
-        <span class="topbar-project-name" title="<%= project.name %>"><span aria-hidden="true"><%= project.name.first.upcase %></span><%= project.name %></span>
         <nav class="project-context-nav" aria-label="<%= project.name %> navigation">
           <%= link_to "Tasks", project_todos_path(project), class: "project-context-link #{'is-active' if active == :todos}", aria: (active == :todos ? { current: "page" } : {}) %>
           <%= link_to "Chat", chat_project_path(project), class: "project-context-link #{'is-active' if active == :chat}", aria: (active == :chat ? { current: "page" } : {}) %>
