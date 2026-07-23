@@ -11,8 +11,8 @@ module HostedAgents
         runtime = runtime_factory.call(hosted_agent)
         if !runtime.running?
           runtime.provision
-        elsif !runtime.mounts_current?
-          Rails.logger.info("Hosted agent #{hosted_agent.id} is recreated to match its shared folder setting")
+        elsif !runtime.container_current?
+          Rails.logger.info("Hosted agent #{hosted_agent.id} is recreated to match its current container spec")
           runtime.recreate
         end
         provisioner_factory.call(hosted_agent).call

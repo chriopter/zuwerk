@@ -4,13 +4,13 @@ class HostedAgents::StartupReconcilerTest < ActiveSupport::TestCase
   class FakeRuntime
     attr_reader :provisioned, :recreated
 
-    def initialize(running:, mounts_current: true)
+    def initialize(running:, container_current: true)
       @running = running
-      @mounts_current = mounts_current
+      @container_current = container_current
     end
 
     def running? = @running
-    def mounts_current? = @mounts_current
+    def container_current? = @container_current
     def provision = @provisioned = true
     def recreate = @recreated = true
   end
@@ -56,7 +56,7 @@ class HostedAgents::StartupReconcilerTest < ActiveSupport::TestCase
   test "recreates a running agent whose container no longer matches its shared folder" do
     identity = User.create!(name: "Drifted agent", kind: :agent)
     hosted_agent = HostedAgent.create!(user: identity, runtime: "claude", state: "running", shared_folder: true)
-    runtime = FakeRuntime.new(running: true, mounts_current: false)
+    runtime = FakeRuntime.new(running: true, container_current: false)
     provisioner = FakeProvisioner.new
 
     HostedAgents::StartupReconciler.call(

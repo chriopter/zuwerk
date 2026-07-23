@@ -70,10 +70,15 @@ module HostedAgents
       lifecycle("start", "podman", "restart", "--time", "20", @hosted_agent.container_name)
     end
 
-    # A container keeps the mounts it was created with, so it can fall behind the
-    # shared folder setting whenever that changes outside the toggle.
-    def mounts_current?
-      shared_folder_mounted? == @hosted_agent.shared_folder?
+    # A container keeps the mounts and environment it was created with, so it can
+    # fall behind the shared folder setting or a newer runtime spec. When it does,
+    # the reconciler recreates it.
+    def container_current?
+      spec = inspect_container
+      return true if spec.nil? # nothing to compare against yet
+
+      mounts, env = spec
+      mounts.include?(SHARED_MOUNT_PATH) == @hosted_agent.shared_folder? && env.include?("IS_SANDBOX=1")
     end
 
     # Mounts are fixed at creation time, so changing the shared folder needs a new
@@ -98,13 +103,19 @@ module HostedAgents
         [ "--volume", "#{source}:#{SHARED_MOUNT_PATH}:rw" ]
       end
 
-      def shared_folder_mounted?
+      # Returns [mount destinations, environment entries] for the container, or
+      # nil when it cannot be inspected. The separator keeps the two lists apart
+      # in a single podman call.
+      def inspect_container
         output = @executor.run(
-          "podman", "inspect", "--format", "{{range .Mounts}}{{.Destination}}\n{{end}}", @hosted_agent.container_name
+          "podman", "inspect", "--format",
+          "{{range .Mounts}}{{.Destination}}\n{{end}}---\n{{range .Config.Env}}{{.}}\n{{end}}",
+          @hosted_agent.container_name
         )
-        output.split("\n").map(&:strip).include?(SHARED_MOUNT_PATH)
+        mounts, env = output.split("---\n", 2)
+        [ mounts.to_s.split("\n").map(&:strip), env.to_s.split("\n").map(&:strip) ]
       rescue CommandExecutor::CommandError
-        false
+        nil
       end
 
       def discard_container

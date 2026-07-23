@@ -6,15 +6,16 @@ class HostedAgents::ContainerRuntimeTest < ActiveSupport::TestCase
   class FakeExecutor
     attr_reader :commands
 
-    def initialize(existing: false, mounts: [])
+    def initialize(existing: false, mounts: [], env: [ "IS_SANDBOX=1" ])
       @commands = []
       @existing = existing
       @mounts = mounts
+      @env = env
     end
 
     def run(*argv, input: nil)
       @commands << FakeCommand.new(argv, input)
-      return @mounts.join("\n") if argv.any? { |token| token.include?("Mounts") }
+      return "#{@mounts.join("\n")}\n---\n#{@env.join("\n")}\n" if argv.any? { |token| token.include?("Mounts") }
 
       if argv[1] == "inspect"
         raise HostedAgents::CommandExecutor::CommandError, "missing" unless @existing
@@ -103,7 +104,7 @@ class HostedAgents::ContainerRuntimeTest < ActiveSupport::TestCase
     @hosted_agent.update!(shared_folder: true)
     runtime = HostedAgents::ContainerRuntime.new(@hosted_agent, executor: FakeExecutor.new(mounts: [ "/root", "/workspace" ]))
 
-    assert_not runtime.mounts_current?
+    assert_not runtime.container_current?
   end
 
   test "a container carrying the shared mount matches the enabled option" do
@@ -111,7 +112,7 @@ class HostedAgents::ContainerRuntimeTest < ActiveSupport::TestCase
     mounts = [ "/root", "/workspace", HostedAgents::ContainerRuntime::SHARED_MOUNT_PATH ]
     runtime = HostedAgents::ContainerRuntime.new(@hosted_agent, executor: FakeExecutor.new(mounts: mounts))
 
-    assert runtime.mounts_current?
+    assert runtime.container_current?
   end
 
   test "a leftover shared mount counts as drift once the option is disabled" do
@@ -119,7 +120,19 @@ class HostedAgents::ContainerRuntimeTest < ActiveSupport::TestCase
     runtime = HostedAgents::ContainerRuntime.new(@hosted_agent, executor: FakeExecutor.new(mounts: mounts))
 
     assert_not @hosted_agent.shared_folder?
-    assert_not runtime.mounts_current?
+    assert_not runtime.container_current?
+  end
+
+  test "a container missing the sandbox declaration has drifted" do
+    runtime = HostedAgents::ContainerRuntime.new(@hosted_agent, executor: FakeExecutor.new(mounts: [ "/root", "/workspace" ], env: [ "PATH=/usr/bin" ]))
+
+    assert_not runtime.container_current?
+  end
+
+  test "a supervised container with the sandbox declaration is current" do
+    runtime = HostedAgents::ContainerRuntime.new(@hosted_agent, executor: FakeExecutor.new(mounts: [ "/root", "/workspace" ], env: [ "IS_SANDBOX=1" ]))
+
+    assert runtime.container_current?
   end
 
   test "lifecycle commands only use the generated container name" do
