@@ -11,7 +11,7 @@ module HostedAgents
           entry = entry_for(hosted_agent)
           record = session_for(entry, hosted_agent, origin)
           session_id = record.external_session_id
-          entry.client.prompt(session_id, text, &on_chunk)
+          entry.client.prompt(session_id, text, on_permission: permission_handler(event, entry.client), &on_chunk)
           record.touch(:last_used_at)
           mark_connected(hosted_agent)
         end
@@ -50,6 +50,14 @@ module HostedAgents
       end
 
       private
+        # Without an event there is nothing to hang an approval on, so warmups
+        # and pings keep declining permissions instead of blocking on a human.
+        def permission_handler(event, client)
+          return nil unless event
+
+          ->(request_id, params) { AgentApprovals::Gate.await(event, request_id, params, client: client) }
+        end
+
         def entry_for(hosted_agent)
           mutex.synchronize do
             entry = entries[hosted_agent.id]

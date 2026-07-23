@@ -10,7 +10,7 @@ class HostedAgents::ChatBridgeTest < ActiveSupport::TestCase
       @event = event
     end
 
-    def prompt(_hosted_agent, origin, text)
+    def prompt(_hosted_agent, origin, text, **)
       @prompt_text = text
       raise "wrong origin" unless origin == @project
       @agent.messages.create!(project: @project, body: "Published through the CLI", agent_event: @event)
@@ -25,7 +25,7 @@ class HostedAgents::ChatBridgeTest < ActiveSupport::TestCase
       @chunks = chunks
     end
 
-    def prompt(*args)
+    def prompt(*args, **)
       @prompt_text = args[2]
       @chunks.each { |chunk| yield chunk }
       { "stopReason" => "end_turn" }
@@ -33,7 +33,7 @@ class HostedAgents::ChatBridgeTest < ActiveSupport::TestCase
   end
 
   class SilentPool
-    def prompt(*) = nil
+    def prompt(*, **) = nil
   end
 
   class BoundaryPool
@@ -43,7 +43,7 @@ class HostedAgents::ChatBridgeTest < ActiveSupport::TestCase
       @during_prompt = during_prompt
     end
 
-    def prompt(*)
+    def prompt(*, **)
       @active_connection = ActiveRecord::Base.connection_pool.active_connection?
       @during_prompt&.call
       yield "stale output" if block_given?
@@ -59,7 +59,7 @@ class HostedAgents::ChatBridgeTest < ActiveSupport::TestCase
       @event = event
     end
 
-    def prompt(_hosted_agent, origin, text)
+    def prompt(_hosted_agent, origin, text, **)
       @prompt_text = text
       raise "wrong todo origin" unless origin == @todo
       @todo.comments.create!(author: @agent, body: "Finished in todo context", agent_event: @event)

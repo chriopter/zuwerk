@@ -35,6 +35,10 @@ module HostedAgents
         "--name", @hosted_agent.container_name,
         "--hostname", @hosted_agent.container_name,
         "--restart=unless-stopped",
+        # The entrypoint parks on `tail`, which never reaps. Without a real init
+        # every exited exec session is reparented to PID 1 and leaks as a zombie
+        # until the container hits its pid limit.
+        "--init",
         "--memory=4g",
         "--cpus=2",
         "--pids-limit=2048",

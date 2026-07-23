@@ -52,7 +52,7 @@ module HostedAgents
         if @connector
           @pool.prompt(prompt_target, prompt_origin, prompt, event: @event, expected_connector_owner: @expected_connector_owner, &capture)
         else
-          @pool.prompt(prompt_target, prompt_origin, prompt, &capture)
+          @pool.prompt(prompt_target, prompt_origin, prompt, event: @event, &capture)
         end
         ActiveRecord::Base.connection_handler.clear_active_connections!
         return unless owned_event?

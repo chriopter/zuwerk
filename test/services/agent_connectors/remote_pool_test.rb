@@ -60,8 +60,7 @@ class AgentConnectors::RemotePoolTest < ActiveSupport::TestCase
     event.transition_to!("running")
     dead_client = Struct.new(:alive?).new(false)
 
-    result = AgentConnectors::RemotePool.send(
-      :await_approval,
+    result = AgentApprovals::Gate.await(
       event,
       "permission",
       { "options" => [ { "optionId" => "allow" } ] },
@@ -83,8 +82,7 @@ class AgentConnectors::RemotePoolTest < ActiveSupport::TestCase
 
     waiter = Thread.new do
       ActiveRecord::Base.connection_pool.with_connection do
-        result << AgentConnectors::RemotePool.send(
-          :await_approval,
+        result << AgentApprovals::Gate.await(
           event,
           "permission",
           { "options" => [ { "optionId" => "allow" } ] },
@@ -121,8 +119,7 @@ class AgentConnectors::RemotePoolTest < ActiveSupport::TestCase
 
     waiter = Thread.new do
       ActiveRecord::Base.connection_pool.with_connection do
-        result << AgentConnectors::RemotePool.send(
-          :await_approval,
+        result << AgentApprovals::Gate.await(
           event,
           "permission",
           { "options" => [ { "optionId" => "allow" } ] },
