@@ -12,9 +12,20 @@
       <time class="text-[11px] text-stone-400" datetime="<%= message.created_at.iso8601 %>"><%= message.created_at.strftime("%H:%M") %></time>
     </div>
 
-    <div class="message-copy <%= 'message-copy-agent' if message.author.agent? %>">
-      <%= message.body %>
+    <div class="message-copy lexxy-content <%= 'message-copy-agent' if message.author.agent? %>">
+      <%= render_message_markdown(message.body) %>
     </div>
+
+    <% if message.attachments.any? %>
+      <div class="message-attachments" aria-label="Attachments">
+        <% message.attachments.each do |attachment| %>
+          <%= link_to rails_blob_path(attachment, disposition: "attachment"), class: "message-attachment" do %>
+            <span class="message-attachment-icon" aria-hidden="true">↧</span>
+            <span><strong><%= attachment.filename %></strong><small><%= number_to_human_size attachment.byte_size %></small></span>
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
 
     <%= render "reactions/reactions", reactable: message, current_user: viewer, path: project_message_reactions_path(message.project, message) %>
   </div>

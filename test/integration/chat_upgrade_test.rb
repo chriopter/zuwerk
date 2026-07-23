@@ -60,12 +60,29 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select ".workspace-sidebar", count: 0
     assert_select ".project-context-nav a[aria-current='page']", text: "Chat"
-    assert_select ".chat-header-bar h1", text: "Shared chat"
-    assert_select ".bot-notify-control form[action='#{project_agent_subscription_path(project, @agent)}'] button[aria-pressed='false']", text: /Hermes/
+    assert_select ".chat-header-bar h1", text: "Chat"
+    assert_select ".notify-menu form[action='#{project_agent_subscription_path(project, @agent)}'] button[aria-pressed='false']", text: /Hermes/
     assert_select "a", text: /Invite agent/
     assert_select "#message-viewport #messages"
     assert_select "textarea[placeholder='Write a message…']"
     assert_select "body", text: /Decisions|Schedule|Project overview/, count: 0
+  end
+
+  test "renders Markdown safely and accepts message attachments" do
+    project = Project.default
+    upload = Rack::Test::UploadedFile.new(StringIO.new("release notes"), "text/plain", original_filename: "notes.txt")
+
+    post project_messages_path(project), params: { message: { body: "**Bold** and *italic* <script>alert(1)</script>", attachments: [ upload ] } }
+
+    message = Message.order(:id).last
+    assert_redirected_to chat_project_path(project)
+    assert_equal 1, message.attachments.count
+
+    get chat_project_path(project)
+    assert_select "#message_#{message.id} .message-copy strong", text: "Bold"
+    assert_select "#message_#{message.id} .message-copy em", text: "italic"
+    assert_select "#message_#{message.id} script", count: 0
+    assert_select "#message_#{message.id} .message-attachment", text: /notes.txt/
   end
 
   test "bot subscriptions require a signed-in human" do

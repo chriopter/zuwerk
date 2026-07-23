@@ -4,30 +4,35 @@
 
 <section class="chat-panel" data-controller="chat-scroll">
     <header class="chat-header-bar">
-      <div class="min-w-0">
-        <h1 class="sr-only">Shared chat</h1>
+      <div class="chat-title-block">
+        <span class="chat-project-avatar" aria-hidden="true"><%= @project.name.first.upcase %></span>
+        <div class="min-w-0">
+          <h1>Chat</h1>
+          <p><%= @project.name %> · <%= pluralize(@agents.count, "agent") %> available</p>
+        </div>
       </div>
 
       <div class="chat-header-actions">
-        <%= link_to "Agents", agents_path, class: "header-action hidden sm:inline-flex" %>
-        <div class="bot-notify-control" aria-label="Automatic bot notifications">
-          <span>Auto notify</span>
-          <div>
+        <details class="notify-menu">
+          <summary class="header-action" aria-label="Configure automatic agent notifications"><span aria-hidden="true">✦</span><span>Notify</span></summary>
+          <div class="notify-menu-popover">
+            <div><strong>Automatic replies</strong><small>Choose which agents receive every message.</small></div>
             <% @agents.each do |agent| %>
               <% enabled = @auto_notify_agent_ids.include?(agent.id) %>
               <%= form_with url: project_agent_subscription_path(@project, agent), method: :patch do %>
                 <%= hidden_field_tag :enabled, enabled ? "0" : "1" %>
-                <button type="submit" class="bot-notify-toggle <%= 'is-enabled' if enabled %>" aria-pressed="<%= enabled %>" title="<%= enabled ? 'Stop automatic notifications for' : 'Automatically notify' %> <%= agent.name %>">
-                  <span class="bot-notify-dot" aria-hidden="true"></span><%= agent.name %>
+                <button type="submit" class="notify-agent-row" aria-pressed="<%= enabled %>">
+                  <span class="notify-agent-avatar"><%= agent.name.first.upcase %></span>
+                  <span><strong><%= agent.name %></strong><small><%= enabled ? "Receives every message" : "Mentions only" %></small></span>
+                  <i class="notify-switch <%= 'is-enabled' if enabled %>" aria-hidden="true"></i>
                 </button>
               <% end %>
             <% end %>
           </div>
-        </div>
-        <%= link_to new_agent_invitation_path, class: "header-action", aria: { label: "Invite agent" }, title: "Invite agent" do %>
+        </details>
+        <%= link_to new_agent_invitation_path, class: "header-action header-action-primary", aria: { label: "Invite agent" }, title: "Invite agent" do %>
           <span aria-hidden="true">＋</span><span class="hidden sm:inline">Invite agent</span>
         <% end %>
-        <%= button_to "Exit", session_path, method: :delete, class: "mobile-logout lg:hidden", title: "Log out", aria: { label: "Log out" } %>
       </div>
     </header>
 
@@ -59,7 +64,10 @@
         <div class="composer-box">
           <%= form.text_area :body, placeholder: "Write a message…", required: true, rows: 1, maxlength: 4000, class: "composer-input", data: { controller: "composer", action: "input->composer#grow keydown->composer#keydown" }, aria: { label: "Message" } %>
           <div class="composer-footer">
-            <span class="hidden sm:inline">Shift + Enter for a new line</span>
+            <div class="composer-tools">
+              <%= form.file_field :attachments, multiple: true, class: "composer-file-input", accept: "image/*,.pdf,.txt,.md,.csv,.json,.zip", aria: { label: "Attach files" } %>
+              <span class="hidden sm:inline">Markdown supported · up to 5 files</span>
+            </div>
             <span class="sm:hidden"></span>
             <%= form.submit "Send", class: "send-button" %>
           </div>

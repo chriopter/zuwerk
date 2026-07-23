@@ -187,8 +187,10 @@ module HostedAgents
           Project name: #{project.name}
           Triggering message: #{@event.subject.body}
 
-          Read the conversation with:
+          Read the conversation, including attachment metadata and authenticated download paths, with:
           zuwerk messages list --project #{project.id}
+
+          Format the final response with Markdown when useful (bold, italics, lists, links, quotes, and fenced code render in chat). To publish additional file attachments, use the authenticated project messages API as multipart form data with `attachments[]`.
 
           Use the Zuwerk CLI/API only for additional structured project actions. Return the final user-facing answer through ACP.
         PROMPT

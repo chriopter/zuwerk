@@ -1,14 +1,23 @@
 module Api
   class MessagesController < BaseController
     def index
-      messages = project.messages.includes(:author).order(:created_at).last(200)
+      messages = project.messages.includes(:author, attachments_attachments: :blob).order(:created_at).last(200)
       render json: messages.map { |message| serialize(message) }
     end
 
     def create
       return create_for_event if params[:event_id].present?
 
-      save_message(@current_agent.messages.new(body: params[:body], project: project))
+      save_message(@current_agent.messages.new(body: params[:body], attachments: params[:attachments], project: project))
+    end
+
+    def attachment
+      message = project.messages.find(params[:message_id])
+      attachment = message.attachments.find(params[:id])
+      send_data attachment.download,
+        filename: attachment.filename.to_s,
+        type: attachment.content_type,
+        disposition: :attachment
     end
 
     def self.serialize(message)
@@ -17,7 +26,16 @@ module Api
         body: message.body,
         created_at: message.created_at.iso8601,
         project: { id: message.project.id, name: message.project.name },
-        user: { id: message.author.id, name: message.author.name, kind: message.author.kind }
+        user: { id: message.author.id, name: message.author.name, kind: message.author.kind },
+        attachments: message.attachments.map do |attachment|
+          {
+            id: attachment.id,
+            filename: attachment.filename.to_s,
+            content_type: attachment.content_type,
+            byte_size: attachment.byte_size,
+            download_path: "/api/projects/#{message.project_id}/messages/#{message.id}/attachments/#{attachment.id}"
+          }
+        end
       }
     end
 
@@ -40,7 +58,7 @@ module Api
           if event.publication_message
             render json: serialize(event.publication_message), status: :ok
           else
-            save_message(@current_agent.messages.new(body: params[:body], project: project, agent_event: event))
+            save_message(@current_agent.messages.new(body: params[:body], attachments: params[:attachments], project: project, agent_event: event))
           end
         end
       end

@@ -34,6 +34,36 @@ class ProjectApiTest < ActionDispatch::IntegrationTest
     assert_equal "Project not found.", response.parsed_body.fetch("error")
   end
 
+  test "agent uploads an attachment with a message" do
+    upload = Rack::Test::UploadedFile.new(StringIO.new("agent artifact"), "text/plain", original_filename: "artifact.txt")
+
+    post api_project_messages_path(@project), params: { body: "Artifact attached", attachments: [ upload ] }, headers: @headers
+
+    assert_response :created
+    message = Message.order(:id).last
+    assert_equal @agent, message.author
+    assert_equal [ "artifact.txt" ], message.attachments.map { |attachment| attachment.filename.to_s }
+  end
+
+  test "agent sees attachment metadata and can download message attachments" do
+    message = @project.messages.create!(author: @agent, body: "Review this")
+    message.attachments.attach(io: StringIO.new("attachment contents"), filename: "brief.txt", content_type: "text/plain")
+    attachment = message.attachments.first
+
+    get api_project_messages_path(@project), headers: @headers, as: :json
+
+    metadata = response.parsed_body.sole.fetch("attachments").sole
+    assert_equal "brief.txt", metadata.fetch("filename")
+    assert_equal "text/plain", metadata.fetch("content_type")
+    assert_equal attachment.id, metadata.fetch("id")
+    assert_equal api_project_message_attachment_path(@project, message, attachment), metadata.fetch("download_path")
+
+    get api_project_message_attachment_path(@project, message, attachment), headers: @headers
+    assert_response :success
+    assert_equal "attachment contents", response.body
+    assert_equal "attachment; filename=\"brief.txt\"; filename*=UTF-8''brief.txt", response.headers.fetch("Content-Disposition")
+  end
+
   test "agent lists and creates messages only through a project" do
     @project.messages.create!(author: @agent, body: "Launch message")
     @other_project.messages.create!(author: @agent, body: "Archived message")

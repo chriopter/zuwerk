@@ -4,7 +4,7 @@ class MessagesController < ApplicationController
   before_action :load_project
 
   def index
-    @messages = @project.messages.includes(:author, reactions: :author).order(:created_at).last(200)
+    @messages = @project.messages.includes(:author, { attachments_attachments: :blob }, reactions: :author).order(:created_at).last(200)
     @message = Message.new(project: @project)
     load_room
   end
@@ -14,7 +14,7 @@ class MessagesController < ApplicationController
     if @message.save
       redirect_to chat_path, status: :see_other
     else
-      @messages = @project.messages.includes(:author, reactions: :author).order(:created_at).last(200)
+      @messages = @project.messages.includes(:author, { attachments_attachments: :blob }, reactions: :author).order(:created_at).last(200)
       load_room
       render :index, status: :unprocessable_entity
     end
@@ -41,6 +41,6 @@ class MessagesController < ApplicationController
     end
 
     def message_params
-      params.require(:message).permit(:body)
+      params.require(:message).permit(:body, attachments: [])
     end
 end
