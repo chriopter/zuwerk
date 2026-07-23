@@ -130,6 +130,22 @@ class HostedAgents::AcpClientTest < ActiveSupport::TestCase
     client&.close
   end
 
+  test "streams text when an ACP agent message chunk uses an array of content blocks" do
+    transport = FakeTransport.new([
+      { jsonrpc: "2.0", id: 1, result: {} },
+      { jsonrpc: "2.0", method: "session/update", params: { update: { sessionUpdate: "agent_message_chunk", content: [ { type: "text", text: "Hello" }, { type: "image", data: "ignored" }, { type: "text", text: " world" } ] } } },
+      { jsonrpc: "2.0", id: 2, result: { stopReason: "end_turn" } }
+    ])
+    client = HostedAgents::AcpClient.new(nil, transport: transport)
+    chunks = []
+
+    client.prompt("session-1", "Work") { |chunk| chunks << chunk }
+
+    assert_equal [ "Hello world" ], chunks
+  ensure
+    client&.close
+  end
+
   test "raises a typed pending permission error without auto approval" do
     transport = FakeTransport.new([
       { jsonrpc: "2.0", id: 1, result: {} },

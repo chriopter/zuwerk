@@ -121,7 +121,7 @@ module HostedAgents
         when "session/update"
           update = message.dig("params", "update") || {}
           on_update&.call(update)
-          text = update.dig("content", "text")
+          text = content_text(update["content"])
           yield text if update["sessionUpdate"] == "agent_message_chunk" && text.present?
         when "session/request_permission"
           raise PermissionPending.new(message.fetch("id"), message.fetch("params", {})) unless on_permission
@@ -148,6 +148,10 @@ module HostedAgents
         end
       rescue Error, AgentConnectors::Transport::Error, JSON::ParserError
         nil
+      end
+
+      def content_text(content)
+        object_list(content).filter_map { |block| block["text"] if block["type"].nil? || block["type"] == "text" }.join
       end
 
       def respond_method_not_found(message)
