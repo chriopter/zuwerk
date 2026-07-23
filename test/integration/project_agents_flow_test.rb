@@ -30,6 +30,8 @@ class ProjectAgentsFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "h1", text: "Agents"
     assert_select "[data-agent-id='#{@hosted.user_id}']", text: /Project Coder/
+    assert_select "label[for='agent_terminal_pane_name_#{@hosted.id}']", text: "Pane name for Project Coder"
+    assert_select "input#agent_terminal_pane_name_#{@hosted.id}", count: 1
 
     assert_difference -> { @project.agent_terminal_panes.count }, 1 do
       post project_agent_terminal_panes_path(@project), params: { agent_terminal_pane: { hosted_agent_id: @hosted.id, name: "Debug shell" } }

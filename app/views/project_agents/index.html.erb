@@ -10,8 +10,9 @@
         <div class="project-agent-identity"><span class="project-avatar" aria-hidden="true"><%= hosted.user.name.first.upcase %></span><span><strong><%= hosted.user.name %></strong><small><%= hosted.runtime.humanize %> · <%= hosted.state.humanize %></small></span></div>
         <%= form_with model: [ @project, AgentTerminalPane.new ], class: "project-pane-form" do |form| %>
           <%= form.hidden_field :hosted_agent_id, value: hosted.id %>
-          <%= form.label :name, "Pane name for #{hosted.user.name}", class: "sr-only" %>
-          <%= form.text_field :name, required: true, maxlength: 80, placeholder: "Pane name", disabled: !hosted.running?, class: "input input-bordered bg-white" %>
+          <% pane_name_id = "agent_terminal_pane_name_#{hosted.id}" %>
+          <%= form.label :name, "Pane name for #{hosted.user.name}", for: pane_name_id, class: "sr-only" %>
+          <%= form.text_field :name, id: pane_name_id, required: true, maxlength: 80, placeholder: "Pane name", disabled: !hosted.running?, class: "input input-bordered bg-white" %>
           <%= form.submit "Spawn pane", disabled: !hosted.running?, class: "btn btn-outline" %>
         <% end %>
       </article>
