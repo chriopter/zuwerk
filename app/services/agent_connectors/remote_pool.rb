@@ -11,12 +11,15 @@ module AgentConnectors
           entry = entry_for(agent.id, transport)
           key = [ origin.class.polymorphic_name, origin.id ]
           session_id = entry[:sessions][key] ||= entry[:client].new_session
-          entry[:client].prompt(
+          sync_connector_model(agent, entry[:client])
+          result = entry[:client].prompt(
             session_id,
             text,
             on_permission: ->(request_id, params) { AgentApprovals::Gate.await(event, request_id, params, client: entry[:client], expected_connector_owner: expected_connector_owner) },
             &on_chunk
           )
+          sync_connector_model(agent, entry[:client])
+          result
         end
       rescue
         cleanup(agent.id, transport)
@@ -54,6 +57,13 @@ module AgentConnectors
             end
             client&.close
           end
+        end
+
+        def sync_connector_model(agent, client)
+          model = client.current_model_name
+          return if model.blank? || agent.connector_model == model
+
+          agent.update!(connector_model: model)
         end
 
         def reset!

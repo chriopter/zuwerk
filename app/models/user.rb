@@ -20,6 +20,7 @@ class User < ApplicationRecord
   validate :human_has_password
   validates :email, absence: true, if: :agent?
   validates :working_label, length: { maximum: 80 }, allow_nil: true
+  validates :connector_model, length: { maximum: 120 }, allow_nil: true
   after_update_commit :broadcast_presence, if: :saved_change_to_presence?
 
   WORKING_TTL = 90.seconds

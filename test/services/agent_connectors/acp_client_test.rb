@@ -42,6 +42,43 @@ class AgentConnectors::AcpClientTest < ActiveSupport::TestCase
     client&.close
   end
 
+  test "reports the current advertised model and follows config updates" do
+    transport = FakeTransport.new([
+      { jsonrpc: "2.0", id: 1, result: {} },
+      {
+        jsonrpc: "2.0",
+        id: 2,
+        result: {
+          sessionId: "remote-session",
+          configOptions: [
+            { id: "model", currentValue: "fable", options: [ { value: "fable", name: "Fable" }, { value: "sonnet", name: "Sonnet" } ] }
+          ]
+        }
+      },
+      {
+        jsonrpc: "2.0",
+        method: "session/update",
+        params: {
+          update: {
+            sessionUpdate: "config_option_update",
+            configOptions: [
+              { id: "model", currentValue: "sonnet", options: [ { value: "fable", name: "Fable" }, { value: "sonnet", name: "Sonnet" } ] }
+            ]
+          }
+        }
+      },
+      { jsonrpc: "2.0", id: 3, result: { stopReason: "end_turn" } }
+    ])
+    client = AgentConnectors::AcpClient.new(transport:)
+
+    client.new_session
+    assert_equal "Fable", client.current_model_name
+    client.prompt("remote-session", "Work")
+    assert_equal "Sonnet", client.current_model_name
+  ensure
+    client&.close
+  end
+
   test "negotiates an advertised session mode" do
     transport = FakeTransport.new([
       { jsonrpc: "2.0", id: 1, result: {} },

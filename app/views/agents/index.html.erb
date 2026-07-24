@@ -40,7 +40,10 @@
           <div class="agents-row-copy">
             <% connected = agent.external_connector_present? %>
             <div class="agents-name-line"><h3><%= agent.name %></h3><span class="agents-status <%= agent.working? ? 'agents-status-working' : connected ? 'agents-status-online' : 'agents-status-offline' %>"><i></i><%= agent.working? ? "Working" : connected ? "Online" : "Offline" %></span></div>
-            <p>External environment · ACP via Zuwerk CLI</p>
+            <p>
+              External environment · ACP via Zuwerk CLI
+              <span class="agents-model">Model: <%= agent.connector_model.presence || "Not reported" %></span>
+            </p>
             <% if agent.working? %><small><%= agent.working_label.presence || "Working" %></small><% end %>
             <% if (prompt_event = @latest_prompt_events[agent.id]) %>
               <details class="agents-prompt">

@@ -65,6 +65,15 @@ module AgentConnectors
       write(jsonrpc: "2.0", method: "session/cancel", params: { sessionId: session_id })
     end
 
+    def current_model_name
+      option = object_list(session_capabilities&.fetch("configOptions", nil)).find { |item| item["id"] == "model" }
+      return unless option
+
+      current_value = option["currentValue"]
+      selected = object_list(option["options"]).find { |choice| choice["value"] == current_value }
+      selected&.fetch("name", nil).presence || current_value.to_s.presence
+    end
+
     def close = @transport&.disconnect
 
     private
@@ -151,6 +160,7 @@ module AgentConnectors
         case message["method"]
         when "session/update"
           update = message.dig("params", "update") || {}
+          remember_config_options(update)
           on_update&.call(update)
           text = content_text(update["content"])
           yield text if update["sessionUpdate"] == "agent_message_chunk" && text.present?
@@ -183,6 +193,13 @@ module AgentConnectors
 
       def content_text(content)
         object_list(content).filter_map { |block| block["text"] if block["type"].nil? || block["type"] == "text" }.join
+      end
+
+      def remember_config_options(update)
+        return unless update["sessionUpdate"] == "config_option_update" && update["configOptions"].is_a?(Array)
+
+        @session_capabilities ||= {}
+        @session_capabilities["configOptions"] = update["configOptions"]
       end
 
       def respond_method_not_found(message)

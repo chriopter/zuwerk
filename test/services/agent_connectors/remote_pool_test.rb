@@ -53,6 +53,15 @@ class AgentConnectors::RemotePoolTest < ActiveSupport::TestCase
     assert_same lock, replacement_lock
   end
 
+  test "persists the model reported by the ACP session" do
+    agent = User.create!(name: "Model Agent", kind: :agent)
+    client = Struct.new(:current_model_name).new("Fable")
+
+    AgentConnectors::RemotePool.send(:sync_connector_model, agent, client)
+
+    assert_equal "Fable", agent.reload.connector_model
+  end
+
   test "disconnect cancels a pending approval and its event" do
     human = User.create!(name: "Pool Human", email: "pool-human@example.com", password: "password1")
     agent = User.create!(name: "Pool Agent", kind: :agent)

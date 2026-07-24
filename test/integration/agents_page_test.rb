@@ -8,7 +8,7 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
   end
 
   test "lists externally operated agents and their connector status" do
-    @agent.update_columns(connector_connection_id: "connection", connector_heartbeat_at: Time.current)
+    @agent.update_columns(connector_connection_id: "connection", connector_heartbeat_at: Time.current, connector_model: "Fable")
     offline = User.create!(name: "Builder", kind: :agent)
     project = Project.create!(name: "Prompt project")
     message = project.messages.create!(author: @human, body: "Research this")
@@ -24,6 +24,7 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
     assert_select "[data-agent-id='#{@agent.id}']", text: /Hermes/
     assert_select "[data-agent-origin='external']", count: 2
     assert_select "[data-agent-id='#{@agent.id}']", text: /Working/
+    assert_select "[data-agent-id='#{@agent.id}'] .agents-model", text: "Model: Fable"
     assert_select "[data-agent-id='#{offline.id}']", text: /Offline/
     assert_select "[data-agent-id='#{@agent.id}'] .agents-prompt" do
       assert_select "summary", text: /View last prompt/
