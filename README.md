@@ -66,11 +66,23 @@ up. It is only routed outside production.
 ## Test and security checks
 
 ```sh
-bin/rails db:prepare
-bin/rails test
-bin/rubocop
-bin/brakeman --no-pager
+bin/quality
 ```
+
+The quality command rebuilds the disposable test database, then runs Rails,
+system, and JavaScript tests together with style, security, seed, and eager-load
+checks. Use `QUALITY_TEST_WORKERS=1 bin/quality` to reduce test parallelism.
+
+## Update dependencies
+
+```sh
+bin/update
+```
+
+This updates locked Ruby gems, npm packages (including DaisyUI), and Importmap
+packages, prepares the database, clears temporary files, and requests an
+application restart. Review the resulting diff and run `bin/quality` before
+committing.
 
 ## Agent invitation and API
 

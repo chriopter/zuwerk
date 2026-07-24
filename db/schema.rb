@@ -51,6 +51,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_23_170000) do
 
   create_table "agent_approvals", force: :cascade do |t|
     t.integer "agent_event_id", null: false
+    t.datetime "cancelled_at"
     t.datetime "created_at", null: false
     t.json "details", default: {}, null: false
     t.datetime "expired_at"
@@ -58,7 +59,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_23_170000) do
     t.json "request_id", null: false
     t.datetime "resolved_at"
     t.integer "resolved_by_id"
-    t.string "selected_option_id"
+    t.json "selected_option_id"
     t.string "state", default: "pending", null: false
     t.datetime "updated_at", null: false
     t.index ["agent_event_id"], name: "index_agent_approvals_on_agent_event_id"

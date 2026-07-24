@@ -1,0 +1,160 @@
+#!/usr/bin/env bash
+set -e
+
+if command -v mise >/dev/null 2>&1; then
+  ruby_version=$(tr -d '\n' < "$(dirname "$0")/../.ruby-version")
+  ruby_version=${ruby_version#ruby-}
+  ruby_root=$(mise where "ruby@${ruby_version}" 2>/dev/null || true)
+  if [ -n "$ruby_root" ] && [ -x "$ruby_root/bin/ruby" ]; then
+    exec "$ruby_root/bin/ruby" -x "$0" "$@"
+  fi
+fi
+
+exec ruby -x "$0" "$@"
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "etc"
+require "fileutils"
+require "open3"
+require "rbconfig"
+
+APP_ROOT = File.expand_path("..", __dir__)
+TEST_WORKERS = ENV.fetch("QUALITY_TEST_WORKERS") { [ Etc.nprocessors / 2, 1 ].max.to_s }
+
+Step = Struct.new(:label, :runner, keyword_init: true)
+
+def bundle_exec(*command, env: {})
+  output, status = Open3.capture2e(env, RbConfig.ruby, "-S", "bundle", "exec", *command)
+  [ status.success?, output ]
+end
+
+def command(*command, env: {})
+  output, status = Open3.capture2e(env, *command)
+  [ status.success?, output ]
+end
+
+def check_javascript
+  files = Dir["test/javascript/*_test.mjs"].sort
+  return [ true, "No JavaScript tests found.\n" ] if files.empty?
+
+  command("node", "--test", *files)
+end
+
+def check_bundle_audit
+  update_success, update_output = bundle_exec("bundle-audit", "update")
+  database = File.expand_path("~/.local/share/ruby-advisory-db")
+  return [ true, "#{update_output}Advisory database unavailable; skipping bundle audit.\n" ] unless update_success || File.directory?(database)
+
+  success, output = bundle_exec("bundle-audit", "check", "--config", "config/bundler-audit.yml")
+  [ success, update_output + output ]
+end
+
+PREP_STEPS = [
+  Step.new(
+    label: "Rebuilding test database",
+    runner: lambda {
+      Dir["storage/test.sqlite3*"].each { |path| FileUtils.rm_f(path) }
+      bundle_exec("bin/rails", "db:test:prepare")
+    }
+  )
+].freeze
+
+PARALLEL_STEPS = [
+  Step.new(
+    label: "Rails tests",
+    runner: -> { bundle_exec("bin/rails", "test", env: { "PARALLEL_WORKERS" => TEST_WORKERS }) }
+  ),
+  Step.new(label: "JavaScript tests", runner: -> { check_javascript }),
+  Step.new(label: "Ruby style", runner: -> { bundle_exec("bin/rubocop") }),
+  Step.new(
+    label: "Brakeman security scan",
+    runner: -> { bundle_exec("brakeman", "--quiet", "--no-pager", "--exit-on-warn", "--exit-on-error") }
+  ),
+  Step.new(label: "Importmap audit", runner: -> { bundle_exec("bin/importmap", "audit") }),
+  Step.new(label: "Gem vulnerability audit", runner: -> { check_bundle_audit })
+].freeze
+
+POST_STEPS = [
+  Step.new(
+    label: "System tests",
+    runner: -> { bundle_exec("bin/rails", "test:system", env: { "PARALLEL_WORKERS" => "0" }) }
+  ),
+  Step.new(
+    label: "Test seeds",
+    runner: -> { bundle_exec("bin/rails", "db:seed:replant", env: { "RAILS_ENV" => "test" }) }
+  ),
+  Step.new(
+    label: "Eager loading",
+    runner: -> { bundle_exec("bin/rails", "runner", "Rails.application.eager_load!", env: { "RAILS_ENV" => "test" }) }
+  )
+].freeze
+
+def expected_ruby
+  File.read(".ruby-version").strip.delete_prefix("ruby-")
+end
+
+def format_duration(seconds)
+  minutes = (seconds / 60).to_i
+  format("%02d:%05.2f", minutes, seconds - (minutes * 60))
+end
+
+def run(step)
+  started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+  puts "\n\e[1;35m▸ #{step.label}\e[0m"
+  success, output = step.runner.call
+  print output unless output.empty?
+  {
+    label: step.label,
+    status: success ? "PASS" : "FAIL",
+    seconds: Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at,
+    success: success
+  }
+end
+
+def run_parallel(steps)
+  puts "\n\e[1;35m▸ Running #{steps.length} checks in parallel\e[0m"
+  threads = steps.map { |step| Thread.new { run(step) } }
+  threads.map(&:value)
+end
+
+def print_summary(results, elapsed)
+  step_width = [ results.map { |result| result[:label].length }.max || 4, 4 ].max
+  divider = "+-#{'-' * step_width}-+--------+----------+"
+
+  puts "\nQuality summary"
+  puts divider
+  puts "| #{'Step'.ljust(step_width)} | Result |     Time |"
+  puts divider
+  results.each do |result|
+    puts "| #{result[:label].ljust(step_width)} | #{result[:status].ljust(6)} | #{format_duration(result[:seconds]).rjust(8)} |"
+  end
+  puts divider
+  status = results.all? { |result| result[:success] } ? "PASS" : "FAIL"
+  puts "| #{'TOTAL'.ljust(step_width)} | #{status.ljust(6)} | #{format_duration(elapsed).rjust(8)} |"
+  puts divider
+end
+
+FileUtils.chdir(APP_ROOT) do
+  unless RUBY_VERSION == expected_ruby
+    abort "Ruby #{expected_ruby} required (using #{RUBY_VERSION})"
+  end
+
+  ruby_bin = File.dirname(RbConfig.ruby)
+  ENV["PATH"] = "#{ruby_bin}:#{ENV.fetch('PATH')}" unless ENV.fetch("PATH").split(":").include?(ruby_bin)
+
+  started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+  results = PREP_STEPS.map { |step| run(step) }
+
+  if results.all? { |result| result[:success] }
+    parallel_results = run_parallel(PARALLEL_STEPS)
+    results.concat(parallel_results)
+    results.concat(POST_STEPS.map { |step| run(step) }) if parallel_results.all? { |result| result[:success] }
+  end
+
+  elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at
+  print_summary(results, elapsed)
+  abort "\n\e[1;31m✗ Quality checks failed\e[0m" unless results.all? { |result| result[:success] }
+
+  puts "\n\e[1;32m✓ All checks passed\e[0m (#{format_duration(elapsed)})"
+end

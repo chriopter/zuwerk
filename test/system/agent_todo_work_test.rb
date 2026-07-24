@@ -13,7 +13,7 @@ class AgentTodoWorkTest < ApplicationSystemTestCase
       @continue = Queue.new
     end
 
-    def prompt(_hosted_agent, origin, _prompt)
+    def prompt(_hosted_agent, origin, _prompt, **)
       raise "wrong work origin" unless origin == @todo
 
       @started << true
