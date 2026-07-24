@@ -2,7 +2,6 @@
 <article id="<%= dom_id(message) %>" class="message-bubble-row group <%= 'is-own' if viewer && viewer.id == message.author_id %>" data-author-id="<%= message.author_id %>">
   <div class="message-avatar <%= message.author.agent? ? 'message-avatar-agent' : 'message-avatar-human' %>">
     <%= message.author.name.first.upcase %>
-    <% if message.author.agent? %><span class="message-avatar-spark" aria-label="Agent">✦</span><% end %>
   </div>
 
   <div class="message-bubble-col">
@@ -12,8 +11,14 @@
         <time datetime="<%= message.created_at.iso8601 %>"><%= message.created_at.strftime("%H:%M") %></time>
       </div>
 
-      <div class="message-copy lexxy-content">
-        <%= render_message_markdown(message.body) %>
+      <% long_body = message.body.to_s.length > 500 %>
+      <div class="message-collapse <%= 'is-collapsed' if long_body %>" <%= 'data-controller=collapse'.html_safe if long_body %>>
+        <div class="message-copy lexxy-content">
+          <%= render_message_markdown(message.body) %>
+        </div>
+        <% if long_body %>
+          <button type="button" class="message-show-more" data-action="collapse#toggle"><span data-collapse-target="label">Show more</span></button>
+        <% end %>
       </div>
 
       <% if message.attachments.any? %>
@@ -26,8 +31,8 @@
           <% end %>
         </div>
       <% end %>
-    </div>
 
-    <%= render "reactions/reactions", reactable: message, current_user: viewer, path: project_message_reactions_path(message.project, message) %>
+      <%= render "reactions/reactions", reactable: message, current_user: viewer, path: project_message_reactions_path(message.project, message) %>
+    </div>
   </div>
 </article>

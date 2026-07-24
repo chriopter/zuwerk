@@ -43,11 +43,11 @@ class AgentTodoWorkTest < ApplicationSystemTestCase
     visit project_todo_path(@project, @todo)
 
     within "#todo_comment_#{comment.id}" do
+      find(".boost-picker > summary").click
       click_button "React with ❤️"
-      assert_selector "button.reaction-chip-active", text: /1/
-      find("button.reaction-chip-active").click
-      assert_no_selector "button.reaction-chip-active"
-      assert_no_selector "button.reaction-chip", text: /1/
+      assert_selector "button.boost-chip.is-own"
+      find("button.boost-chip.is-own").click
+      assert_no_selector "button.boost-chip"
     end
 
     assignment = @todo.assignments.create!(agent: @agent, assigner: @human)
@@ -59,7 +59,7 @@ class AgentTodoWorkTest < ApplicationSystemTestCase
     Timeout.timeout(5) { pool.started.pop }
 
     visit project_todo_path(@project, @todo)
-    assert_text "👍 Codex Browser"
+    assert_selector "#todo_reactions .boost-chip[title*='Codex Browser'] .boost-chip-emoji", text: "👍"
     assert_selector "[data-agent-event-id='#{event.public_id}']", text: "Codex Browser is working"
     assert_selector "[data-agent-event-id='#{event.public_id}'] .agent-turn-spinner", visible: :all
 

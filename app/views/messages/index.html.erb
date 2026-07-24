@@ -2,7 +2,7 @@
 <%= turbo_stream_from @project.agent_turn_stream %>
 <%= turbo_stream_from "agent_presence" %>
 
-<section class="chat-panel" data-controller="chat-scroll">
+<section class="chat-panel" data-controller="chat-scroll working-ring">
     <header class="chat-header">
       <nav class="workspace-breadcrumb" aria-label="Breadcrumb">
         <%= link_to @project.name, project_path(@project) %><span aria-hidden="true">/</span><span aria-current="page">Chat</span>
@@ -10,26 +10,29 @@
       <h1 class="sr-only">Chat</h1>
 
       <div class="chat-header-actions">
-        <details class="notify-menu">
-          <summary class="tb-pill-hit" aria-label="Configure automatic agent notifications"><span class="tb-pill"><span aria-hidden="true">✦</span><span>Notify</span></span></summary>
-          <div class="notify-menu-popover">
-            <div><strong>Automatic replies</strong><small>Choose which agents receive every message.</small></div>
-            <% @agents.each do |agent| %>
-              <% enabled = @auto_notify_agent_ids.include?(agent.id) %>
-              <%= form_with url: project_agent_subscription_path(@project, agent), method: :patch do %>
-                <%= hidden_field_tag :enabled, enabled ? "0" : "1" %>
-                <button type="submit" class="notify-agent-row" aria-pressed="<%= enabled %>">
-                  <span class="notify-agent-avatar"><%= agent.name.first.upcase %></span>
-                  <span><strong><%= agent.name %></strong><small><%= enabled ? "Receives every message" : "Mentions only" %></small></span>
-                  <i class="notify-switch <%= 'is-enabled' if enabled %>" aria-hidden="true"></i>
-                </button>
-              <% end %>
+        <div class="avatar-stack" aria-label="People and agents in this chat">
+          <% @humans.each do |human| %>
+            <span class="avatar-stack-item" title="<%= human.name %>"><%= human.name.first.upcase %></span>
+          <% end %>
+          <% @agents.each do |agent| %>
+            <% enabled = @auto_notify_agent_ids.include?(agent.id) %>
+            <%= form_with url: project_agent_subscription_path(@project, agent), method: :patch, class: "avatar-stack-form" do %>
+              <%= hidden_field_tag :enabled, enabled ? "0" : "1" %>
+              <button type="submit" class="avatar-stack-item is-agent <%= 'is-working' if agent.working? %>" data-agent-id="<%= agent.id %>" aria-pressed="<%= enabled %>"
+                title="<%= agent.name %><%= enabled ? " — watching this chat" : " — mentions only" %>"
+                aria-label="<%= enabled ? "Stop #{agent.name} watching this chat" : "Let #{agent.name} watch this chat" %>">
+                <%= agent.name.first.upcase %>
+                <% if agent.external_connector_present? %><i class="avatar-stack-dot" aria-hidden="true"></i><% end %>
+                <% if enabled %><i class="avatar-stack-eye" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/></svg></i><% end %>
+              </button>
             <% end %>
-          </div>
-        </details>
-        <%= link_to new_agent_invitation_path, class: "pill-primary", aria: { label: "Invite agent" }, title: "Invite agent" do %>
-          <span aria-hidden="true">＋</span><span class="hidden sm:inline">Invite agent</span>
-        <% end %>
+          <% end %>
+          <% if @agents.empty? %>
+            <%= link_to new_agent_invitation_path, class: "pill-primary", aria: { label: "Invite agent" }, title: "Invite agent" do %>
+              <span aria-hidden="true">＋</span><span class="hidden sm:inline">Invite agent</span>
+            <% end %>
+          <% end %>
+        </div>
       </div>
     </header>
 
@@ -56,10 +59,14 @@
     </div>
 
     <div class="composer-dock">
-      <%= form_with model: [@project, @message], class: "composer-form" do |form| %>
+      <%= form_with model: [@project, @message], class: "composer-form", data: { controller: "mention", mention_users_value: @agents.map { |agent| { handle: agent.handle, name: agent.name } }.to_json } do |form| %>
         <%= render "shared/errors", object: @message %>
+        <div class="mention-menu" data-mention-target="menu" hidden></div>
         <div class="composer-box">
-          <%= form.text_area :body, placeholder: "Write a message…", required: true, rows: 1, maxlength: 4000, class: "composer-input", data: { controller: "composer", action: "input->composer#grow keydown->composer#keydown" }, aria: { label: "Message" } %>
+          <div class="composer-input-wrap">
+            <div class="mention-highlights" data-mention-target="highlights" aria-hidden="true"></div>
+            <%= form.text_area :body, placeholder: "Write a message…", required: true, rows: 1, maxlength: 4000, class: "composer-input", data: { controller: "composer", mention_target: "input", action: "input->composer#grow input->mention#update keydown->mention#keydown keydown->composer#keydown click->mention#update scroll->mention#highlight" }, aria: { label: "Message" } %>
+          </div>
           <div class="composer-footer">
             <div class="composer-tools">
               <%= form.file_field :attachments, multiple: true, class: "composer-file-input", accept: "image/*,.pdf,.txt,.md,.csv,.json,.zip", aria: { label: "Attach files" } %>

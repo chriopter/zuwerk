@@ -40,7 +40,7 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
   test "project directory opens a project overview and tools use breadcrumbs" do
     sign_in
     @first_project.todos.create!(creator: @human, title: "Open task", status: :open)
-    @first_project.todos.create!(creator: @human, title: "Active task", status: :in_progress)
+    @first_project.todos.create!(creator: @human, title: "Active task", status: :open)
     @first_project.messages.create!(author: @human, body: "Latest project note")
 
     get root_path
@@ -62,7 +62,7 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
     assert_select ".workspace-topbar a.topbar-home[href='#{root_path}']"
     assert_select ".topbar-global-nav, .topbar-account", count: 0
     assert_select ".project-home h1", text: "Alpha"
-    assert_select ".project-tool-card", count: 4
+    assert_select ".project-tool-card", count: 6
     assert_select "a[href='#{project_todos_path(@first_project)}']", text: /Tasks/
     assert_select "a[href='#{chat_project_path(@first_project)}']", text: /Chat/
     assert_select "a[href='#{project_board_posts_path(@first_project)}']", text: /Briefing/
@@ -96,9 +96,9 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
 
     get project_todos_path(@first_project)
     assert_select "h1", text: "Tasks"
-    assert_select ".kanban-column", count: 3
-    assert_select ".kanban-empty", text: "Todos hierher ziehen", count: 3
-    assert_select "a[href='#{new_project_todo_path(@first_project)}']", text: "Neues Todo"
+    assert_select ".todo-list-card", minimum: 1
+    assert_select ".list-create form[action='#{project_todo_lists_path(@first_project)}']"
+    assert_select ".kanban-create form[action='#{project_todos_path(@first_project)}']"
 
     get agents_path
     assert_select ".agents-empty", text: /No agents yet/

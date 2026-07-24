@@ -3,6 +3,9 @@
   themes: corporate --default;
 }
 
+@keyframes glass-toast-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes glass-toast-out { to { opacity: 0; transform: translateY(-6px); visibility: hidden; } }
+
 @keyframes typing-bounce { 0%, 60%, 100% { transform: translateY(0); opacity: .35; } 30% { transform: translateY(-3px); opacity: 1; } }
 
 @layer components {
@@ -105,13 +108,15 @@
   .chat-header { @apply relative z-10 flex h-16 shrink-0 items-center justify-between px-4 sm:px-6 lg:px-8; }
   .mobile-agent-presence { @apply flex h-8 shrink-0 items-center border-b border-stone-200 bg-white px-4 lg:hidden; }
   .mobile-agent-presence #agent_presence { @apply m-0; }
-  .agent-turn-strip { @apply shrink-0 border-b border-stone-200 bg-white px-4 sm:px-6 lg:px-8; }
+  .agent-turn-strip { @apply shrink-0 px-4 sm:px-6 lg:px-8; }
+  .agent-turn-strip .agent-turn-state-running { @apply hidden; }
   .agent-turn-strip:empty, .todo-agent-turn:empty, .kanban-agent-turn:empty { @apply hidden; }
   .agent-turn-state { @apply flex min-h-8 items-center gap-2 text-xs font-medium text-stone-500; }
   .agent-turn-spinner { @apply h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-stone-300 border-t-[#e85f42]; }
   .agent-turn-state-failed { @apply text-red-700; }
   .agent-turn-state-cancelled { @apply text-stone-500; }
   .todo-agent-turn { @apply mt-3; }
+  .todo-detail-heading .agent-turn-state-running { @apply hidden; }
   .kanban-agent-turn { @apply mt-2; }
   .agent-approval-card { @apply mb-3 grid gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-stone-700 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center; }
   .agent-approval-card > div > span { @apply text-[9px] font-semibold uppercase tracking-[.12em] text-amber-700; }
@@ -120,6 +125,20 @@
   .agent-approval-actions { @apply flex flex-wrap gap-2; }
   .agent-approval-button { @apply min-h-9 rounded-lg border border-amber-300 bg-white px-3 text-xs font-semibold text-stone-800 hover:bg-amber-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#27332d]; }
   .chat-header-actions { @apply flex items-center gap-2; }
+  .avatar-stack { @apply flex items-center gap-1.5; }
+  .avatar-stack-item { @apply relative grid h-8 w-8 shrink-0 place-items-center rounded-full border-2 border-white bg-[#27332d] text-[10px] font-semibold text-white shadow-[0_2px_6px_rgba(28,25,23,.15)]; }
+  .avatar-stack-item.is-agent { @apply bg-[#e85f42]; }
+  .avatar-stack-dot { @apply absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border-2 border-white bg-emerald-500; }
+  .avatar-stack-item.is-working::after { content: ""; @apply absolute -inset-1 animate-spin rounded-full border-2 border-[#e85f42]/20 border-t-[#e85f42]; }
+  .avatar-stack-form { @apply inline-flex; }
+  button.avatar-stack-item { @apply cursor-pointer transition hover:-translate-y-px hover:z-10 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#27332d]; }
+  .avatar-stack-check { @apply absolute -left-1 -top-1 grid h-4 w-4 place-items-center rounded-full border border-white bg-[#27332d] text-white shadow-[0_1px_3px_rgba(28,25,23,.3)]; }
+  .avatar-stack-check svg { @apply h-2.5 w-2.5; }
+  .avatar-stack-item.is-unassigned { @apply bg-white text-stone-400 shadow-none; }
+  button .avatar-stack-item, .avatar-stack-form .avatar-stack-item { @apply cursor-pointer transition hover:-translate-y-px; }
+  .avatar-stack-item.is-unassigned { @apply border-stone-300; }
+  .avatar-stack-eye { @apply absolute -left-1 -top-1 grid h-4 w-4 place-items-center rounded-full border border-white bg-white text-stone-700 not-italic shadow-[0_1px_3px_rgba(28,25,23,.25)]; }
+  .avatar-stack-eye svg { @apply h-2.5 w-2.5; }
   .notify-menu { @apply relative; }
   .notify-menu > summary { @apply cursor-pointer list-none; }
   .notify-menu > summary::-webkit-details-marker { display: none; }
@@ -163,7 +182,7 @@
   .message-bubble-row.is-own { @apply flex-row-reverse; }
   .message-bubble-col { @apply flex min-w-0 max-w-[78%] flex-col gap-1; }
   .message-bubble-row.is-own .message-bubble-col { @apply items-end; }
-  .message-bubble { @apply rounded-2xl rounded-bl-md border border-white/60 bg-white/70 px-4 py-2.5 shadow-[0_1px_2px_rgba(28,25,23,.05),inset_0_1px_0_rgba(255,255,255,.55)] backdrop-blur-md; }
+  .message-bubble { @apply relative rounded-2xl rounded-bl-md border border-white/60 bg-white/70 px-4 py-2.5 shadow-[0_1px_2px_rgba(28,25,23,.05),inset_0_1px_0_rgba(255,255,255,.55)] backdrop-blur-md; }
   .message-bubble-row.is-own .message-bubble { @apply rounded-bl-2xl rounded-br-md border-white/15 bg-[#27332d]/90 shadow-[0_10px_26px_-12px_rgba(39,51,45,.55),inset_0_1px_0_rgba(255,255,255,.14)]; }
   .message-meta { @apply flex flex-wrap items-baseline gap-x-2 text-[11px] text-stone-400; }
   .message-meta strong { @apply font-semibold text-stone-700; }
@@ -180,10 +199,13 @@
   .message-bubble-row.is-own .message-bubble { @apply pr-6; }
   .message-avatar-human { @apply bg-[#27332d] text-white; }
   .message-avatar-agent { @apply bg-[#e85f42] text-white; }
-  .message-avatar-spark { @apply absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full border-2 border-[#fbfbf8] bg-white text-[7px] text-[#e85f42]; }
   .agent-label { @apply text-[9px] font-semibold uppercase tracking-[.1em] text-[#d9563b]; }
 
   .message-copy { @apply mt-1 break-words font-serif text-[15px] leading-7 text-stone-800; }
+  .message-collapse.is-collapsed .message-copy { @apply max-h-44 overflow-hidden; mask-image: linear-gradient(180deg, #000 62%, transparent 96%); -webkit-mask-image: linear-gradient(180deg, #000 62%, transparent 96%); }
+  .message-show-more { @apply mt-1 block w-full cursor-pointer text-right text-xs font-semibold text-stone-500 transition hover:text-stone-900; }
+  .message-bubble-row.is-own .message-show-more { @apply text-left; }
+  .message-bubble-row.is-own .message-show-more { @apply text-white/70 hover:text-white; }
   .message-copy-agent { @apply text-stone-700; }
   .message-copy > :first-child { @apply mt-0; }
   .message-copy > :last-child { @apply mb-0; }
@@ -202,14 +224,44 @@
   .message-attachment strong, .message-attachment small { @apply block truncate; }
   .message-attachment strong { @apply text-xs font-semibold text-stone-800; }
   .message-attachment small { @apply mt-0.5 text-[10px] text-stone-400; }
-  .reaction-actions { @apply mt-2 flex min-h-6 flex-wrap gap-1; }
-  .reaction-chip { @apply inline-flex h-6 min-w-7 items-center justify-center gap-1 rounded-full border border-white/60 bg-white/45 px-1.5 text-xs text-stone-600 shadow-[inset_0_1px_0_rgba(255,255,255,.6)] backdrop-blur-md transition hover:border-white/80 hover:bg-white/70; }
-  .reaction-chip-active { @apply border-[#efaa9b] bg-[#fff3ef]; }
+  .boosts { @apply relative z-10 flex min-h-0 flex-wrap items-center gap-1; }
+  .message-bubble .boosts { @apply absolute -bottom-3 left-2 z-10 flex-nowrap; }
+  .message-bubble-row.is-own .message-bubble .boosts { @apply left-auto right-2; }
+  .message-bubble .boosts:not(:has(.boost-chip)) { @apply pointer-events-none opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100; }
+  .message-bubble .boosts:not(:has(.boost-chip)) .boost-picker > summary { @apply opacity-100; }
+  .message-bubble-row:has(.boost-chip) { @apply mb-6; }
+  .boost-chip { @apply inline-flex h-6 cursor-pointer items-center gap-1 rounded-full border border-white/70 bg-white/85 py-0.5 pl-0.5 pr-1.5 shadow-[0_2px_8px_-2px_rgba(28,25,23,.18),inset_0_1px_0_rgba(255,255,255,.7)] backdrop-blur-md transition hover:-translate-y-px hover:border-white; }
+  .boost-chip.is-own { @apply border-[#efaa9b] bg-[#fff3ef]; }
+  .boost-chip-avatar { @apply grid h-4.5 w-4.5 shrink-0 place-items-center rounded-full bg-[#27332d] text-[8px] font-bold text-white; }
+  .boost-chip-avatar.is-agent { @apply bg-[#e85f42]; }
+  .boost-chip-emoji { @apply text-[13px] leading-none; }
+  .boost-picker { @apply relative; }
+  .boost-picker > summary { @apply grid h-6 w-6 cursor-pointer list-none place-items-center rounded-full border border-white/70 bg-white/60 text-xs text-stone-400 opacity-0 shadow-[inset_0_1px_0_rgba(255,255,255,.7)] backdrop-blur-md transition hover:border-white hover:text-stone-800 focus-visible:opacity-100 group-hover:opacity-100; }
+  .boost-picker[open] > summary { @apply opacity-100 text-stone-800; }
+  #todo_reactions .boost-picker > summary, .todo-comments .boost-picker > summary { @apply opacity-100; }
+  .boost-picker > summary::-webkit-details-marker { display: none; }
+  .boost-picker-menu { @apply absolute bottom-8 left-1/2 z-30 grid w-max -translate-x-1/2 grid-cols-5 gap-0.5 rounded-2xl border border-white/60 bg-white/85 p-1.5 shadow-[0_20px_60px_rgba(28,25,23,.18),inset_0_1px_0_rgba(255,255,255,.6)] backdrop-blur-xl; }
+  .message-bubble-row.is-own .boost-picker-menu { @apply left-auto right-0 translate-x-0; }
+  .boost-picker-option { @apply grid h-8 w-8 cursor-pointer place-items-center rounded-lg text-base transition hover:bg-stone-100; }
 
   .composer-dock { @apply pointer-events-none absolute inset-x-0 bottom-0 z-20 px-3 pb-4 sm:px-6 sm:pb-6; }
-  .composer-form { @apply pointer-events-auto mx-auto w-full max-w-[820px]; }
+  .composer-form { @apply pointer-events-auto relative mx-auto w-full max-w-[820px]; }
+  .mention-menu { @apply absolute bottom-full left-3 z-30 mb-2 flex w-72 flex-col overflow-hidden rounded-2xl border border-white/60 bg-white/90 p-1.5 shadow-[0_20px_60px_rgba(28,25,23,.18),inset_0_1px_0_rgba(255,255,255,.6)] backdrop-blur-xl; }
+  .mention-option { @apply flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-2.5 py-2 text-left transition; }
+  .mention-option.is-active, .mention-option:hover { @apply bg-stone-100; }
+  .mention-option-avatar { @apply grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#e85f42] text-[10px] font-semibold text-white; }
+  .mention-option-name { @apply min-w-0 flex-1 truncate text-sm font-semibold text-stone-800; }
+  .mention-option-handle { @apply shrink-0 text-xs text-stone-400; }
+  .lexxy-prompt-menu { @apply z-40 rounded-2xl border border-white/60 bg-white/90 p-1.5 shadow-[0_20px_60px_rgba(28,25,23,.18),inset_0_1px_0_rgba(255,255,255,.6)] backdrop-blur-xl; }
+  .lexxy-prompt-menu li { @apply flex cursor-pointer items-center gap-2.5 rounded-xl px-2.5 py-2; }
+  .lexxy-prompt-menu li[aria-selected="true"], .lexxy-prompt-menu li:hover { @apply bg-stone-100; }
   .composer-box { @apply overflow-hidden rounded-2xl border border-white/60 bg-white/75 shadow-[0_18px_50px_rgba(28,25,23,.16),inset_0_1px_0_rgba(255,255,255,.65)] backdrop-blur-xl transition focus-within:-translate-y-px focus-within:border-[#87968e] focus-within:ring-4 focus-within:ring-[#dfe6e1]; }
-  .composer-input { @apply block max-h-40 min-h-14 w-full resize-none border-0 bg-transparent px-4 py-3 text-[15px] leading-6 text-stone-900 outline-none placeholder:text-stone-400; }
+  .composer-input-wrap { @apply relative; }
+  .mention-highlights { @apply pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words px-4 py-3 text-[15px] leading-6 text-transparent; }
+  .mention-token { @apply rounded-lg text-transparent; background: rgba(238,241,236,.95);
+    box-shadow: 0 0 0 3px rgba(238,241,236,.95), 0 0 0 4px rgba(255,255,255,.9), 0 2px 6px -1px rgba(28,25,23,.14);
+  }
+  .composer-input { @apply relative block max-h-40 min-h-14 w-full resize-none border-0 bg-transparent px-4 py-3 text-[15px] leading-6 text-stone-900 outline-none placeholder:text-stone-400; }
   .composer-footer { @apply flex items-center justify-between border-t border-white/40 px-3 py-2 text-xs text-stone-400; }
   .composer-tools { @apply flex min-w-0 items-center gap-2; }
   .composer-file-input { @apply max-w-44 text-[10px] text-stone-400 file:mr-2 file:rounded-lg file:border file:border-white/50 file:bg-white/50 file:px-2.5 file:py-1.5 file:text-[10px] file:font-semibold file:text-stone-600 file:backdrop-blur-md hover:file:bg-white/70; }
@@ -285,59 +337,91 @@
   .workspace-secondary-action { @apply inline-flex h-10 items-center justify-center rounded-lg border border-white/60 bg-white/50 px-4 text-sm font-semibold text-stone-700 shadow-[inset_0_1px_0_rgba(255,255,255,.6)] backdrop-blur-md transition hover:-translate-y-px hover:border-white/80 hover:bg-white/70; }
   .workspace-back-link { @apply mb-5 inline-flex text-xs font-semibold text-stone-500 transition hover:text-stone-900; }
 
-  .kanban-page { @apply mx-auto flex min-h-full max-w-[1680px] flex-col pb-8; }
-  .kanban-board { @apply mt-6 grid min-h-0 flex-1 gap-4 xl:grid-cols-3; }
-  .kanban-column { @apply flex min-h-[28rem] min-w-0 flex-col rounded-2xl border border-white/60 bg-white/40 p-3 shadow-[0_1px_2px_rgba(28,25,23,.04),inset_0_1px_0_rgba(255,255,255,.5)] backdrop-blur-md transition; }
-  .kanban-column-over { @apply border-[#e85f42]/60 bg-[#fff2ec]/70 ring-2 ring-[#e85f42]/10; }
-  .kanban-column-header { @apply flex items-start justify-between gap-3 px-1 pb-3 pt-1; }
-  .kanban-column-title { @apply flex items-center gap-2; }
-  .kanban-column-title i { @apply h-2 w-2 rounded-full bg-stone-400; }
-  .kanban-column-in-progress .kanban-column-title i { @apply bg-[#e85f42]; }
-  .kanban-column-completed .kanban-column-title i { @apply bg-emerald-500; }
-  .kanban-column-title h2 { @apply text-sm font-semibold text-stone-900; }
-  .kanban-column-title span { @apply rounded-full bg-stone-200 px-2 py-0.5 text-[10px] font-semibold text-stone-500; }
-  .kanban-column-header p { @apply mt-1 text-[11px] text-stone-400; }
-  .kanban-add { @apply grid h-8 w-8 place-items-center rounded-lg text-lg text-stone-400 transition hover:bg-white/70 hover:text-stone-900 hover:shadow-sm; }
-  .kanban-cards { @apply flex min-h-40 flex-1 flex-col gap-2.5; }
-  .kanban-card { @apply cursor-grab overflow-hidden rounded-xl border border-white/60 bg-white/55 shadow-[0_1px_2px_rgba(28,25,23,.04),inset_0_1px_0_rgba(255,255,255,.55)] backdrop-blur-sm transition hover:-translate-y-0.5 hover:border-white/80 hover:bg-white/70 hover:shadow-[0_12px_28px_-8px_rgba(28,25,23,.14)]; }
-  .kanban-card-dragging { @apply scale-[.98] opacity-35; }
-  .kanban-card-link { @apply block p-4; }
-  .kanban-card-topline { @apply flex items-center justify-between gap-3 text-[10px] font-semibold uppercase tracking-[.08em] text-stone-400; }
-  .kanban-parent { @apply min-w-0 truncate normal-case tracking-normal text-stone-400; }
-  .kanban-card h3 { @apply mt-2 text-sm font-semibold leading-5 text-stone-900; }
-  .kanban-card-description { @apply mt-2 line-clamp-3 text-xs leading-5 text-stone-500; }
-  .kanban-card-footer { @apply mt-4 flex items-end justify-between gap-3 border-t border-stone-100 pt-3; }
-  .kanban-assignees { @apply flex -space-x-1.5; }
-  .kanban-assignees span { @apply grid h-6 w-6 place-items-center rounded-full border-2 border-white bg-[#27332d] text-[9px] font-semibold text-white; }
-  .kanban-assignees .kanban-unassigned { @apply bg-stone-100 text-stone-400; }
-  .kanban-card-meta { @apply flex flex-col items-end gap-0.5 text-[9px] text-stone-400; }
-  .kanban-empty { @apply flex min-h-24 items-center justify-center rounded-xl border border-dashed border-white/70 text-xs text-stone-400; }
+  .todo-lists-page { @apply mx-auto w-full max-w-[880px] pb-16; }
+  .todo-lists-grid { @apply mt-6 grid items-start gap-4 md:grid-cols-2; }
+  .todo-list-card { @apply p-4; }
+  .todo-list-card-header { @apply mb-3 flex cursor-grab items-center gap-2 border-b border-stone-100 px-1 pb-3; }
+  .todo-list-card-header h2 { @apply min-w-0 truncate font-serif text-xl font-normal tracking-tight text-stone-950; }
+  .todo-list-card-header span { @apply rounded-full bg-stone-200 px-2 py-0.5 text-[10px] font-semibold text-stone-500; }
+  .todo-list-rows { @apply mt-1 flex flex-col; }
+  .todo-lists-grid.is-focused { @apply mx-auto max-w-xl grid-cols-1; }
+  .todo-focus-back { @apply mt-2 text-xs font-semibold text-stone-500; }
+  .todo-focus-back a { @apply transition hover:text-stone-900; }
+  .todo-list-row { @apply flex min-h-10 cursor-grab items-center gap-2.5 rounded-xl px-2 py-1.5 transition hover:bg-white/70; }
+  .todo-list-row-main { @apply flex min-w-0 flex-1 items-center gap-2.5; }
+  .todo-check { @apply grid h-5 w-5 shrink-0 cursor-pointer place-items-center rounded-full border-2 border-stone-300 bg-transparent text-transparent transition hover:border-stone-500; }
+  .todo-check svg { @apply h-3 w-3; }
+  .todo-check-completed { @apply border-emerald-500 bg-emerald-500 text-white shadow-[0_2px_6px_rgba(16,185,129,.35)] hover:border-emerald-600; }
+  .todo-check:hover { @apply text-stone-300; }
+  .todo-check-completed:hover { @apply text-white; }
+  .todo-list-show-all { @apply mt-1 block rounded-xl px-2 py-2 text-center text-xs font-semibold text-stone-400 transition hover:bg-white/60 hover:text-stone-800; }
+  .todo-list-row-dragging { @apply scale-[.98] opacity-40; }
+  .todo-list-card.is-drop-target { @apply border-[#87968e] bg-white/75 ring-4 ring-[#dfe6e1]; }
+  .todo-list-row-title { @apply min-w-0 flex-1 truncate text-sm font-medium text-stone-800; }
+  .todo-list-row.is-completed .todo-list-row-title { @apply text-stone-400 line-through; }
+  .todo-list-dot { @apply h-2 w-2 shrink-0 rounded-full bg-stone-300; }
+  .todo-list-dot-completed { @apply bg-emerald-500; }
+  .todo-list-row-people { @apply flex shrink-0 items-center gap-1; }
+  .todo-list-row-people .avatar-stack-item { @apply h-6 w-6 border text-[9px]; }
+  .todo-list-row .kanban-agent-turn { @apply shrink-0; }
+  .todo-list-row .agent-turn-state { @apply min-h-0 text-[10px]; }
+  .todo-list-empty { @apply px-2 py-6 text-center text-sm text-stone-400; }
+  .list-create { @apply relative; }
+  .list-create > summary { @apply cursor-pointer list-none; }
+  .list-create > summary::-webkit-details-marker { display: none; }
+  .list-create[open] > summary { @apply hidden; }
+  .list-create > div { @apply overflow-hidden rounded-full border border-white/70 bg-white/85 shadow-[0_10px_28px_-12px_rgba(28,25,23,.22),inset_0_1px_0_rgba(255,255,255,.65)] backdrop-blur-md transition focus-within:border-[#87968e] focus-within:ring-4 focus-within:ring-[#dfe6e1]; }
+  .list-create form { @apply flex items-center gap-1 p-1; }
+  .list-create input[type="text"] { @apply h-8 w-48 min-w-0 border-0 bg-transparent px-3 text-sm text-stone-900 outline-none placeholder:text-stone-400; }
+  .list-create button[type="submit"] { @apply grid h-7 w-7 shrink-0 cursor-pointer place-items-center rounded-full border border-white/15 bg-[#27332d]/90 text-white shadow-[0_6px_16px_-6px_rgba(39,51,45,.55),inset_0_1px_0_rgba(255,255,255,.18)] transition hover:bg-[#27332d]; }
+  .list-create button[type="submit"] svg { @apply h-3.5 w-3.5; }
+  .kanban-create { @apply mt-1; }
+  .kanban-create > summary { @apply flex h-9 cursor-pointer list-none items-center gap-1.5 rounded-xl px-2 text-xs font-medium text-stone-400 transition hover:bg-white/60 hover:text-stone-700; }
+  .kanban-create > summary::-webkit-details-marker { display: none; }
+  .kanban-create[open] > summary { @apply hidden; }
+  .kanban-create > div { @apply overflow-hidden rounded-xl border border-white/70 bg-white/85 shadow-[0_10px_28px_-12px_rgba(28,25,23,.22),inset_0_1px_0_rgba(255,255,255,.65)] backdrop-blur-md transition focus-within:border-[#87968e] focus-within:ring-4 focus-within:ring-[#dfe6e1]; }
+  .kanban-create form { @apply flex items-center gap-1 p-1; }
+  .kanban-create input[type="text"] { @apply h-8 min-w-0 flex-1 border-0 bg-transparent px-2.5 text-sm text-stone-900 outline-none placeholder:text-stone-400; }
+  .kanban-create button[type="submit"] { @apply grid h-7 w-7 shrink-0 cursor-pointer place-items-center rounded-full border border-white/15 bg-[#27332d]/90 text-white shadow-[0_6px_16px_-6px_rgba(39,51,45,.55),inset_0_1px_0_rgba(255,255,255,.18)] transition hover:-translate-y-px hover:bg-[#27332d]; }
+  .kanban-create button[type="submit"] svg { @apply h-3.5 w-3.5; }
 
   .todo-detail-page, .todo-form-page { @apply mx-auto max-w-6xl pb-12; }
-  .todo-detail-shell { @apply overflow-hidden rounded-2xl border border-white/60 bg-white/55 shadow-[0_1px_2px_rgba(28,25,23,.04),inset_0_1px_0_rgba(255,255,255,.55)] backdrop-blur-md; }
-  .todo-detail-header { @apply grid gap-5 border-b border-stone-200 p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:p-8; }
-  .todo-detail-eyebrow { @apply mb-3 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[.12em] text-stone-400; }
+  .todo-detail-shell { @apply overflow-visible; }
+  .todo-detail-header { @apply border-b border-stone-200/70 px-1 pb-6; }
+  .todo-detail-eyebrow { @apply mb-3 flex flex-wrap items-center gap-2 text-xs font-medium normal-case tracking-normal text-stone-400; }
   .todo-detail-eyebrow a { @apply transition hover:text-stone-800; }
   .todo-detail-heading h1 { @apply max-w-4xl font-serif text-3xl font-normal leading-tight tracking-tight text-stone-950 sm:text-4xl; }
-  .todo-detail-actions { @apply flex items-start gap-2; }
-  .todo-description { @apply col-span-full max-w-4xl border-t border-stone-100 pt-5 text-sm leading-6 text-stone-600; }
+  .todo-title-line { @apply flex items-center gap-3; }
+  .todo-top-line { @apply flex items-start justify-between gap-4; }
+  .todo-top-line .avatar-stack { @apply shrink-0; }
+  .todo-check-lg { @apply h-7 w-7; }
+  .todo-check-lg svg { @apply h-4 w-4; }
+  .todo-title-input { @apply block w-full max-w-4xl border-0 bg-transparent font-serif text-3xl font-normal leading-tight tracking-tight text-stone-950 outline-none transition sm:text-4xl; }
+  .todo-title-input:hover { @apply bg-white/50; }
+  .todo-title-input:focus { @apply rounded-xl bg-white/70 ring-4 ring-[#dfe6e1]; }
+  .todo-description-edit { @apply mt-4; }
+  .todo-description-edit [role="button"] { @apply cursor-text rounded-xl transition hover:bg-white/50; }
+  .todo-description-placeholder { @apply max-w-4xl py-2 text-sm text-stone-400; }
+  .todo-detail-actions { @apply flex flex-wrap items-center gap-2.5; }
+  .todo-description { @apply max-w-4xl pt-2 text-sm leading-6 text-stone-600; }
   .todo-status { @apply rounded-full px-2 py-0.5 text-[9px] tracking-normal; }
   .todo-status-open { @apply bg-stone-100 text-stone-600; }
-  .todo-status-in-progress { @apply bg-orange-50 text-[#c84b32]; }
   .todo-status-completed { @apply bg-emerald-50 text-emerald-700; }
-  .todo-detail-grid { @apply grid lg:grid-cols-[minmax(0,1fr)_280px]; }
-  .todo-conversation { @apply min-w-0 p-5 sm:p-8; }
+  .todo-meta-line { @apply mt-4 flex flex-wrap items-center gap-x-4 gap-y-2; }
+  #todo_reactions { @apply mt-2 px-1; }
+  #todo_reactions .boosts { @apply min-h-6; }
+  .todo-meta-context { @apply text-xs text-stone-400; }
+  .todo-created-inline { @apply ml-2 text-[11px] font-normal text-stone-400/80; }
+  .todo-meta-context a { @apply font-medium text-stone-600 hover:text-stone-900; }
+  .todo-conversation { @apply min-w-0 px-1 py-6 sm:pr-8; }
   .todo-section-heading { @apply mb-4 flex items-center gap-2; }
   .todo-section-heading h2 { @apply text-sm font-semibold text-stone-900; }
   .todo-section-heading span { @apply rounded-full bg-stone-100 px-2 py-0.5 text-[10px] text-stone-500; }
   .todo-comments { @apply divide-y divide-stone-100; }
   .todo-comment-form { @apply mt-6 border-t border-stone-200 pt-6; }
-  .todo-properties { @apply border-t border-white/60 bg-white/30 p-5 backdrop-blur-md lg:border-l lg:border-t-0 lg:p-6; }
+  .todo-properties { @apply border-t border-stone-200/70 p-5 lg:border-l lg:border-t-0 lg:p-6; }
   .todo-properties > section { @apply border-b border-stone-200 py-5 first:pt-0 last:border-0 last:pb-0; }
   .todo-properties h2 { @apply mb-3 text-[10px] font-semibold uppercase tracking-[.13em] text-stone-400; }
-  .todo-status-options { @apply grid grid-cols-3 gap-1 rounded-lg bg-stone-200/70 p-1 lg:grid-cols-1; }
-  .todo-status-option { @apply w-full rounded-md px-2 py-2 text-left text-xs font-medium text-stone-500 transition hover:bg-white/60; }
-  .todo-status-option-active { @apply bg-white/80 text-stone-900 shadow-sm; }
   .todo-agent-list { @apply space-y-2; }
   .todo-agent-list > div { @apply flex items-center gap-2 text-sm; }
   .todo-agent-list strong { @apply min-w-0 flex-1 truncate font-medium; }
@@ -352,7 +436,7 @@
   .todo-form-card { @apply rounded-2xl border border-white/60 bg-white/55 p-5 shadow-[0_1px_2px_rgba(28,25,23,.04),inset_0_1px_0_rgba(255,255,255,.55)] backdrop-blur-md sm:p-8; }
   .todo-form-card form { @apply mt-8; }
 
-  .workspace-top-shell { @apply grid h-dvh min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden bg-[#f5f7f6] p-2.5 sm:gap-3.5 sm:p-3.5;
+  .workspace-top-shell { @apply grid min-h-dvh grid-rows-[auto_minmax(0,1fr)] gap-3 bg-[#f5f7f6] p-2.5 sm:gap-3.5 sm:p-3.5;
     /* Oil-film iridescence: one continuous hue rotation around an off-center
        point, softened by a light veil so the middle stays calm. */
     background-image:
@@ -367,7 +451,14 @@
         rgba(70,200,225,.19) 80%,
         rgba(110,160,250,.20));
   }
-  .workspace-topbar { @apply relative z-40; }
+  .glass-toasts { @apply pointer-events-none fixed right-4 top-16 z-50 flex flex-col items-end gap-2 sm:right-6; }
+  .glass-toast { @apply rounded-full border border-white/60 bg-white/80 px-4 py-2.5 text-xs font-semibold text-stone-800 shadow-[0_16px_44px_-12px_rgba(28,25,23,.3),inset_0_1px_0_rgba(255,255,255,.6)] backdrop-blur-xl;
+    animation: glass-toast-in .25s ease-out, glass-toast-out .4s ease-in 4s both;
+  }
+  .glass-toast-error { @apply border-red-200/70 bg-red-50/90 text-red-800; }
+  .workspace-top-shell.is-chat-shell { @apply h-dvh min-h-0 overflow-hidden; }
+  .workspace-topbar { @apply sticky top-2.5 z-40 sm:top-3.5; }
+  .is-chat-shell .workspace-topbar { @apply relative top-0; }
   .workspace-topbar-inner { @apply mx-auto grid w-full max-w-[1000px] grid-cols-[1fr_auto_1fr] items-center gap-2.5 px-0.5; }
   .topbar-zone { @apply flex min-w-0 items-center; }
   .topbar-zone-start { @apply justify-start; }
@@ -404,8 +495,8 @@
   .topbar-status-agent { @apply flex items-center gap-2 px-3 py-2 text-sm text-stone-500; }
   .topbar-status-menu a, .topbar-status-menu button { @apply block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-stone-600 hover:bg-stone-100; }
   .topbar-status-menu a[aria-current="page"] { @apply bg-stone-100 text-stone-950; }
-  .workspace-top-main { @apply mx-auto w-full max-w-[1000px] min-h-0 min-w-0 overflow-y-auto rounded-[26px] border border-white/60 bg-white/45 p-4 shadow-[0_28px_80px_-28px_rgba(28,25,23,.32),inset_0_1px_0_rgba(255,255,255,.6)] backdrop-blur-xl sm:p-8; }
-  .workspace-top-main.is-chat { @apply h-full overflow-hidden p-0; }
+  .workspace-top-main { @apply mx-auto w-full min-w-0 max-w-[1000px] rounded-[26px] border border-white/60 bg-white/45 p-4 shadow-[0_28px_80px_-28px_rgba(28,25,23,.32),inset_0_1px_0_rgba(255,255,255,.6)] backdrop-blur-xl sm:p-8; }
+  .workspace-top-main.is-chat { @apply h-full min-h-0 overflow-hidden p-0; }
 
   .project-directory { @apply mx-auto w-full max-w-[880px] pb-16; }
   .project-directory-header { @apply mb-8 flex min-h-14 items-center justify-center; }
@@ -433,7 +524,7 @@
   .project-directory-person { @apply grid h-6 w-6 place-items-center rounded-full bg-[#27332d] text-[10px] font-semibold text-white; }
   .project-directory-person.is-agent { @apply bg-[#e85f42]; }
 
-  .project-home { @apply mx-auto w-full max-w-[880px] pb-16 pt-5; }
+  .project-home { @apply mx-auto w-full max-w-[880px] pb-16; }
   .project-home-header { @apply mb-8 flex min-h-14 items-center justify-center; }
   .project-home-header h1 { @apply font-serif text-4xl font-normal tracking-tight text-stone-950; }
   .project-tool-grid { @apply grid gap-4 lg:grid-cols-3; }
@@ -448,13 +539,16 @@
   .project-tool-row > span { @apply min-w-0 flex-1 truncate; }
   .project-tool-row small { @apply text-[10px] text-stone-400; }
   .project-tool-status { @apply h-2 w-2 shrink-0 rounded-full bg-stone-300; }
-  .project-tool-status-in-progress { @apply bg-amber-400; }
   .project-message-preview { @apply flex min-w-0 items-center gap-3 rounded-xl px-2 py-2.5; }
   .project-message-preview > i { @apply grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#edf0eb] text-[10px] font-bold not-italic text-[#27332d]; }
   .project-message-preview > span { @apply min-w-0; }
   .project-message-preview strong, .project-message-preview small { @apply block truncate; }
   .project-message-preview strong { @apply text-xs font-semibold text-stone-800; }
   .project-message-preview small { @apply mt-0.5 text-xs text-stone-500; }
+  .project-agent-entry { @apply block border-b border-stone-100 px-2 py-2.5 last:border-0; }
+  .project-agent-name { @apply flex items-center gap-2 text-sm font-semibold text-stone-800; }
+  .project-agent-name i { @apply grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#e85f42] text-[9px] font-semibold not-italic text-white; }
+  .project-agent-act { @apply mt-1 block truncate pl-8 text-xs text-stone-500; }
   .project-tool-empty { @apply text-center text-sm text-stone-400; }
   .workspace-breadcrumb { @apply flex min-w-0 items-center gap-2 text-sm font-semibold text-stone-400; }
   .workspace-breadcrumb a { @apply min-w-0 truncate text-stone-600 transition hover:text-stone-950; }
@@ -557,7 +651,6 @@
     .project-directory-header { @apply mb-7 items-start; }
     .project-directory-header h1, .project-home-header h1 { @apply text-3xl; }
     .project-directory-link { @apply min-h-28; }
-    .project-home { @apply pt-2; }
       .project-tool-card { @apply min-h-52 p-4; }
     .project-tool-preview { @apply min-h-32; }
     .board-page-header, .board-automation-header { @apply flex-col; }

@@ -4,6 +4,7 @@ class Project < ApplicationRecord
   has_many :agent_subscriptions, dependent: :destroy
   has_many :automatically_notified_agents, through: :agent_subscriptions, source: :agent
   has_many :todos, dependent: :destroy
+  has_many :todo_lists, dependent: :destroy
   has_many :board_automations, dependent: :destroy
   has_many :board_posts, through: :board_automations
   has_many :file_entries, class_name: "ProjectFileEntry", dependent: :destroy

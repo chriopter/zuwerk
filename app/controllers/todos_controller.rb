@@ -4,7 +4,11 @@ class TodosController < ApplicationController
   before_action :set_todo, only: %i[show edit update reorder]
 
   def index
-    @board_todos = @project.todos.includes(:creator, :assigned_agents, :comments).ordered
+    @focus_list = @project.todo_lists.find(params[:list]) if params[:list].present?
+    @lists = @focus_list ? [ @focus_list ] : @project.todo_lists.order(:position, :id).to_a
+    todos = @project.todos.includes(:assigned_agents).ordered.to_a
+    @list_todos = todos.group_by(&:todo_list_id)
+    @unlisted_todos = @focus_list ? [] : (@list_todos.delete(nil) || [])
   end
 
   def show
@@ -24,7 +28,11 @@ class TodosController < ApplicationController
       @todo.position = next_position(@todo.parent)
       @todo.save!
     end
-    redirect_to project_todo_path(@project, @todo)
+    if params[:return_to] == "board"
+      redirect_to project_todos_path(@project, adding: params[:adding].presence, list: params[:list].presence)
+    else
+      redirect_to project_todo_path(@project, @todo)
+    end
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound, ArgumentError => error
     add_submission_error(error)
     render :new, status: :unprocessable_entity
@@ -44,7 +52,11 @@ class TodosController < ApplicationController
       end
     end
     if @todo.errors.empty?
+      if params[:return_to] == "board"
+      redirect_to project_todos_path(@project, adding: params[:adding].presence, list: params[:list].presence)
+    else
       redirect_to project_todo_path(@project, @todo)
+    end
     else
       render :edit, status: :unprocessable_entity
     end
@@ -54,8 +66,14 @@ class TodosController < ApplicationController
   end
 
   def reorder
-    parent = params[:parent_id].present? ? @project.todos.find(params[:parent_id]) : nil
-    @todo.move_to!(parent: parent, position: params[:position])
+    if params[:position].present? || params[:parent_id].present? || !params.key?(:todo_list_id)
+      parent = params[:parent_id].present? ? @project.todos.find(params[:parent_id]) : nil
+      @todo.move_to!(parent: parent, position: params[:position])
+    end
+    if params.key?(:todo_list_id)
+      list = params[:todo_list_id].present? ? @project.todo_lists.find(params[:todo_list_id]) : nil
+      @todo.update!(todo_list: list)
+    end
     head :no_content
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound, ArgumentError, TypeError => error
     errors = error.respond_to?(:record) ? error.record.errors.full_messages : [ error.message ]
@@ -75,7 +93,7 @@ class TodosController < ApplicationController
   end
 
   def todo_params
-    params.require(:todo).permit(:title, :description, :status, :parent_id)
+    params.require(:todo).permit(:title, :description, :status, :parent_id, :todo_list_id)
   end
 
   def next_position(parent)

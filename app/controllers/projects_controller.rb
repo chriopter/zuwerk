@@ -15,6 +15,16 @@ class ProjectsController < ApplicationController
     @active_board_automations_count = @project.board_automations.where(active: true).count
     @recent_file_entries = @project.file_entries.includes(file_attachment: :blob).order(updated_at: :desc, id: :desc).limit(4)
     @file_entries_count = @project.file_entries.count
+    @inbox_mentions = @project.messages.includes(:author)
+      .where("body LIKE ?", "%@#{current_user.handle}%")
+      .order(created_at: :desc, id: :desc).limit(3)
+    project_events = AgentEvent
+      .where(subject_type: "Message", subject_id: @project.messages.select(:id))
+      .or(AgentEvent.where(subject_type: "TodoAssignment", subject_id: TodoAssignment.joins(:todo).where(todos: { project_id: @project.id }).select(:id)))
+      .order(created_at: :desc, id: :desc).includes(:recipient, :subject).limit(60).to_a
+    subscribed = User.agent.where(id: @project.agent_subscriptions.select(:agent_id))
+    @project_agents = (project_events.map(&:recipient) + subscribed).uniq
+    @agent_recent_events = project_events.group_by(&:recipient_id).transform_values { |events| events.first(3) }
   end
 
   def create

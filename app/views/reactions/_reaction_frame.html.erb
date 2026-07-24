@@ -1,0 +1,4 @@
+<div id="todo_reactions">
+  <%= render "reactions/reactions", reactable: todo, current_user: nil,
+        path: Rails.application.routes.url_helpers.project_todo_reactions_path(todo.project, todo) %>
+</div>

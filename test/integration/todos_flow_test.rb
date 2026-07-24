@@ -26,7 +26,7 @@ class TodosFlowTest < ActionDispatch::IntegrationTest
     assert_select ".workspace-breadcrumb a[href='#{project_path(@project)}']", text: @project.name
     assert_select ".workspace-breadcrumb a[href='#{project_todos_path(@project)}']", text: "Tasks"
     assert_select ".workspace-breadcrumb span[aria-current='page']", text: "##{todo.id}"
-    assert_select "h1", text: "Ship hierarchy"
+    assert_select ".todo-title-input[value=?]", "Ship hierarchy"
     assert_select "lexxy-editor"
   end
 
@@ -55,8 +55,8 @@ class TodosFlowTest < ActionDispatch::IntegrationTest
     assert_redirected_to project_todo_path(@project, todo)
     assert_equal [ "Edited", "Final context", parent ], [ todo.reload.title, todo.description.to_plain_text, todo.parent ]
 
-    patch project_todo_path(@project, todo), params: { todo: { status: "in_progress" } }
-    assert todo.reload.in_progress?
+    patch project_todo_path(@project, todo), params: { todo: { status: "completed" } }
+    assert todo.reload.completed?
     patch project_todo_path(@project, todo), params: { todo: { status: "completed" } }
     assert todo.reload.completed?
     patch project_todo_path(@project, todo), params: { todo: { status: "open" } }
@@ -91,7 +91,7 @@ class TodosFlowTest < ActionDispatch::IntegrationTest
     end
 
     assert_response :unprocessable_entity
-    assert_select "h1", text: todo.title
+    assert_select ".todo-title-input[value=?]", todo.title
     assert_select "p.text-red-600", text: /Body can't be blank/
     assert_select "lexxy-editor"
   end

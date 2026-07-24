@@ -6,17 +6,20 @@
   </header>
 
   <div class="project-tool-grid">
-    <%= link_to project_board_posts_path(@project), class: "project-tool-card glass-card glass-card-hover" do %>
+    <%= link_to chat_project_path(@project), class: "project-tool-card glass-card glass-card-hover" do %>
       <header>
-        <span><strong>Briefing</strong></span>
+        <span><strong>Inbox</strong></span>
       </header>
       <div class="project-tool-preview">
-        <% if @recent_board_posts.any? %>
-          <% @recent_board_posts.each do |post| %>
-            <span class="project-board-preview"><strong><%= post.title %></strong><small><%= truncate(post.body.to_plain_text.squish, length: 110) %></small><i><%= post.author.name %> · <%= time_ago_in_words(post.published_at) %> ago</i></span>
+        <% if @inbox_mentions.any? %>
+          <% @inbox_mentions.each do |message| %>
+            <span class="project-message-preview">
+              <i aria-hidden="true"><%= message.author.name.first.upcase %></i>
+              <span><strong><%= message.author.name %></strong><small><%= truncate(strip_tags(render_message_markdown(message.body)).squish, length: 90) %></small></span>
+            </span>
           <% end %>
         <% else %>
-          <span class="project-tool-empty">Recurring agent publications will appear here.</span>
+          <span class="project-tool-empty">Mentions and unread messages land here.</span>
         <% end %>
       </div>
     <% end %>
@@ -54,6 +57,21 @@
       </div>
     <% end %>
 
+    <%= link_to project_board_posts_path(@project), class: "project-tool-card glass-card glass-card-hover" do %>
+      <header>
+        <span><strong>Briefing</strong></span>
+      </header>
+      <div class="project-tool-preview">
+        <% if @recent_board_posts.any? %>
+          <% @recent_board_posts.each do |post| %>
+            <span class="project-board-preview"><strong><%= post.title %></strong><small><%= truncate(post.body.to_plain_text.squish, length: 110) %></small><i><%= post.author.name %> · <%= time_ago_in_words(post.published_at) %> ago</i></span>
+          <% end %>
+        <% else %>
+          <span class="project-tool-empty">Recurring agent publications will appear here.</span>
+        <% end %>
+      </div>
+    <% end %>
+
     <%= link_to project_file_entries_path(@project), class: "project-tool-card glass-card glass-card-hover" do %>
       <header>
         <span><strong>Files</strong></span>
@@ -63,6 +81,36 @@
           <% @recent_file_entries.each do |entry| %><span class="project-tool-row"><i aria-hidden="true"><%= entry.folder? ? "▰" : "□" %></i><span><%= entry.name %></span><small><%= entry.folder? ? "Folder" : number_to_human_size(entry.file.byte_size) %></small></span><% end %>
         <% else %>
           <span class="project-tool-empty">Upload files or create folders.</span>
+        <% end %>
+      </div>
+    <% end %>
+
+    <%= link_to agents_path, class: "project-tool-card glass-card glass-card-hover" do %>
+      <header>
+        <span><strong>Agents</strong></span>
+      </header>
+      <div class="project-tool-preview">
+        <% if @project_agents.any? %>
+          <% @project_agents.first(3).each do |agent| %>
+            <span class="project-agent-entry">
+              <span class="project-agent-name"><i aria-hidden="true"><%= agent.name.first.upcase %></i><%= agent.name %></span>
+              <% (@agent_recent_events[agent.id] || []).each do |event| %>
+                <span class="project-agent-act">
+                  <%= case event.event_type
+                    when "mentioned" then "Answered in chat"
+                    when "todo_assigned" then "Task: #{event.todo&.title}".truncate(46)
+                    when "board_scheduled" then "Published a briefing"
+                  end %>
+                  · <%= time_ago_in_words(event.created_at) %> ago
+                </span>
+              <% end %>
+              <% if (@agent_recent_events[agent.id] || []).empty? %>
+                <span class="project-agent-act">No activity yet</span>
+              <% end %>
+            </span>
+          <% end %>
+        <% else %>
+          <span class="project-tool-empty">No agents in this project yet.</span>
         <% end %>
       </div>
     <% end %>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_24_140000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_24_170000) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
@@ -243,6 +243,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_24_140000) do
     t.index ["todo_id"], name: "index_todo_comments_on_todo_id"
   end
 
+  create_table "todo_lists", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.integer "position", default: 0, null: false
+    t.integer "project_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["project_id"], name: "index_todo_lists_on_project_id"
+  end
+
   create_table "todos", force: :cascade do |t|
     t.string "ancestry"
     t.datetime "created_at", null: false
@@ -251,11 +260,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_24_140000) do
     t.integer "project_id", null: false
     t.integer "status", default: 0, null: false
     t.string "title", null: false
+    t.integer "todo_list_id"
     t.datetime "updated_at", null: false
     t.index ["ancestry"], name: "index_todos_on_ancestry"
     t.index ["creator_id"], name: "index_todos_on_creator_id"
     t.index ["project_id", "ancestry", "position"], name: "index_todos_on_project_id_and_ancestry_and_position"
     t.index ["project_id"], name: "index_todos_on_project_id"
+    t.index ["todo_list_id"], name: "index_todos_on_todo_list_id"
   end
 
   create_table "users", force: :cascade do |t|

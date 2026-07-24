@@ -1,41 +1,78 @@
-<% content_for :title, "Todos · #{@project.name} · Zuwerk" %>
+<% content_for :title, "Tasks · #{@project.name} · Zuwerk" %>
 <%= turbo_stream_from @project.agent_turn_stream %>
 
-<section class="kanban-page" data-controller="kanban" data-kanban-project-id-value="<%= @project.id %>">
+<section class="todo-lists-page">
   <header class="workspace-page-header">
     <div>
       <nav class="workspace-breadcrumb" aria-label="Breadcrumb"><%= link_to @project.name, project_path(@project) %><span aria-hidden="true">/</span><span aria-current="page">Tasks</span></nav>
-      <h1>Tasks</h1><p>Arbeit übersichtlich vom Eingang bis zum Abschluss führen.</p>
+      <h1>Tasks</h1>
+      <% if @focus_list %><p class="todo-focus-back"><%= link_to "← Alle Listen", project_todos_path(@project) %></p><% end %>
     </div>
-    <%= link_to "Neues Todo", new_project_todo_path(@project), class: "workspace-primary-action" %>
+    <details class="list-create" data-controller="reveal-focus" data-action="toggle->reveal-focus#focus">
+      <summary aria-label="Neue Liste anlegen"><span class="pill-primary"><span aria-hidden="true">＋</span><span>Neue Liste</span></span></summary>
+      <div>
+        <%= form_with url: project_todo_lists_path(@project), method: :post do %>
+          <%= text_field_tag "todo_list[name]", nil, required: true, maxlength: 80, placeholder: "Listenname…" %>
+          <button type="submit" aria-label="Liste anlegen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button>
+        <% end %>
+      </div>
+    </details>
   </header>
 
-  <% columns = [["open", "Offen", "Bereit zur Bearbeitung"], ["in_progress", "In Arbeit", "Wird gerade umgesetzt"], ["completed", "Erledigt", "Abgenommen und abgeschlossen"]] %>
-  <div class="kanban-board" aria-label="Todo Kanban Board">
-    <% columns.each do |status, label, subtitle| %>
-      <% todos = @board_todos.select { |todo| todo.status == status } %>
-      <section class="kanban-column kanban-column-<%= status.dasherize %>" data-kanban-target="column" data-status="<%= status %>" data-action="dragover->kanban#dragOver drop->kanban#drop">
-        <header class="kanban-column-header">
-          <div><div class="kanban-column-title"><i></i><h2><%= label %></h2><span><%= todos.count %></span></div><p><%= subtitle %></p></div>
-          <%= link_to "+", new_project_todo_path(@project, todo: { status: status }), class: "kanban-add", aria: { label: "Todo in #{label} anlegen" } %>
+  <div class="todo-lists-grid <%= 'is-focused' if @focus_list %>" data-controller="todo-move" data-todo-move-project-id-value="<%= @project.id %>">
+    <% render_lists = @lists.presence || [ nil ] %>
+    <% render_lists.each_with_index do |list, index| %>
+      <% list_name = list&.name || "Todos" %>
+      <% todos = (list ? (@list_todos[list.id] || []) : []) + (index.zero? ? @unlisted_todos : []) %>
+      <% completed, active = todos.partition { |todo| todo.status == "completed" } %>
+      <% visible = active + (@focus_list ? completed : completed.first(3)) %>
+      <section class="todo-list-card glass-card" aria-label="<%= list_name %>" data-list-id="<%= list&.id %>" data-list-position="<%= index %>" data-action="dragover->todo-move#dragOver dragleave->todo-move#dragLeave drop->todo-move#drop">
+        <header class="todo-list-card-header" <% if list %>draggable="true" data-action="dragstart->todo-move#listDragStart dragend->todo-move#dragEnd"<% end %>>
+          <h2><%= list_name %></h2><span><%= todos.count %></span>
         </header>
-        <div class="kanban-cards" data-kanban-target="cards">
-          <% todos.each do |todo| %>
-            <article class="kanban-card" draggable="true" data-kanban-target="card" data-todo-id="<%= todo.id %>" data-action="dragstart->kanban#dragStart dragend->kanban#dragEnd">
-              <%= link_to project_todo_path(@project, todo), class: "kanban-card-link" do %>
-                <div class="kanban-card-topline"><span>#<%= todo.id %></span><% if todo.parent %><span class="kanban-parent" title="<%= todo.parent.title %>">↳ <%= todo.parent.title %></span><% end %></div>
-                <h3><%= todo.title %></h3>
-                <%= render "agent_events/kanban_status", todo: todo %>
-                <% if todo.description.present? %><p class="kanban-card-description"><%= truncate(todo.description.to_plain_text, length: 120) %></p><% end %>
-                <footer class="kanban-card-footer">
-                  <div class="kanban-assignees"><% todo.assigned_agents.first(3).each do |agent| %><span title="<%= agent.name %>"><%= agent.name.first.upcase %></span><% end %><% if todo.assigned_agents.empty? %><span class="kanban-unassigned">–</span><% end %></div>
-                  <div class="kanban-card-meta"><% if todo.children.any? %><span><%= todo.children.count %> Untertodos</span><% end %><% if todo.comments.any? %><span><%= todo.comments.count %> Kommentare</span><% end %></div>
-                </footer>
+
+        <div class="todo-list-rows">
+          <% visible.each do |todo| %>
+            <% done = todo.status == "completed" %>
+            <div class="todo-list-row <%= 'is-completed' if done %>" draggable="true" data-todo-id="<%= todo.id %>" data-action="dragstart->todo-move#dragStart dragend->todo-move#dragEnd">
+              <%= button_to project_todo_path(@project, todo), method: :patch,
+                    params: { todo: { status: done ? "open" : "completed" }, return_to: "board" },
+                    class: "todo-check todo-check-#{todo.status.dasherize}",
+                    aria: { label: done ? "#{todo.title} wieder öffnen" : "#{todo.title} abhaken" } do %>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg>
               <% end %>
-            </article>
+              <%= link_to project_todo_path(@project, todo), class: "todo-list-row-main" do %>
+                <span class="todo-list-row-title"><%= todo.title %></span>
+                <%= render "agent_events/kanban_status", todo: todo %>
+                <% if todo.assigned_agents.any? %>
+                  <span class="todo-list-row-people">
+                    <% todo.assigned_agents.first(4).each do |agent| %><span class="avatar-stack-item is-agent" title="<%= agent.name %>"><%= agent.name.first.upcase %></span><% end %>
+                  </span>
+                <% end %>
+              <% end %>
+            </div>
           <% end %>
-          <% if todos.empty? %><div class="kanban-empty">Todos hierher ziehen</div><% end %>
+          <% if list && !@focus_list && completed.size > 3 %>
+            <%= link_to "Show all (#{completed.size} erledigt)", project_todos_path(@project, list: list.id), class: "todo-list-show-all" %>
+          <% end %>
+          <% if todos.empty? %><p class="todo-list-empty">Noch keine Todos.</p><% end %>
         </div>
+
+        <% adding_key = list ? list.id.to_s : "unlisted" %>
+        <% adding_this = params[:adding].to_s == adding_key %>
+        <details class="kanban-create" <%= "open" if adding_this %> data-controller="reveal-focus" data-action="toggle->reveal-focus#focus">
+          <summary aria-label="Todo in <%= list_name %> anlegen"><span aria-hidden="true">+</span><span>Neues Todo</span></summary>
+          <div>
+            <%= form_with url: project_todos_path(@project), method: :post do %>
+              <% if list %><%= hidden_field_tag "todo[todo_list_id]", list.id %><% end %>
+              <%= hidden_field_tag :return_to, "board" %>
+              <%= hidden_field_tag :adding, adding_key %>
+              <% if @focus_list %><%= hidden_field_tag :list, @focus_list.id %><% end %>
+              <%= text_field_tag "todo[title]", nil, required: true, maxlength: 200, placeholder: "Titel eingeben…", autofocus: adding_this %>
+              <button type="submit" aria-label="Anlegen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button>
+            <% end %>
+          </div>
+        </details>
       </section>
     <% end %>
   </div>

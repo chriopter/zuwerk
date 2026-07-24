@@ -1,4 +1,4 @@
-<div id="agent_presence" class="mt-0.5 flex items-center gap-2" aria-live="polite">
+<div id="agent_presence" class="mt-0.5 flex items-center gap-2" aria-live="polite" data-working-agent-ids="<%= agents.select(&:working?).map(&:id).to_json %>">
   <% working = agents.select(&:working?) %>
   <% if working.any? %>
     <span class="typing-dots typing-dots-small" aria-hidden="true"><i></i><i></i><i></i></span>

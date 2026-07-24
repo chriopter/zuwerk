@@ -1,0 +1,9 @@
+<% show_presence = local_assigns.fetch(:show_presence, false) %>
+<div class="avatar-stack" aria-label="<%= local_assigns.fetch(:label, "People") %>">
+  <% users.each do |user| %>
+    <span class="avatar-stack-item <%= 'is-agent' if user.agent? %>" title="<%= user.name %>">
+      <%= user.name.first.upcase %>
+      <% if show_presence && user.agent? && user.external_connector_present? %><i class="avatar-stack-dot" aria-hidden="true"></i><% end %>
+    </span>
+  <% end %>
+</div>

@@ -20,12 +20,14 @@ class ReactionsController < ApplicationController
       @reactable = @project.messages.find(params[:message_id])
     else
       @todo = @project.todos.find(params[:todo_id])
-      @reactable = @todo.comments.find(params[:comment_id])
+      @reactable = params[:comment_id] ? @todo.comments.find(params[:comment_id]) : @todo
     end
   end
 
   def return_path
     return chat_project_path(@project) if @reactable.is_a?(Message)
+
+    return project_todo_path(@project, @todo) if @reactable.is_a?(Todo)
 
     project_todo_path(@project, @todo, anchor: ActionView::RecordIdentifier.dom_id(@reactable))
   end

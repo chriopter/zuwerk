@@ -1,12 +1,21 @@
-<% reactions = reactable.reactions.to_a %>
-<div class="reaction-actions" aria-label="Reactions">
-  <% Reaction::EMOJIS.each do |emoji| %>
-    <% matching = reactions.select { |reaction| reaction.emoji == emoji } %>
-    <% reacted = matching.any? { |reaction| reaction.author_id == current_user&.id } %>
-    <% names = matching.map { |reaction| reaction.author.name }.join(", ") %>
-    <%= button_to path, params: { emoji: emoji }, class: "reaction-chip #{'reaction-chip-active' if reacted}", title: names.presence || "React with #{emoji}", aria: { label: "React with #{emoji}" } do %>
-      <span><%= emoji %></span>
-      <% if matching.any? %><span class="text-[11px] font-semibold"><%= matching.count %></span><% end %>
+<% reactions = reactable.reactions.includes(:author).order(:created_at).to_a %>
+<div class="boosts" aria-label="Reactions">
+  <% reactions.each do |reaction| %>
+    <% own = reaction.author_id == current_user&.id %>
+    <%= button_to path, params: { emoji: reaction.emoji },
+          class: "boost-chip #{'is-own' if own}",
+          title: own ? "Remove your #{reaction.emoji}" : "#{reaction.author.name} reacted #{reaction.emoji} — react too",
+          aria: { label: own ? "Remove your #{reaction.emoji} reaction" : "#{reaction.author.name} reacted #{reaction.emoji}" } do %>
+      <span class="boost-chip-avatar <%= 'is-agent' if reaction.author.agent? %>" aria-hidden="true"><%= reaction.author.name.first.upcase %></span>
+      <span class="boost-chip-emoji"><%= reaction.emoji %></span>
     <% end %>
   <% end %>
+  <details class="boost-picker">
+    <summary aria-label="Add a reaction"><span aria-hidden="true">＋</span></summary>
+    <div class="boost-picker-menu">
+      <% Reaction::EMOJIS.each do |emoji| %>
+        <%= button_to path, params: { emoji: emoji }, class: "boost-picker-option", title: "React with #{emoji}", aria: { label: "React with #{emoji}" } do %><%= emoji %><% end %>
+      <% end %>
+    </div>
+  </details>
 </div>

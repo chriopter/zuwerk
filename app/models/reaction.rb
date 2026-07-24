@@ -1,5 +1,5 @@
 class Reaction < ApplicationRecord
-  EMOJIS = %w[👍 ❤️ 🎉].freeze
+  EMOJIS = %w[👍 ❤️ 🎉 😂 😮 😢 🙏 🚀 👀 ✅].freeze
   REACTABLE_TYPES = %w[Message Todo TodoComment].freeze
 
   belongs_to :author, class_name: "User"
@@ -19,7 +19,7 @@ class Reaction < ApplicationRecord
           locals: { message: reactable, current_user: nil }
       when "Todo"
         reactable.reload.broadcast_replace_to "todo_#{reactable.id}_status",
-          target: "todo_agent_acknowledgements", partial: "todos/agent_acknowledgements",
+          target: "todo_reactions", partial: "reactions/reaction_frame",
           locals: { todo: reactable }
       end
     end

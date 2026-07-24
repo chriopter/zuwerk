@@ -33,12 +33,18 @@
   else
     :agents
   end %>
-  <body class="<%= current_user ? 'h-dvh overflow-hidden bg-[#f7f7f3]' : 'min-h-screen bg-slate-50 text-slate-950 antialiased' %>">
+  <body class="<%= current_user ? (chat_page ? 'h-dvh overflow-hidden bg-[#f7f7f3]' : 'min-h-dvh bg-[#f7f7f3]') : 'min-h-screen bg-slate-50 text-slate-950 antialiased' %>">
     <% if current_user %>
-      <div class="workspace-top-shell">
+      <div class="workspace-top-shell <%= 'is-chat-shell' if chat_page %>">
         <%= render "shared/workspace_topbar", project: @project, active: active_section %>
+        <% if flash.any? %>
+          <div class="glass-toasts">
+            <% flash.each do |type, message| %>
+              <div class="glass-toast <%= 'glass-toast-error' if type == 'alert' %>" role="<%= type == 'alert' ? 'alert' : 'status' %>"><%= message %></div>
+            <% end %>
+          </div>
+        <% end %>
         <main class="workspace-top-main <%= chat_page ? 'is-chat' : '' %>">
-          <% flash.each do |type, message| %><div class="alert <%= type == 'alert' ? 'alert-error' : 'alert-success' %> mb-4 shadow-sm" role="<%= type == 'alert' ? 'alert' : 'status' %>"><span><%= message %></span></div><% end %>
           <%= yield %>
         </main>
       </div>

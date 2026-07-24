@@ -1,0 +1,12 @@
+<lexxy-prompt trigger="@" insert-editable-text>
+  <% agents.each do |agent| %>
+    <lexxy-prompt-item search="<%= agent.handle %> <%= agent.name %>">
+      <template type="menu">
+        <span class="mention-option-avatar"><%= agent.name.first.upcase %></span>
+        <span class="mention-option-name"><%= agent.name %></span>
+        <span class="mention-option-handle">@<%= agent.handle %></span>
+      </template>
+      <template type="editor">@<%= agent.handle %>&nbsp;</template>
+    </lexxy-prompt-item>
+  <% end %>
+</lexxy-prompt>

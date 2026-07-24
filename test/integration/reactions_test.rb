@@ -28,7 +28,7 @@ class ReactionsTest < ActionDispatch::IntegrationTest
     assert_redirected_to project_todo_path(@project, @todo, anchor: "todo_comment_#{@comment.id}")
 
     follow_redirect!
-    assert_select "#todo_comment_#{@comment.id} .reaction-chip-active", text: /👍\s*1/
+    assert_select "#todo_comment_#{@comment.id} .boost-chip.is-own .boost-chip-emoji", text: "👍"
   end
 
   test "reaction targets are scoped to their project and todo" do

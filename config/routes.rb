@@ -19,9 +19,13 @@ Rails.application.routes.draw do
     resources :file_entries, path: "files", only: %i[index create destroy] do
       get :download, on: :member
     end
+    resources :todo_lists, path: "lists", only: :create do
+      patch :reorder, on: :member
+    end
     resources :todos, except: :destroy do
       patch :reorder, on: :member
       resources :assignments, controller: "todo_assignments", only: %i[create destroy]
+      resources :reactions, only: :create
       resources :comments, controller: "todo_comments", only: %i[create edit update destroy] do
         resources :reactions, only: :create
       end

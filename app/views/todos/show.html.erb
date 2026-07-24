@@ -1,28 +1,78 @@
 <% content_for :title, "#{@todo.title} · Todos · Zuwerk" %>
 <%= turbo_stream_from "todo_#{@todo.id}_status" %>
 <%= turbo_stream_from @project.agent_turn_stream %>
-<section class="todo-detail-page">
+<%= turbo_stream_from "agent_presence" %>
+<section class="todo-detail-page" data-controller="working-ring">
+  <div hidden><%= render "messages/agent_presence", agents: @agents %></div>
   <div class="todo-detail-shell">
     <header class="todo-detail-header">
       <div class="todo-detail-heading">
-        <nav class="todo-detail-eyebrow workspace-breadcrumb" aria-label="Breadcrumb"><%= link_to @project.name, project_path(@project) %><span aria-hidden="true">/</span><%= link_to "Tasks", project_todos_path(@project) %><span aria-hidden="true">/</span><span aria-current="page">#<%= @todo.id %></span><span class="todo-status todo-status-<%= @todo.status.dasherize %>"><%= { "open" => "Offen", "in_progress" => "In Arbeit", "completed" => "Erledigt" }.fetch(@todo.status) %></span></nav>
-        <h1><%= @todo.title %></h1><%= render "todos/agent_acknowledgements", todo: @todo %>
+        <div class="todo-top-line">
+        <nav class="todo-detail-eyebrow workspace-breadcrumb" aria-label="Breadcrumb"><%= link_to @project.name, project_path(@project) %><span aria-hidden="true">/</span><%= link_to "Tasks", project_todos_path(@project) %><span aria-hidden="true">/</span><span aria-current="page">#<%= @todo.id %></span><span class="todo-created-inline">Erstellt von <%= @todo.creator.name %> · <%= @todo.created_at.strftime("%d.%m.%Y") %></span></nav>
+        <div class="avatar-stack" aria-label="Zugewiesene Agenten">
+          <% assignments_by_agent = @todo.assignments.includes(:agent).index_by(&:agent_id) %>
+          <% @agents.each do |agent| %>
+            <% assignment = assignments_by_agent[agent.id] %>
+            <% if assignment %>
+              <%= button_to project_todo_assignment_path(@project, @todo, assignment), method: :delete, class: "avatar-stack-form", form_class: "avatar-stack-form" do %>
+                <span class="avatar-stack-item is-agent <%= 'is-working' if agent.working? %>" data-agent-id="<%= agent.id %>" title="<%= agent.name %> — zugewiesen, Klick entfernt" aria-label="<%= agent.name %> entfernen">
+                  <%= agent.name.first.upcase %>
+                  <i class="avatar-stack-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg></i>
+                  <% if agent.external_connector_present? %><i class="avatar-stack-dot" aria-hidden="true"></i><% end %>
+                </span>
+              <% end %>
+            <% else %>
+              <%= button_to project_todo_assignments_path(@project, @todo), params: { agent_id: agent.id }, class: "avatar-stack-form", form_class: "avatar-stack-form" do %>
+                <span class="avatar-stack-item is-agent is-unassigned <%= 'is-working' if agent.working? %>" data-agent-id="<%= agent.id %>" title="<%= agent.name %> zuweisen" aria-label="<%= agent.name %> zuweisen"><%= agent.name.first.upcase %><% if agent.external_connector_present? %><i class="avatar-stack-dot" aria-hidden="true"></i><% end %></span>
+              <% end %>
+            <% end %>
+          <% end %>
+        </div>
+        </div>
+        <div class="todo-title-line" data-controller="inline-edit">
+          <%= button_to project_todo_path(@project, @todo), method: :patch,
+                params: { todo: { status: @todo.completed? ? "open" : "completed" } },
+                class: "todo-check todo-check-lg todo-check-#{@todo.status.dasherize}",
+                aria: { label: @todo.completed? ? "Wieder öffnen" : "Erledigen" } do %>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg>
+          <% end %>
+          <%= form_with model: [ @project, @todo ], method: :patch, class: "min-w-0 flex-1" do %>
+            <%= hidden_field_tag :return_to, "detail" %>
+            <%= text_field_tag "todo[title]", @todo.title, required: true, maxlength: 200, class: "todo-title-input",
+                  data: { inline_edit_target: "input", action: "blur->inline-edit#submitIfChanged keydown->inline-edit#keydown" },
+                  aria: { label: "Titel bearbeiten" } %>
+          <% end %>
+        </div>
+        <div class="todo-meta-line">
+          <% if @todo.parent %><span class="todo-meta-context">Übergeordnet: <%= link_to @todo.parent.title, project_todo_path(@project, @todo.parent) %></span><% end %>
+        </div>
+        <% # broadcast target id must stay: reactions/_reaction_frame %>
         <%= render "agent_events/todo_status", todo: @todo %>
       </div>
-      <div class="todo-detail-actions"><%= button_to(@todo.completed? ? "Wieder öffnen" : "Erledigen", project_todo_path(@project, @todo), method: :patch, params: { todo: { status: @todo.completed? ? "open" : "completed" } }, class: "workspace-secondary-action") %><%= link_to "Bearbeiten", edit_project_todo_path(@project, @todo), class: "workspace-primary-action" %></div>
-      <% if @todo.description.present? %><div class="todo-description lexxy-content"><%= @todo.description %></div><% end %>
+      <div class="todo-description-edit" data-controller="inline-edit">
+        <div data-inline-edit-target="display" data-action="click->inline-edit#reveal" role="button" tabindex="0" title="Klicken zum Bearbeiten">
+          <% if @todo.description.present? %>
+            <div class="todo-description lexxy-content"><%= @todo.description %></div>
+          <% else %>
+            <p class="todo-description-placeholder">Beschreibung hinzufügen…</p>
+          <% end %>
+        </div>
+        <div hidden data-inline-edit-target="editor">
+          <%= form_with model: [ @project, @todo ], method: :patch do |form| %>
+            <%= hidden_field_tag :return_to, "detail" %>
+            <%= form.rich_text_area :description do %><%= render "shared/mention_prompt", agents: @agents %><% end %>
+            <div class="mt-2 flex justify-end"><%= form.submit "Speichern", class: "pill-primary" %></div>
+          <% end %>
+        </div>
+      </div>
+      <div id="todo_reactions">
+          <%= render "reactions/reactions", reactable: @todo, current_user: current_user, path: project_todo_reactions_path(@project, @todo) %>
+      </div>
     </header>
-    <div class="todo-detail-grid">
-      <section class="todo-conversation" aria-labelledby="comments-heading">
-        <div class="todo-section-heading"><h2 id="comments-heading">Aktivität</h2><span><%= @todo.comments.count %></span></div>
-        <div class="todo-comments"><%= render partial: "todo_comments/comment", collection: @todo.comments.includes(:author, :rich_text_body, reactions: :author).order(:created_at) %></div>
-        <%= form_with model: @comment, url: project_todo_comments_path(@project, @todo), class: "todo-comment-form" do |form| %><% if @comment.errors.any? %><p class="mb-2 text-sm text-red-600"><%= @comment.errors.full_messages.to_sentence %></p><% end %><%= form.rich_text_area :body, placeholder: "Update, Entscheidung oder Kontext hinzufügen…" %><div class="mt-3 flex justify-end"><%= form.submit "Kommentar hinzufügen", class: "workspace-primary-action" %></div><% end %>
-      </section>
-      <aside class="todo-properties">
-        <section><h2>Status</h2><div class="todo-status-options"><% [["open", "Offen"], ["in_progress", "In Arbeit"], ["completed", "Erledigt"]].each do |status, label| %><%= button_to label, project_todo_path(@project, @todo), method: :patch, params: { todo: { status: status } }, class: "todo-status-option #{'todo-status-option-active' if @todo.status == status}" %><% end %></div></section>
-        <section><h2>Zugewiesen</h2><div class="todo-agent-list"><% @todo.assignments.includes(:agent).each do |assignment| %><div><span class="todo-agent-avatar"><%= assignment.agent.name.first.upcase %></span><strong><%= assignment.agent.name %></strong><%= button_to "×", project_todo_assignment_path(@project, @todo, assignment), method: :delete, title: "Agent entfernen" %></div><% end %></div><% available_agents = @agents.where.not(id: @todo.assigned_agent_ids) %><% if available_agents.any? %><%= form_with url: project_todo_assignments_path(@project, @todo), class: "todo-agent-form" do |form| %><%= form.collection_select :agent_id, available_agents, :id, :name, {}, class: "select select-bordered select-sm min-w-0 flex-1 bg-white" %><%= form.submit "Zuweisen", class: "workspace-secondary-action" %><% end %><% end %></section>
-        <section><h2>Kontext</h2><dl class="todo-context-list"><% if @todo.parent %><div><dt>Übergeordnet</dt><dd><%= link_to @todo.parent.title, project_todo_path(@project, @todo.parent) %></dd></div><% end %><div><dt>Erstellt von</dt><dd><%= @todo.creator.name %></dd></div><div><dt>Erstellt</dt><dd><%= @todo.created_at.strftime("%d.%m.%Y") %></dd></div></dl></section>
-      </aside>
-    </div>
+    <section class="todo-conversation" aria-labelledby="comments-heading">
+      <div class="todo-section-heading"><h2 id="comments-heading">Aktivität</h2><span><%= @todo.comments.count %></span></div>
+      <div class="todo-comments"><%= render partial: "todo_comments/comment", collection: @todo.comments.includes(:author, :rich_text_body, reactions: :author).order(:created_at) %></div>
+      <%= form_with model: @comment, url: project_todo_comments_path(@project, @todo), class: "todo-comment-form" do |form| %><% if @comment.errors.any? %><p class="mb-2 text-sm text-red-600"><%= @comment.errors.full_messages.to_sentence %></p><% end %><%= form.rich_text_area :body, placeholder: "Update, Entscheidung oder Kontext hinzufügen…" do %><%= render "shared/mention_prompt", agents: @agents %><% end %><div class="mt-3 flex justify-end"><%= form.submit "Kommentar hinzufügen", class: "pill-primary" %></div><% end %>
+    </section>
   </div>
 </section>

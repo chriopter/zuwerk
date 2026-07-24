@@ -7,10 +7,12 @@ class AgentSubscriptionsController < ApplicationController
 
     if ActiveModel::Type::Boolean.new.cast(params[:enabled])
       project.agent_subscriptions.find_or_create_by!(agent: agent)
+      notice = "#{agent.name} will now answer on every message."
     else
       project.agent_subscriptions.where(agent: agent).destroy_all
+      notice = "#{agent.name} will only answer when tagged."
     end
 
-    redirect_to chat_project_path(project), notice: "Automatic bot notifications updated."
+    redirect_to chat_project_path(project), notice: notice
   end
 end
