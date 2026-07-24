@@ -246,6 +246,10 @@
   .agents-name-line h3 { @apply truncate text-sm font-semibold text-stone-900; }
   .agents-row-copy p { @apply mt-1 truncate text-xs text-stone-500; }
   .agents-row-copy small { @apply mt-1.5 block truncate text-xs text-[#d9563b]; }
+  .agents-prompt { @apply mt-3 max-w-3xl; }
+  .agents-prompt summary { @apply w-fit cursor-pointer text-xs font-semibold text-stone-600 hover:text-stone-950; }
+  .agents-prompt summary span { @apply ml-1 font-normal text-stone-400; }
+  .agents-prompt pre { @apply mt-2 max-h-80 overflow-auto whitespace-pre-wrap rounded-xl border border-stone-200 bg-stone-50 p-4 font-mono text-[11px] leading-5 text-stone-700; }
   .agents-status { @apply inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold; }
   .agents-status i { @apply h-1.5 w-1.5 rounded-full; }
   .agents-status-online { @apply bg-emerald-50 text-emerald-700; }

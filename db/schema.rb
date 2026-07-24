@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_24_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_24_130000) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
@@ -76,6 +76,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_24_120000) do
     t.string "event_type", null: false
     t.datetime "finished_at"
     t.string "last_error"
+    t.text "prompt_snapshot"
+    t.datetime "prompted_at"
     t.string "public_id", null: false
     t.integer "recipient_id", null: false
     t.datetime "started_at"

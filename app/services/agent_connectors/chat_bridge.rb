@@ -5,6 +5,7 @@ module AgentConnectors
     class DeliveryError < StandardError; end
 
     MAX_AUTOMATIC_RESPONSE_BYTES = 1.megabyte
+    STREAM_FLUSH_INTERVAL = 0.1
 
     def initialize(agent_event, connection_id:, pool: RemotePool)
       @event = agent_event
@@ -33,20 +34,29 @@ module AgentConnectors
           return
         end
 
+        prompt = prompt_text
+        return unless store_prompt(prompt)
+
         chunks = +""
         capture = lambda do |chunk|
           remaining = MAX_AUTOMATIC_RESPONSE_BYTES - chunks.bytesize
           chunks << chunk.to_s.byteslice(0, remaining).to_s.scrub if remaining.positive?
+          stream_project_response(chunks)
         end
         ActiveRecord::Base.connection_handler.clear_active_connections!
-        @pool.prompt(@event.recipient, origin, prompt_text, event: @event, expected_connector_owner: @connection_id, &capture)
+        @pool.prompt(@event.recipient, origin, prompt, event: @event, expected_connector_owner: @connection_id, &capture)
         ActiveRecord::Base.connection_handler.clear_active_connections!
-        return unless owned_event?
+        unless owned_event?
+          discard_streamed_response
+          return
+        end
 
+        stream_project_response(chunks, force: true)
         publish_automatic_response(chunks)
         validate_publication!
         complete_delivery!
       rescue => error
+        discard_streamed_response
         record_failure(error)
         raise error if error.is_a?(DeliveryError)
 
@@ -117,6 +127,53 @@ module AgentConnectors
         end
       rescue ActiveRecord::RecordNotUnique
         @event.reload
+      end
+
+      def stream_project_response(chunks, force: false)
+        return if todo_event? || board_event?
+        return if !force && !stream_flush_due?
+
+        body = chunks.strip.truncate(Message::MAX_BODY_LENGTH, omission: "")
+        return if body.blank?
+
+        mutate_owned_event do
+          @event.reload
+          publication = @streamed_message || @event.publication_message
+          if publication
+            next unless publication == @streamed_message
+
+            publication.update!(body:) unless publication.body == body
+          else
+            @streamed_message = @event.recipient.messages.create!(project: project, body:, agent_event: @event)
+          end
+          @last_stream_flush_at = monotonic_time
+        end
+      rescue ActiveRecord::RecordNotUnique
+        @event.reload
+      end
+
+      def stream_flush_due?
+        @last_stream_flush_at.nil? || monotonic_time - @last_stream_flush_at >= STREAM_FLUSH_INTERVAL
+      end
+
+      def monotonic_time
+        Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      end
+
+      def discard_streamed_response
+        message = @streamed_message
+        return unless message&.persisted?
+
+        message.destroy!
+        @streamed_message = nil
+      rescue => cleanup_error
+        Rails.logger.error("ACP event #{@event.id} streaming cleanup failed: #{cleanup_error.message}")
+      end
+
+      def store_prompt(prompt)
+        mutate_owned_event do
+          @event.update!(prompt_snapshot: prompt, prompted_at: Time.current)
+        end
       end
 
       def correlated_publication?

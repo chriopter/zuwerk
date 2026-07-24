@@ -15,6 +15,8 @@ class Message < ApplicationRecord
   validate :agent_event_matches_message
   after_create :create_mention_events
   after_create_commit :broadcast_append
+  after_update_commit :broadcast_replace
+  after_destroy_commit :broadcast_remove
 
   private
     def acceptable_attachments
@@ -39,6 +41,14 @@ class Message < ApplicationRecord
 
     def broadcast_append
       broadcast_append_to project.message_stream, target: "messages", partial: "messages/message", locals: { current_user: nil }
+    end
+
+    def broadcast_replace
+      broadcast_replace_to project.message_stream, partial: "messages/message", locals: { current_user: nil }
+    end
+
+    def broadcast_remove
+      broadcast_remove_to project.message_stream
     end
 
 

@@ -23,6 +23,22 @@ class AgentConnectors::ChatBridgeTest < ActiveSupport::TestCase
     end
   end
 
+  class ObservingChunkPool
+    attr_reader :bodies
+
+    def initialize
+      @bodies = []
+    end
+
+    def prompt(agent, *, **)
+      yield "First"
+      @bodies << agent.messages.sole.body
+      yield " second"
+      @bodies << agent.messages.sole.body
+      { "stopReason" => "end_turn" }
+    end
+  end
+
   test "publishes ACP output as one correlated project response" do
     human, agent, project, event = build_event
 
@@ -34,6 +50,27 @@ class AgentConnectors::ChatBridgeTest < ActiveSupport::TestCase
     assert_equal "completed", event.state
     assert event.delivered_at?
     assert_equal [ "👍" ], event.subject.reactions.where(author: agent).pluck(:emoji)
+  end
+
+  test "creates the project response while ACP output is streaming" do
+    _human, _agent, _project, event = build_event
+    pool = ObservingChunkPool.new
+
+    bridge(event, pool:).deliver
+
+    assert_equal "First", pool.bodies.first
+    assert_equal "First second", event.reload.publication_message.body
+    assert_equal "completed", event.state
+  end
+
+  test "stores the exact prompt sent to the agent" do
+    _human, _agent, project, event = build_event
+
+    bridge(event, pool: ChunkPool.new("Answer")).deliver
+
+    assert_includes event.reload.prompt_snapshot, "Project ID: #{project.id}"
+    assert_includes event.prompt_snapshot, "Triggering message: Please answer"
+    assert event.prompted_at?
   end
 
   test "accepts a correlated response published through the API" do
@@ -58,6 +95,23 @@ class AgentConnectors::ChatBridgeTest < ActiveSupport::TestCase
     assert_nil event.reload.publication_message
     assert_equal "running", event.state
     assert_equal "replacement", event.connector_connection_id
+  end
+
+  test "removes a partial streamed response when ACP delivery fails" do
+    _human, _agent, _project, event = build_event
+    pool = Object.new
+    pool.define_singleton_method(:prompt) do |*, &on_chunk|
+      on_chunk.call("Incomplete")
+      raise "connection closed"
+    end
+
+    error = assert_raises(AgentConnectors::ChatBridge::DeliveryError) do
+      bridge(event, pool:).deliver
+    end
+
+    assert_includes error.message, "connection closed"
+    assert_nil event.reload.publication_message
+    assert_equal "running", event.state
   end
 
   private
