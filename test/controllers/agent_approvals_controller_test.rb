@@ -4,7 +4,7 @@ class AgentApprovalsControllerTest < ActionDispatch::IntegrationTest
   setup do
     @human = User.create!(name: "Resolver", email: "resolver@example.com", password: "password1")
     @agent = User.create!(name: "Approval Bot", kind: :agent)
-    event = AgentEvent.create!(recipient: @agent, subject: Message.create!(author: @human, body: "Approve"), event_type: "mentioned")
+    event = AgentEvent.create!(recipient: @agent, subject: ChatMessage.create!(author: @human, project: Project.default, body: "Approve"), event_type: "chat_message_mentioned")
     event.transition_to!("running")
     @approval = AgentApproval.create!(agent_event: event, request_id: "request", options: [ { "optionId" => "allow" }, { "optionId" => "reject" } ], details: {})
   end
@@ -31,7 +31,7 @@ class AgentApprovalsControllerTest < ActionDispatch::IntegrationTest
 
     patch agent_approval_path(@approval), params: { option_index: "0" }
 
-    assert_redirected_to chat_project_path(@approval.agent_event.subject.project)
+    assert_redirected_to project_chat_path(@approval.agent_event.subject.project)
     assert_equal option_id, @approval.reload.selected_option_id
   end
 

@@ -81,8 +81,8 @@ module AgentConnectors
         @event.project
       end
 
-      def todo
-        @event.subject.todo if todo_event?
+      def task
+        @event.subject.task if task_event?
       end
 
       def board_post
@@ -94,22 +94,22 @@ module AgentConnectors
       end
 
       def origin
-        return todo if todo_event?
+        return task if task_event?
         return board_automation if board_event?
 
         project
       end
 
-      def todo_event?
-        @event.event_type.in?(%w[todo_assigned comment_mentioned])
+      def task_event?
+        @event.event_type.in?(%w[task_assigned task_comment_mentioned])
       end
 
       def comment_mention_event?
-        @event.event_type == "comment_mentioned"
+        @event.event_type == "task_comment_mentioned"
       end
 
       def board_event?
-        @event.event_type == "board_scheduled"
+        @event.event_type == "board_post_scheduled"
       end
 
       def publish_automatic_response(chunks)
@@ -117,15 +117,15 @@ module AgentConnectors
         return if body.blank?
         mutate_owned_event do
           @event.reload
-          next if @event.publication_message || @event.publication_comment || @event.publication_board_post&.published_at?
+          next if @event.publication_chat_message || @event.publication_task_comment || @event.publication_board_post&.published_at?
 
-          if todo_event?
-            todo.comments.create!(author: @event.recipient, body: body, agent_event: @event)
+          if task_event?
+            task.comments.create!(author: @event.recipient, body: body, agent_event: @event)
           elsif board_event?
             board_post.publish!(body, event: @event)
           else
-            body = body.truncate(Message::MAX_BODY_LENGTH, omission: "")
-            @event.recipient.messages.create!(project: project, body: body, agent_event: @event)
+            body = body.truncate(ChatMessage::MAX_BODY_LENGTH, omission: "")
+            @event.recipient.chat_messages.create!(project: project, body: body, agent_event: @event)
           end
         end
       rescue ActiveRecord::RecordNotUnique
@@ -133,21 +133,21 @@ module AgentConnectors
       end
 
       def stream_project_response(chunks, force: false)
-        return if todo_event? || board_event?
+        return if task_event? || board_event?
         return if !force && !stream_flush_due?
 
-        body = chunks.strip.truncate(Message::MAX_BODY_LENGTH, omission: "")
+        body = chunks.strip.truncate(ChatMessage::MAX_BODY_LENGTH, omission: "")
         return if body.blank?
 
         mutate_owned_event do
           @event.reload
-          publication = @streamed_message || @event.publication_message
+          publication = @streamed_message || @event.publication_chat_message
           if publication
             next unless publication == @streamed_message
 
             publication.update!(body:) unless publication.body == body
           else
-            @streamed_message = @event.recipient.messages.create!(project: project, body:, agent_event: @event)
+            @streamed_message = @event.recipient.chat_messages.create!(project: project, body:, agent_event: @event)
           end
           @last_stream_flush_at = monotonic_time
         end
@@ -181,10 +181,10 @@ module AgentConnectors
 
       def correlated_publication?
         @event.reload
-        return @event.publication_comment.present? if todo_event?
+        return @event.publication_task_comment.present? if task_event?
         return @event.publication_board_post&.published_at? if board_event?
 
-        @event.publication_message.present?
+        @event.publication_chat_message.present?
       end
 
       def complete_delivery!
@@ -196,16 +196,16 @@ module AgentConnectors
 
       def validate_publication!
         @event.reload
-        if todo_event?
-          published = @event.publication_comment
-          valid = published&.author == @event.recipient && published.todo == todo
-          raise DeliveryError, "Recipient did not create an event-correlated todo comment" unless valid
+        if task_event?
+          published = @event.publication_task_comment
+          valid = published&.author == @event.recipient && published.task == task
+          raise DeliveryError, "Recipient did not create an event-correlated task comment" unless valid
         elsif board_event?
           published = @event.publication_board_post
           valid = published == board_post && published&.author == @event.recipient && published.published_at?
           raise DeliveryError, "Recipient did not create an event-correlated board post" unless valid
         else
-          published = @event.publication_message
+          published = @event.publication_chat_message
           valid = published&.author == @event.recipient && published.project == project
           raise DeliveryError, "Recipient did not create an event-correlated project message" unless valid
         end
@@ -254,7 +254,7 @@ module AgentConnectors
       end
 
       def prompt_text
-        return todo_prompt_text if todo_event?
+        return task_prompt_text if task_event?
         return board_prompt_text if board_event?
 
         <<~PROMPT
@@ -271,12 +271,12 @@ module AgentConnectors
           zuwerk events acknowledge #{@event.public_id}
 
           Read the conversation, including attachment metadata and authenticated download paths, with:
-          zuwerk messages list --project #{project.id}
+          zuwerk chat list --project #{project.id}
 
           Search semantically across this project's chat, tasks, comments, and text attachments when earlier context may matter:
           zuwerk search --project #{project.id} --query "<what you need to know>"
 
-          Format the final response with Markdown when useful (bold, italics, lists, links, quotes, and fenced code render in chat). To publish additional file attachments, use the authenticated project messages API as multipart form data with `attachments[]`.
+          Format the final response with Markdown when useful (bold, italics, lists, links, quotes, and fenced code render in chat). To publish additional file attachments, use the authenticated project chat messages API as multipart form data with `attachments[]`.
 
           Use the Zuwerk CLI/API only for additional structured project actions. Return the final user-facing answer through ACP.
         PROMPT
@@ -284,8 +284,8 @@ module AgentConnectors
 
 
       def working_label
-        label = if todo_event?
-          "Working on #{todo.title}"
+        label = if task_event?
+          "Working on #{task.title}"
         elsif board_event?
           "Writing #{board_automation.title}"
         else
@@ -314,62 +314,62 @@ module AgentConnectors
           #{board_post.prompt_snapshot}
 
           Refresh project context when needed with:
-          zuwerk messages list --project #{project.id}
-          zuwerk todos list --project #{project.id}
+          zuwerk chat list --project #{project.id}
+          zuwerk tasks list --project #{project.id}
           zuwerk search --project #{project.id} --query "<what you need to know>"
 
           Format the final publication with Markdown when useful. Return only the reader-facing post through ACP.
         PROMPT
       end
 
-      def todo_prompt_text
-        ancestry = todo.ancestors.map(&:title).join(" > ").presence || "(top level)"
-        children = todo.children.ordered.map { |child| "- [#{child.status}] ##{child.id} #{child.title}" }.join("\n").presence || "(none)"
-        comments = todo.comments.includes(:author, :rich_text_body).order(:created_at).map do |comment|
+      def task_prompt_text
+        ancestry = task.ancestors.map(&:title).join(" > ").presence || "(top level)"
+        children = task.children.ordered.map { |child| "- [#{child.status}] ##{child.id} #{child.title}" }.join("\n").presence || "(none)"
+        comments = task.comments.includes(:author, :rich_text_body).order(:created_at).map do |comment|
           "- #{comment.author.name} (#{comment.created_at.iso8601}): #{comment.body.to_plain_text}"
         end.join("\n").presence || "(none)"
         reason = if comment_mention_event?
           "You were mentioned in comment ##{@event.subject.id}: #{@event.subject.body.to_plain_text}"
         else
-          "You were assigned to this todo."
+          "You were assigned to this task."
         end
 
         <<~PROMPT
-          You are #{@event.recipient.name}, an ACP-connected agent working on a specific Zuwerk todo.
-          ACP text output is automatically saved as the single correlated todo comment.
+          You are #{@event.recipient.name}, an ACP-connected agent working on a specific Zuwerk task.
+          ACP text output is automatically saved as the single correlated task comment.
           Do not publish the same final comment through the Zuwerk CLI/API.
 
           Event ID: #{@event.public_id}
           Trigger: #{reason}
           Project ID: #{project.id}
           Project name: #{project.name}
-          Todo ID: #{todo.id}
-          Todo title: #{todo.title}
-          Todo status: #{todo.status}
-          Todo ancestry: #{ancestry}
-          Todo description: #{todo.description.to_plain_text.presence || "(none)"}
+          Task ID: #{task.id}
+          Task title: #{task.title}
+          Task status: #{task.status}
+          Task ancestry: #{ancestry}
+          Task description: #{task.description.to_plain_text.presence || "(none)"}
 
           Acknowledge this event before doing any other work:
           zuwerk events acknowledge #{@event.public_id}
 
-          Child todos:
+          Child tasks:
           #{children}
 
           Existing comments:
           #{comments}
 
-          Refresh the complete todo context before acting:
-          zuwerk todos show #{todo.id} --project #{project.id}
+          Refresh the complete task context before acting:
+          zuwerk tasks show #{task.id} --project #{project.id}
 
           Search semantically across this project's chat, tasks, comments, and text attachments when earlier context may matter:
           zuwerk search --project #{project.id} --query "<what you need to know>"
 
-          You may update this todo with:
-          zuwerk todos update #{todo.id} --project #{project.id} [--title ...] [--description ...] [--status open|completed]
+          You may update this task with:
+          zuwerk tasks update #{task.id} --project #{project.id} [--title ...] [--description ...] [--status open|completed]
 
-          When this todo changes repository files, run the relevant tests and commit the finished changes before reporting the outcome. Never commit credentials or unrelated work. Include the commit hash in the final ACP response. Do not push unless the todo explicitly requires it.
+          When this task changes repository files, run the relevant tests and commit the finished changes before reporting the outcome. Never commit credentials or unrelated work. Include the commit hash in the final ACP response. Do not push unless the task explicitly requires it.
 
-          Return the final user-facing outcome through ACP; Zuwerk creates the correlated todo comment automatically.
+          Return the final user-facing outcome through ACP; Zuwerk creates the correlated task comment automatically.
         PROMPT
       end
   end

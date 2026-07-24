@@ -63,16 +63,16 @@ class IntensiveAgentRunSimulationTest < ActionDispatch::IntegrationTest
       end
 
       def publish(event, origin, number)
-        if event.event_type == "todo_assigned"
+        if event.event_type == "task_assigned"
           origin.comments.create!(author: event.recipient, agent_event: event, body: "Completed deterministic run #{number}")
         else
-          origin.messages.create!(author: event.recipient, agent_event: event, body: "Completed deterministic run #{number}")
+          origin.chat_messages.create!(author: event.recipient, agent_event: event, body: "Completed deterministic run #{number}")
         end
       end
 
       def capture(runtime, state, event, origin)
-        partial = event.event_type == "todo_assigned" ? "agent_events/todo_status" : "agent_events/project_status"
-        local = event.event_type == "todo_assigned" ? { todo: origin } : { project: origin }
+        partial = event.event_type == "task_assigned" ? "agent_events/task_status" : "agent_events/chat_status"
+        local = event.event_type == "task_assigned" ? { task: origin } : { project: origin }
         @snapshots[runtime][state] = ApplicationController.render(partial:, locals: local)
       end
   end
@@ -82,7 +82,7 @@ class IntensiveAgentRunSimulationTest < ActionDispatch::IntegrationTest
       result = run_simulation(seed: simulation_seed)
 
       assert_equal 7, result.fetch(:projects)
-      assert_equal 70, result.fetch(:todos)
+      assert_equal 70, result.fetch(:tasks)
       assert_equal 7, result.fetch(:trigger_chats)
       assert_equal 77, result.fetch(:events)
       assert_equal 77, result.fetch(:publications)
@@ -111,10 +111,10 @@ class IntensiveAgentRunSimulationTest < ActionDispatch::IntegrationTest
     def run_simulation(seed:)
       baseline = {
         projects: Project.count,
-        todos: Todo.count,
-        messages: Message.count,
+        tasks: Task.count,
+        chat_messages: ChatMessage.count,
         events: AgentEvent.count,
-        comments: TodoComment.count
+        comments: TaskComment.count
       }
       human = User.create!(name: "Simulation Human", email: "simulation-#{seed}@example.com", password: "password1")
       agents = %w[Hermes Claude Codex].map { |runtime| User.create!(name: runtime, kind: :agent) }
@@ -122,14 +122,14 @@ class IntensiveAgentRunSimulationTest < ActionDispatch::IntegrationTest
 
       7.times do |project_index|
         project = Project.create!(name: "Simulation #{seed}-#{project_index + 1}")
-        10.times do |todo_index|
-          todo = project.todos.create!(creator: human, title: "Run #{project_index + 1}.#{todo_index + 1}")
+        10.times do |task_index|
+          task = project.tasks.create!(creator: human, title: "Run #{project_index + 1}.#{task_index + 1}")
           agent = agents[events.length % agents.length]
-          assignment = todo.assignments.create!(agent:, assigner: human)
+          assignment = task.assignments.create!(agent:, assigned_by: human)
           events << assignment.agent_events.sole
         end
         agent = agents[events.length % agents.length]
-        message = project.messages.create!(author: human, body: "@#{agent.handle} run project chat #{project_index + 1}")
+        message = project.chat_messages.create!(author: human, body: "@#{agent.handle} run project chat #{project_index + 1}")
         events << message.agent_events.sole
       end
 
@@ -165,24 +165,24 @@ class IntensiveAgentRunSimulationTest < ActionDispatch::IntegrationTest
       completed_snapshots = {}
       agents.each do |agent|
         event = events.reverse.find { |candidate| candidate.recipient_id == agent.id }
-        origin = event.event_type == "todo_assigned" ? event.todo : event.project
-        partial = event.event_type == "todo_assigned" ? "agent_events/todo_status" : "agent_events/project_status"
-        local = event.event_type == "todo_assigned" ? { todo: origin } : { project: origin }
+        origin = event.event_type == "task_assigned" ? event.task : event.project
+        partial = event.event_type == "task_assigned" ? "agent_events/task_status" : "agent_events/chat_status"
+        local = event.event_type == "task_assigned" ? { task: origin } : { project: origin }
         pool.snapshots[agent.name][:completed] = ApplicationController.render(partial:, locals: local)
         completed_snapshots[agent.name] = pool.snapshots.fetch(agent.name)
       end
 
       publication_ids = events.map do |event|
-        publication = event.publication_message || event.publication_comment
+        publication = event.publication_chat_message || event.publication_task_comment
         assert publication, "event #{event.public_id} must have one correlated publication"
         [ publication.class.name, publication.id ]
       end
       {
         projects: Project.count - baseline[:projects],
-        todos: Todo.count - baseline[:todos],
-        trigger_chats: Message.where(author: human).count,
+        tasks: Task.count - baseline[:tasks],
+        trigger_chats: ChatMessage.where(author: human).count,
         events: AgentEvent.count - baseline[:events],
-        publications: (Message.count - baseline[:messages] - 7) + (TodoComment.count - baseline[:comments]),
+        publications: (ChatMessage.count - baseline[:chat_messages] - 7) + (TaskComment.count - baseline[:comments]),
         completed_events: events.count { |event| event.reload.state == "completed" },
         duplicate_correlations: publication_ids.length - publication_ids.uniq.length,
         pending_approvals: AgentApproval.where(agent_event: events, state: "pending").count,

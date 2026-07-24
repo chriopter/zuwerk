@@ -4,7 +4,7 @@ class CommentMentionTest < ApplicationSystemTestCase
   setup do
     @human = User.create!(name: "Ada", email: "comment-mention@example.com", password: "password1")
     @project = Project.create!(name: "Mention comments")
-    @todo = @project.todos.create!(creator: @human, title: "Review")
+    @task = @project.tasks.create!(creator: @human, title: "Review")
     User.create!(name: "Fable Dev", kind: :agent)
 
     visit new_session_path
@@ -15,7 +15,7 @@ class CommentMentionTest < ApplicationSystemTestCase
   end
 
   test "typing @ in a comment suggests agents from the lexxy prompt" do
-    visit project_todo_path(@project, @todo)
+    visit project_task_path(@project, @task)
 
     editor = find("lexxy-editor [contenteditable='true']", wait: 5)
     editor.click

@@ -1,7 +1,7 @@
 <div id="sidebar_agent_list" class="sidebar-agent-list" aria-live="polite">
   <% agents.each do |agent| %>
     <% connected = agent.external_connector_present? %>
-    <% event = agent.agent_events.accepted.where(event_type: "todo_assigned").order(accepted_at: :desc).find(&:active?) %>
+    <% event = agent.agent_events.accepted.where(event_type: "task_assigned").order(accepted_at: :desc).find(&:active?) %>
     <% avatar = { "hermes" => "/avatars/hermes.svg", "klaus" => "/avatars/klaus.svg", "codex" => "/avatars/codex.svg" }[agent.handle] %>
     <div class="sidebar-agent-group">
       <div class="agent-row-shell <%= 'agent-row-active' if active_agent_id == agent.id %>" data-sidebar-agent-id="<%= agent.id %>" data-agent-connected="<%= connected %>">
@@ -10,7 +10,7 @@
           <span class="agent-name"><%= agent.name %></span>
         <% end %>
         <% if event %>
-          <%= link_to project_todo_path(event.todo.project, event.todo), class: "agent-inline-work", title: event.todo.title, aria: { label: "Arbeitet an #{event.todo.title}" }, data: { agent_event_id: event.public_id } do %>
+          <%= link_to project_task_path(event.task.project, event.task), class: "agent-inline-work", title: event.task.title, aria: { label: "Arbeitet an #{event.task.title}" }, data: { agent_event_id: event.public_id } do %>
             <span class="agent-work-spinner" aria-hidden="true"></span>
           <% end %>
         <% end %>

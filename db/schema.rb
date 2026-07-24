@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_24_170000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_24_182000) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
@@ -105,16 +105,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_24_170000) do
     t.index ["token_digest"], name: "index_agent_invitations_on_token_digest", unique: true
   end
 
-  create_table "agent_subscriptions", force: :cascade do |t|
-    t.integer "agent_id", null: false
-    t.datetime "created_at", null: false
-    t.integer "project_id", null: false
-    t.datetime "updated_at", null: false
-    t.index ["agent_id"], name: "index_agent_subscriptions_on_agent_id"
-    t.index ["project_id", "agent_id"], name: "index_agent_subscriptions_on_project_id_and_agent_id", unique: true
-    t.index ["project_id"], name: "index_agent_subscriptions_on_project_id"
-  end
-
   create_table "board_automations", force: :cascade do |t|
     t.boolean "active", default: true, null: false
     t.integer "agent_id", null: false
@@ -148,16 +138,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_24_170000) do
     t.index ["published_at"], name: "index_board_posts_on_published_at"
   end
 
-  create_table "messages", force: :cascade do |t|
+  create_table "chat_messages", force: :cascade do |t|
     t.integer "agent_event_id"
     t.integer "author_id", null: false
     t.text "body", null: false
     t.datetime "created_at", null: false
     t.integer "project_id", null: false
     t.datetime "updated_at", null: false
-    t.index ["agent_event_id"], name: "index_messages_on_agent_event_id", unique: true
-    t.index ["author_id"], name: "index_messages_on_author_id"
-    t.index ["project_id"], name: "index_messages_on_project_id"
+    t.index ["agent_event_id"], name: "index_chat_messages_on_agent_event_id", unique: true
+    t.index ["author_id"], name: "index_chat_messages_on_author_id"
+    t.index ["project_id"], name: "index_chat_messages_on_project_id"
+  end
+
+  create_table "chat_subscriptions", force: :cascade do |t|
+    t.integer "agent_id", null: false
+    t.datetime "created_at", null: false
+    t.integer "project_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["agent_id"], name: "index_chat_subscriptions_on_agent_id"
+    t.index ["project_id", "agent_id"], name: "index_chat_subscriptions_on_project_id_and_agent_id", unique: true
+    t.index ["project_id"], name: "index_chat_subscriptions_on_project_id"
   end
 
   create_table "project_file_entries", force: :cascade do |t|
@@ -196,14 +196,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_24_170000) do
     t.index ["reactable_type", "reactable_id"], name: "index_reactions_on_reactable_type_and_reactable_id"
   end
 
-  create_table "room_settings", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.boolean "notify_agents", default: false, null: false
-    t.integer "project_id", null: false
-    t.datetime "updated_at", null: false
-    t.index ["project_id"], name: "index_room_settings_on_project_id", unique: true
-  end
-
   create_table "search_documents", force: :cascade do |t|
     t.text "content", null: false
     t.string "content_digest", null: false
@@ -220,53 +212,56 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_24_170000) do
     t.index ["project_id"], name: "index_search_documents_on_project_id"
   end
 
-  create_table "todo_assignments", force: :cascade do |t|
+  create_table "task_assignments", force: :cascade do |t|
     t.integer "agent_id", null: false
-    t.integer "assigner_id", null: false
+    t.integer "assigned_by_id", null: false
     t.datetime "created_at", null: false
-    t.integer "todo_id", null: false
+    t.integer "task_id", null: false
     t.datetime "updated_at", null: false
-    t.index ["agent_id"], name: "index_todo_assignments_on_agent_id"
-    t.index ["assigner_id"], name: "index_todo_assignments_on_assigner_id"
-    t.index ["todo_id", "agent_id"], name: "index_todo_assignments_on_todo_id_and_agent_id", unique: true
-    t.index ["todo_id"], name: "index_todo_assignments_on_todo_id"
+    t.index ["agent_id"], name: "index_task_assignments_on_agent_id"
+    t.index ["assigned_by_id"], name: "index_task_assignments_on_assigned_by_id"
+    t.index ["task_id", "agent_id"], name: "index_task_assignments_on_task_id_and_agent_id", unique: true
+    t.index ["task_id"], name: "index_task_assignments_on_task_id"
   end
 
-  create_table "todo_comments", force: :cascade do |t|
+  create_table "task_comments", force: :cascade do |t|
     t.integer "agent_event_id"
     t.integer "author_id", null: false
     t.datetime "created_at", null: false
-    t.integer "todo_id", null: false
+    t.integer "task_id", null: false
     t.datetime "updated_at", null: false
-    t.index ["agent_event_id"], name: "index_todo_comments_on_agent_event_id", unique: true
-    t.index ["author_id"], name: "index_todo_comments_on_author_id"
-    t.index ["todo_id"], name: "index_todo_comments_on_todo_id"
+    t.index ["agent_event_id"], name: "index_task_comments_on_agent_event_id", unique: true
+    t.index ["author_id"], name: "index_task_comments_on_author_id"
+    t.index ["task_id"], name: "index_task_comments_on_task_id"
   end
 
-  create_table "todo_lists", force: :cascade do |t|
+  create_table "task_lists", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name", null: false
     t.integer "position", default: 0, null: false
     t.integer "project_id", null: false
     t.datetime "updated_at", null: false
-    t.index ["project_id"], name: "index_todo_lists_on_project_id"
+    t.index ["project_id", "name"], name: "index_task_lists_on_project_id_and_name", unique: true
+    t.index ["project_id", "position"], name: "index_task_lists_on_project_id_and_position"
+    t.index ["project_id"], name: "index_task_lists_on_project_id"
   end
 
-  create_table "todos", force: :cascade do |t|
+  create_table "tasks", force: :cascade do |t|
     t.string "ancestry"
     t.datetime "created_at", null: false
     t.integer "creator_id", null: false
     t.integer "position", default: 0, null: false
     t.integer "project_id", null: false
     t.integer "status", default: 0, null: false
+    t.integer "task_list_id", null: false
     t.string "title", null: false
-    t.integer "todo_list_id"
     t.datetime "updated_at", null: false
-    t.index ["ancestry"], name: "index_todos_on_ancestry"
-    t.index ["creator_id"], name: "index_todos_on_creator_id"
-    t.index ["project_id", "ancestry", "position"], name: "index_todos_on_project_id_and_ancestry_and_position"
-    t.index ["project_id"], name: "index_todos_on_project_id"
-    t.index ["todo_list_id"], name: "index_todos_on_todo_list_id"
+    t.index ["ancestry"], name: "index_tasks_on_ancestry"
+    t.index ["creator_id"], name: "index_tasks_on_creator_id"
+    t.index ["project_id", "ancestry", "position"], name: "index_tasks_on_project_id_and_ancestry_and_position"
+    t.index ["project_id"], name: "index_tasks_on_project_id"
+    t.index ["task_list_id", "ancestry", "position"], name: "index_tasks_on_task_list_id_and_ancestry_and_position"
+    t.index ["task_list_id"], name: "index_tasks_on_task_list_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -295,29 +290,30 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_24_170000) do
   add_foreign_key "agent_approvals", "users", column: "resolved_by_id"
   add_foreign_key "agent_events", "users", column: "recipient_id"
   add_foreign_key "agent_invitations", "users", column: "inviter_id"
-  add_foreign_key "agent_subscriptions", "projects"
-  add_foreign_key "agent_subscriptions", "users", column: "agent_id"
   add_foreign_key "board_automations", "projects"
   add_foreign_key "board_automations", "users", column: "agent_id"
   add_foreign_key "board_automations", "users", column: "creator_id"
   add_foreign_key "board_posts", "agent_events"
   add_foreign_key "board_posts", "board_automations"
   add_foreign_key "board_posts", "users", column: "author_id"
-  add_foreign_key "messages", "agent_events"
-  add_foreign_key "messages", "projects"
-  add_foreign_key "messages", "users", column: "author_id"
+  add_foreign_key "chat_messages", "agent_events"
+  add_foreign_key "chat_messages", "projects"
+  add_foreign_key "chat_messages", "users", column: "author_id"
+  add_foreign_key "chat_subscriptions", "projects"
+  add_foreign_key "chat_subscriptions", "users", column: "agent_id"
   add_foreign_key "project_file_entries", "project_file_entries", column: "parent_id"
   add_foreign_key "project_file_entries", "projects"
   add_foreign_key "project_file_entries", "users", column: "creator_id"
   add_foreign_key "reactions", "users", column: "author_id"
-  add_foreign_key "room_settings", "projects"
   add_foreign_key "search_documents", "projects"
-  add_foreign_key "todo_assignments", "todos"
-  add_foreign_key "todo_assignments", "users", column: "agent_id"
-  add_foreign_key "todo_assignments", "users", column: "assigner_id"
-  add_foreign_key "todo_comments", "agent_events"
-  add_foreign_key "todo_comments", "todos"
-  add_foreign_key "todo_comments", "users", column: "author_id"
-  add_foreign_key "todos", "projects"
-  add_foreign_key "todos", "users", column: "creator_id"
+  add_foreign_key "task_assignments", "tasks"
+  add_foreign_key "task_assignments", "users", column: "agent_id"
+  add_foreign_key "task_assignments", "users", column: "assigned_by_id"
+  add_foreign_key "task_comments", "agent_events"
+  add_foreign_key "task_comments", "tasks"
+  add_foreign_key "task_comments", "users", column: "author_id"
+  add_foreign_key "task_lists", "projects"
+  add_foreign_key "tasks", "projects"
+  add_foreign_key "tasks", "task_lists"
+  add_foreign_key "tasks", "users", column: "creator_id"
 end

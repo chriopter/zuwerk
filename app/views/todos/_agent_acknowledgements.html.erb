@@ -1,6 +1,0 @@
-<div id="todo_agent_acknowledgements" class="mt-3 flex flex-wrap gap-1" aria-label="Agent acknowledgements">
-  <% acknowledgements = todo.reactions.select { |reaction| reaction.emoji == "👍" && reaction.author.agent? } %>
-  <% acknowledgements.each do |reaction| %>
-    <span class="reaction-chip" title="Accepted by <%= reaction.author.name %>">👍 <span class="text-[11px] font-semibold"><%= reaction.author.name %></span></span>
-  <% end %>
-</div>

@@ -100,18 +100,18 @@ The CLI stores the one-time bearer token in its private configuration file. Its 
 zuwerk projects list
 zuwerk projects show PROJECT_ID
 zuwerk search --project PROJECT_ID --query "deployment decision" [--limit 10]
-zuwerk messages list --project PROJECT_ID
-zuwerk messages create --project PROJECT_ID --body "Hello from the agent"
-zuwerk todos list --project PROJECT_ID
+zuwerk chat list --project PROJECT_ID
+zuwerk chat send --project PROJECT_ID --body "Hello from the agent"
+zuwerk tasks list --project PROJECT_ID
 ```
 
-The bearer-authenticated JSON API exposes `GET /api/projects`, `GET /api/projects/:id`, project-scoped hybrid semantic search at `GET /api/projects/:id/search?q=...`, project-scoped message routes at `/api/projects/:project_id/messages`, project-scoped todo routes at `/api/projects/:project_id/todos` and `/api/projects/:project_id/todos/:id`, and explicit event acknowledgement at `POST /api/agent_events/:id/acknowledge`. Search uses a local multilingual embedding model plus lexical scoring and returns source links for messages, todos, comments, and text attachments. Source content remains authoritative; the derived index is reconciled before each search. Todo descriptions are returned as plain text. There is no default-project, globally scoped todo, or HTTP message-streaming API.
+The bearer-authenticated JSON API exposes `GET /api/projects`, `GET /api/projects/:id`, project-scoped hybrid semantic search at `GET /api/projects/:id/search?q=...`, project chat messages at `/api/projects/:project_id/chat/messages`, tasks at `/api/projects/:project_id/tasks` and `/api/projects/:project_id/tasks/:id`, and explicit event acknowledgement at `POST /api/agent_events/:id/acknowledge`. Search uses a local multilingual embedding model plus lexical scoring and returns source links for chat messages, tasks, comments, and text attachments. Source content remains authoritative; the derived index is reconciled before each search. Task descriptions are returned as plain text.
 
 Invitation redemption is transactional and single-use. Agent users have no email, password, or browser session.
 
 ## Mention event webhooks
 
-Mentioning an agent by its normalized name handle (for example, `@hermes`) creates a durable `mentioned` event. Zuwerk delivers that event to a generic webhook outbox consumer. The trigger contains only event, recipient, and message IDs—never the message body or conversation text. The webhook wakes the agent, which can load authorized context and respond through the Zuwerk CLI.
+Mentioning an agent by its normalized name handle (for example, `@hermes`) creates a durable `chat_message_mentioned` event. Zuwerk delivers that event to a generic webhook outbox consumer. The trigger contains only event, recipient, and message IDs—never the message body or conversation text. The webhook wakes the agent, which can load authorized context and respond through the Zuwerk CLI.
 
 Configure delivery with `ZUWERK_WEBHOOK_URL` (the HTTPS endpoint) and `ZUWERK_WEBHOOK_SECRET` (the shared signing secret). Keep the secret out of source control.
 
@@ -123,7 +123,7 @@ Authenticated agents use the same `Authorization: Bearer …` header as the proj
 
 - `POST /api/agent/status` with JSON `{ "status": "working", "label": "Reviewing code" }` starts or refreshes a heartbeat. Send it at least once per minute. Presence expires after 90 seconds. Send `{ "status": "idle" }` when finished. Labels are optional and limited to 80 characters.
 
-Webhook events remain trigger-only: agents load conversation context through the project-scoped messages API; Zuwerk does not embed an LLM.
+Webhook events remain trigger-only: agents load conversation context through the project-scoped chat API; Zuwerk does not embed an LLM.
 
 ## ACP agent connectors
 
@@ -150,7 +150,7 @@ adapter. The Agents page creates runtime-specific, one-time setup prompts.
 
 Tailwind CSS 4 is compiled by `tailwindcss-rails`; DaisyUI 5 is a development package used by the CSS build. Node/npm is needed only when installing/updating front-end dependencies, not at production runtime. Run `npm install` after checkout and compile with `bin/rails tailwindcss:build` (asset precompilation also builds it).
 
-The shared room's **Notify agents** switch is persisted globally. When enabled, every human message wakes every registered agent exactly once. When disabled, only explicit `@handle` mentions wake agents. Agent-authored messages never create wake events.
+Each project's chat subscriptions determine which agents receive every human chat message. Other agents wake only for explicit `@handle` mentions. Agent-authored chat messages never create wake events.
 
 ## Scope
 

@@ -6,7 +6,7 @@
   </header>
 
   <div class="project-tool-grid">
-    <%= link_to chat_project_path(@project), class: "project-tool-card glass-card glass-card-hover" do %>
+    <%= link_to project_chat_path(@project), class: "project-tool-card glass-card glass-card-hover" do %>
       <header>
         <span><strong>Inbox</strong></span>
       </header>
@@ -24,13 +24,13 @@
       </div>
     <% end %>
 
-    <%= link_to chat_project_path(@project), class: "project-tool-card glass-card glass-card-hover" do %>
+    <%= link_to project_chat_path(@project), class: "project-tool-card glass-card glass-card-hover" do %>
       <header>
         <span><strong>Chat</strong></span>
       </header>
       <div class="project-tool-preview">
-        <% if @recent_messages.any? %>
-          <% @recent_messages.each do |message| %>
+        <% if @recent_chat_messages.any? %>
+          <% @recent_chat_messages.each do |message| %>
             <span class="project-message-preview">
               <i aria-hidden="true"><%= message.author.name.first.upcase %></i>
               <span><strong><%= message.author.name %></strong><small><%= truncate(strip_tags(render_message_markdown(message.body)).squish, length: 90) %></small></span>
@@ -42,14 +42,14 @@
       </div>
     <% end %>
 
-    <%= link_to project_todos_path(@project), class: "project-tool-card glass-card glass-card-hover" do %>
+    <%= link_to project_tasks_path(@project), class: "project-tool-card glass-card glass-card-hover" do %>
       <header>
         <span><strong>Tasks</strong></span>
       </header>
       <div class="project-tool-preview">
-        <% if @recent_todos.any? %>
-          <% @recent_todos.each do |todo| %>
-            <span class="project-tool-row"><i class="project-tool-status project-tool-status-<%= todo.status.dasherize %>"></i><span><%= todo.title %></span><small>#<%= todo.id %></small></span>
+        <% if @recent_tasks.any? %>
+          <% @recent_tasks.each do |task| %>
+            <span class="project-tool-row"><i class="project-tool-status project-tool-status-<%= task.status.dasherize %>"></i><span><%= task.title %></span><small>#<%= task.id %></small></span>
           <% end %>
         <% else %>
           <span class="project-tool-empty">No open tasks.</span>
@@ -97,9 +97,9 @@
               <% (@agent_recent_events[agent.id] || []).each do |event| %>
                 <span class="project-agent-act">
                   <%= case event.event_type
-                    when "mentioned" then "Answered in chat"
-                    when "todo_assigned" then "Task: #{event.todo&.title}".truncate(46)
-                    when "board_scheduled" then "Published a briefing"
+                    when "chat_message_mentioned" then "Answered in chat"
+                    when "task_assigned" then "Task: #{event.task&.title}".truncate(46)
+                    when "board_post_scheduled" then "Published a briefing"
                   end %>
                   · <%= time_ago_in_words(event.created_at) %> ago
                 </span>

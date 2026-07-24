@@ -1,0 +1,38 @@
+<% viewer = local_assigns[:current_user] %>
+<article id="<%= dom_id(chat_message) %>" class="message-bubble-row group <%= 'is-own' if viewer && viewer.id == chat_message.author_id %>" data-author-id="<%= chat_message.author_id %>">
+  <div class="message-avatar <%= chat_message.author.agent? ? 'message-avatar-agent' : 'message-avatar-human' %>">
+    <%= chat_message.author.name.first.upcase %>
+  </div>
+
+  <div class="message-bubble-col">
+    <div class="message-bubble">
+      <div class="message-meta">
+        <strong><%= chat_message.author.name %></strong>
+        <time datetime="<%= chat_message.created_at.iso8601 %>"><%= chat_message.created_at.strftime("%H:%M") %></time>
+      </div>
+
+      <% long_body = chat_message.body.to_s.length > 500 %>
+      <div class="message-collapse <%= 'is-collapsed' if long_body %>" <%= 'data-controller=collapse'.html_safe if long_body %>>
+        <div class="message-copy lexxy-content">
+          <%= render_message_markdown(chat_message.body) %>
+        </div>
+        <% if long_body %>
+          <button type="button" class="message-show-more" data-action="collapse#toggle"><span data-collapse-target="label">Show more</span></button>
+        <% end %>
+      </div>
+
+      <% if chat_message.attachments.any? %>
+        <div class="message-attachments" aria-label="Attachments">
+          <% chat_message.attachments.each do |attachment| %>
+            <%= link_to rails_blob_path(attachment, disposition: "attachment"), class: "message-attachment" do %>
+              <span class="message-attachment-icon" aria-hidden="true">↧</span>
+              <span><strong><%= attachment.filename %></strong><small><%= number_to_human_size attachment.byte_size %></small></span>
+            <% end %>
+          <% end %>
+        </div>
+      <% end %>
+
+      <%= render "reactions/reactions", reactable: chat_message, current_user: viewer, path: project_chat_message_reactions_path(chat_message.project, chat_message) %>
+    </div>
+  </div>
+</article>

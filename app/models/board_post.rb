@@ -34,7 +34,7 @@ class BoardPost < ApplicationRecord
 
   def publication_event_matches
     return unless agent_event
-    return if agent_event.event_type == "board_scheduled" && agent_event.subject == self && agent_event.recipient == author
+    return if agent_event.event_type == "board_post_scheduled" && agent_event.subject == self && agent_event.recipient == author
 
     errors.add(:agent_event, "must be this post's scheduled agent event")
   end

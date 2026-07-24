@@ -1,0 +1,5 @@
+<% content_for :title, "Neues Task · Zuwerk" %>
+<section class="task-form-page">
+  <%= link_to "← Zurück zum Board", project_tasks_path(@project), class: "workspace-back-link" %>
+  <div class="task-form-card"><p class="workspace-kicker"><%= @project.name %></p><h1>Neues Task</h1><p>Ein klarer Arbeitsauftrag mit Kontext und Status.</p><%= render "form", task: @task %></div>
+</section>

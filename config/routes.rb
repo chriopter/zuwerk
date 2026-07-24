@@ -2,15 +2,14 @@ Rails.application.routes.draw do
   root "projects#index"
   resource :onboarding, only: %i[new create]
   resource :session, only: %i[new create destroy]
-  resources :messages, only: :create
   resources :projects, only: [ :index, :show, :create ] do
     patch :reorder, on: :member
-    get :chat, on: :member, to: "messages#index"
-    resources :messages, only: :create do
-      resources :reactions, only: :create
+    resource :chat, only: :show do
+      resources :messages, controller: "chat_messages", only: :create do
+        resources :reactions, only: :create
+      end
+      resources :subscriptions, controller: "chat_subscriptions", only: :update
     end
-    resource :room_setting, only: :update
-    resources :agent_subscriptions, only: :update
     resources :board_posts, path: "board", only: %i[index show]
     resources :board_automations, path: "board/automations", only: %i[new create show edit update] do
       post :run_now, on: :member
@@ -19,14 +18,14 @@ Rails.application.routes.draw do
     resources :file_entries, path: "files", only: %i[index create destroy] do
       get :download, on: :member
     end
-    resources :todo_lists, path: "lists", only: :create do
+    resources :task_lists, path: "task-lists", only: :create do
       patch :reorder, on: :member
     end
-    resources :todos, except: :destroy do
+    resources :tasks, except: :destroy do
       patch :reorder, on: :member
-      resources :assignments, controller: "todo_assignments", only: %i[create destroy]
+      resources :assignments, controller: "task_assignments", only: %i[create destroy]
       resources :reactions, only: :create
-      resources :comments, controller: "todo_comments", only: %i[create edit update destroy] do
+      resources :comments, controller: "task_comments", only: %i[create edit update destroy] do
         resources :reactions, only: :create
       end
     end
@@ -37,16 +36,18 @@ Rails.application.routes.draw do
   get "database", to: "database#index", as: :database
   get "database/:table", to: "database#show", as: :database_table
   get "database/:table/records/:id", to: "database#record", as: :database_record
-  resource :room_setting, only: :update
   namespace :api do
     resources :projects, only: %i[index show] do
       get :search, on: :member
-      resources :messages, only: %i[index create]
-      get "messages/:message_id/attachments/:id", to: "messages#attachment", as: :message_attachment
-      resources :todos, only: %i[index show create update] do
-        resources :comments, controller: "todo_comments", only: %i[index create]
+      resources :tasks, only: %i[index show create update] do
+        resources :comments, controller: "task_comments", only: %i[index create]
       end
     end
+    get "projects/:project_id/chat/messages", to: "chat_messages#index", as: :project_chat_messages
+    post "projects/:project_id/chat/messages", to: "chat_messages#create"
+    get "projects/:project_id/chat/messages/:message_id/attachments/:id",
+      to: "chat_messages#attachment",
+      as: :project_chat_message_attachment
     post "restart", to: "restarts#create", as: :restart if Rails.env.local?
     post "agent/status", to: "agent_presences#update", as: :agent_status
     post "agent_events/:id/acknowledge", to: "agent_events#acknowledge", as: :acknowledge_agent_event

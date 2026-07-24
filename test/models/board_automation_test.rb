@@ -52,7 +52,7 @@ class BoardAutomationTest < ActiveSupport::TestCase
       automation = create_automation(cadence: "hourly")
       automation.update!(next_run_at: 2.hours.ago)
 
-      assert_difference [ -> { BoardPost.count }, -> { AgentEvent.where(event_type: "board_scheduled").count } ], 1 do
+      assert_difference [ -> { BoardPost.count }, -> { AgentEvent.where(event_type: "board_post_scheduled").count } ], 1 do
         automation.dispatch_due!
       end
 
@@ -105,7 +105,7 @@ class BoardAutomationTest < ActiveSupport::TestCase
 
       assert_equal Time.current, post.scheduled_for
       assert_equal scheduled, automation.reload.next_run_at
-      assert_equal "board_scheduled", post.agent_event.event_type
+      assert_equal "board_post_scheduled", post.agent_event.event_type
     end
   end
 

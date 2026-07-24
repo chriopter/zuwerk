@@ -1,9 +1,0 @@
-<aside class="rounded-xl border border-stone-200 bg-white lg:sticky lg:top-6 lg:self-start" data-controller="todo-sort" data-todo-sort-project-id-value="<%= @project.id %>">
-  <div class="flex items-center justify-between border-b border-stone-200 px-4 py-3">
-    <p class="text-xs font-semibold uppercase tracking-[.12em] text-stone-400">Todos</p>
-    <%= link_to "+", new_project_todo_path(@project), class: "text-lg text-stone-400 hover:text-stone-900", title: "New todo" %>
-  </div>
-  <ol class="max-h-[calc(100dvh-12rem)] overflow-y-auto p-2" data-action="dragover->todo-sort#dragOverRoot drop->todo-sort#dropRoot">
-    <%= render "todos/tree", todos: @project.todos.roots.ordered %>
-  </ol>
-</aside>

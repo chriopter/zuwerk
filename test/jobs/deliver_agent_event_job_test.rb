@@ -66,7 +66,7 @@ class DeliverAgentEventJobTest < ActiveJob::TestCase
 
   private
     def mention_event
-      message = Message.create!(author: @human, project: @project, body: "Please work")
-      AgentEvent.create!(recipient: @agent, subject: message, event_type: "mentioned")
+      message = ChatMessage.create!(author: @human, project: @project, body: "Please work")
+      AgentEvent.create!(recipient: @agent, subject: message, event_type: "chat_message_mentioned")
     end
 end

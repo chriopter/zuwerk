@@ -19,7 +19,7 @@ class AgentConnectors::ChatBridgeTest < ActiveSupport::TestCase
 
     def prompt(_agent, origin, _text, **)
       raise "wrong origin" unless origin == @project
-      @agent.messages.create!(project: @project, body: "Published through the API", agent_event: @event)
+      @agent.chat_messages.create!(project: @project, body: "Published through the API", agent_event: @event)
     end
   end
 
@@ -32,9 +32,9 @@ class AgentConnectors::ChatBridgeTest < ActiveSupport::TestCase
 
     def prompt(agent, *, **)
       yield "First"
-      @bodies << agent.messages.sole.body
+      @bodies << agent.chat_messages.sole.body
       yield " second"
-      @bodies << agent.messages.sole.body
+      @bodies << agent.chat_messages.sole.body
       { "stopReason" => "end_turn" }
     end
   end
@@ -42,11 +42,11 @@ class AgentConnectors::ChatBridgeTest < ActiveSupport::TestCase
   test "publishes ACP output as one correlated project response" do
     human, agent, project, event = build_event
 
-    assert_difference -> { agent.messages.count }, 1 do
+    assert_difference -> { agent.chat_messages.count }, 1 do
       bridge(event, pool: ChunkPool.new("Automatic ", "answer")).deliver
     end
 
-    assert_equal "Automatic answer", event.reload.publication_message.body
+    assert_equal "Automatic answer", event.reload.publication_chat_message.body
     assert_equal "completed", event.state
     assert event.delivered_at?
     assert_nil event.accepted_at
@@ -60,7 +60,7 @@ class AgentConnectors::ChatBridgeTest < ActiveSupport::TestCase
     bridge(event, pool:).deliver
 
     assert_equal "First", pool.bodies.first
-    assert_equal "First second", event.reload.publication_message.body
+    assert_equal "First second", event.reload.publication_chat_message.body
     assert_equal "completed", event.state
   end
 
@@ -80,7 +80,7 @@ class AgentConnectors::ChatBridgeTest < ActiveSupport::TestCase
 
     bridge(event, pool: PublishingPool.new(agent:, project:, event:)).deliver
 
-    assert_equal "Published through the API", event.reload.publication_message.body
+    assert_equal "Published through the API", event.reload.publication_chat_message.body
     assert_equal "completed", event.state
   end
 
@@ -94,7 +94,7 @@ class AgentConnectors::ChatBridgeTest < ActiveSupport::TestCase
 
     bridge(event, pool:).deliver
 
-    assert_nil event.reload.publication_message
+    assert_nil event.reload.publication_chat_message
     assert_equal "running", event.state
     assert_equal "replacement", event.connector_connection_id
   end
@@ -112,24 +112,24 @@ class AgentConnectors::ChatBridgeTest < ActiveSupport::TestCase
     end
 
     assert_includes error.message, "connection closed"
-    assert_nil event.reload.publication_message
+    assert_nil event.reload.publication_chat_message
     assert_equal "running", event.state
   end
 
-  test "delivers a todo comment mention and saves ACP output on that todo" do
-    human = User.create!(name: "Todo Human", email: "todo-human@example.com", password: "password1")
+  test "delivers a task comment mention and saves ACP output on that task" do
+    human = User.create!(name: "Task Human", email: "task-human@example.com", password: "password1")
     agent = User.create!(name: "Fable Dev", kind: :agent)
     project = Project.create!(name: "Kitchen")
-    todo = project.todos.create!(creator: human, title: "Bake a cake")
-    source = todo.comments.create!(author: human, body: "@fable-dev create the preparation tasks")
+    task = project.tasks.create!(creator: human, title: "Bake a cake")
+    source = task.comments.create!(author: human, body: "@fable-dev create the preparation tasks")
     event = source.agent_events.sole
     event.transition_to!("running")
     event.update_columns(connector_connection_id: "connector")
 
     bridge(event, pool: ChunkPool.new("Created the tasks.")).deliver
 
-    response = event.reload.publication_comment
-    assert_equal todo, response.todo
+    response = event.reload.publication_task_comment
+    assert_equal task, response.task
     assert_equal agent, response.author
     assert_equal "Created the tasks.", response.body.to_plain_text
     assert_equal "completed", event.state
@@ -142,8 +142,8 @@ class AgentConnectors::ChatBridgeTest < ActiveSupport::TestCase
       human = User.create!(name: "ACP Human", email: "acp-#{SecureRandom.hex(4)}@example.com", password: "password1")
       agent = User.create!(name: "ACP Agent #{SecureRandom.hex(2)}", kind: :agent)
       project = Project.create!(name: "ACP Project")
-      message = Message.create!(author: human, project:, body: "Please answer")
-      event = AgentEvent.create!(recipient: agent, subject: message, event_type: "mentioned")
+      message = ChatMessage.create!(author: human, project:, body: "Please answer")
+      event = AgentEvent.create!(recipient: agent, subject: message, event_type: "chat_message_mentioned")
       event.transition_to!("running")
       event.update_columns(connector_connection_id: "connector")
       [ human, agent, project, event ]

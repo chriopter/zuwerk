@@ -27,10 +27,10 @@ class ProjectSearchTest < ActiveSupport::TestCase
     human = User.create!(name: "Search Human", email: "search-human@example.com", password: "password1")
     project = Project.create!(name: "Searchable")
     other_project = Project.create!(name: "Private")
-    matching_message = project.messages.create!(author: human, body: "Die Netzwerkverbindung wurde durch einen Neustart repariert.")
-    project.messages.create!(author: human, body: "Zum Mittag gibt es Kuchen.")
-    matching_todo = project.todos.create!(creator: human, title: "Bridge stabilisieren", description: "Connection failure dauerhaft verhindern")
-    matching_todo.comments.create!(author: human, body: "Der Socket braucht einen Heartbeat.")
+    matching_message = project.chat_messages.create!(author: human, body: "Die Netzwerkverbindung wurde durch einen Neustart repariert.")
+    project.chat_messages.create!(author: human, body: "Zum Mittag gibt es Kuchen.")
+    matching_task = project.tasks.create!(creator: human, title: "Bridge stabilisieren", description: "Connection failure dauerhaft verhindern")
+    matching_task.comments.create!(author: human, body: "Der Socket braucht einen Heartbeat.")
     agent = User.create!(name: "Search Reporter", kind: :agent)
     automation = project.board_automations.create!(creator: human, agent: agent, title: "Board report", cadence: "weekly", prompt: "Report")
     board_post = automation.run_now!
@@ -38,17 +38,17 @@ class ProjectSearchTest < ActiveSupport::TestCase
     file_entry = project.file_entries.new(kind: "file", name: "network-notes.txt", creator: human)
     file_entry.file.attach(io: StringIO.new("Network connection recovery notes"), filename: "network-notes.txt", content_type: "text/plain")
     file_entry.save!
-    other_project.messages.create!(author: human, body: "Verbindungsproblem in einem anderen Projekt")
+    other_project.chat_messages.create!(author: human, body: "Verbindungsproblem in einem anderen Projekt")
 
     embedder = SemanticFixtureEmbedder.new
     results = ProjectSearch.new(project, embedder: embedder).call("Verbindungsproblem", limit: 3)
 
     assert_equal 6, SearchDocument.where(project: project).count
-    assert_equal [ "message", "todo" ], results.first(2).map(&:type).sort
-    assert_equal matching_message.id, results.find { |result| result.type == "message" }.source_id
-    assert_equal matching_todo.id, results.find { |result| result.type == "todo" }.source_id
+    assert_equal [ "chat_message", "task" ], results.first(2).map(&:type).sort
+    assert_equal matching_message.id, results.find { |result| result.type == "chat_message" }.source_id
+    assert_equal matching_task.id, results.find { |result| result.type == "task" }.source_id
     assert_equal project.id, results.first.project_id
-    assert_equal "/projects/#{project.id}/chat#message_#{matching_message.id}", results.find { |result| result.type == "message" }.url
+    assert_equal "/projects/#{project.id}/chat#chat_message_#{matching_message.id}", results.find { |result| result.type == "chat_message" }.url
     board_document = SearchDocument.find_by!(project: project, source_type: "board_post", source_id: board_post.id)
     assert_equal "/projects/#{project.id}/board/#{board_post.id}", board_document.url
     assert_includes board_document.content, "stabilen Betrieb"
@@ -61,12 +61,12 @@ class ProjectSearchTest < ActiveSupport::TestCase
     ProjectSearch.new(project, embedder: embedder).call("Kuchen", limit: 2)
     assert_equal [ [ "Kuchen" ] ], embedder.batches
 
-    comment_id = matching_todo.comments.first.id
+    comment_id = matching_task.comments.first.id
     matching_message.update!(body: "Die Datenbankmigration ist jetzt das relevante Thema.")
-    matching_todo.destroy!
+    matching_task.destroy!
     ProjectSearch.new(project, embedder: embedder).call("Migration", limit: 2)
-    assert_equal "Die Datenbankmigration ist jetzt das relevante Thema.", SearchDocument.find_by!(source_type: "message", source_id: matching_message.id).content
-    assert_not SearchDocument.exists?(source_type: "todo", source_id: matching_todo.id)
-    assert_not SearchDocument.exists?(source_type: "todo_comment", source_id: comment_id)
+    assert_equal "Die Datenbankmigration ist jetzt das relevante Thema.", SearchDocument.find_by!(source_type: "chat_message", source_id: matching_message.id).content
+    assert_not SearchDocument.exists?(source_type: "task", source_id: matching_task.id)
+    assert_not SearchDocument.exists?(source_type: "task_comment", source_id: comment_id)
   end
 end

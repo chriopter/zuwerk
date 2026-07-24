@@ -6,7 +6,7 @@ class DeliverAgentEventJob < ApplicationJob
     job.arguments.first.terminalize_failure!(error)
   end
   def perform(agent_event)
-    return if agent_event.event_type == "board_scheduled"
+    return if agent_event.event_type == "board_post_scheduled"
 
     claimed = AgentEvent.claim_for_fallback!(agent_event)
     return unless claimed == agent_event

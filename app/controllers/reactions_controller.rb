@@ -17,18 +17,18 @@ class ReactionsController < ApplicationController
   def load_reactable
     @project = Project.find(params[:project_id])
     if params[:message_id]
-      @reactable = @project.messages.find(params[:message_id])
+      @reactable = @project.chat_messages.find(params[:message_id])
     else
-      @todo = @project.todos.find(params[:todo_id])
-      @reactable = params[:comment_id] ? @todo.comments.find(params[:comment_id]) : @todo
+      @task = @project.tasks.find(params[:task_id])
+      @reactable = params[:comment_id] ? @task.comments.find(params[:comment_id]) : @task
     end
   end
 
   def return_path
-    return chat_project_path(@project) if @reactable.is_a?(Message)
+    return project_chat_path(@project) if @reactable.is_a?(ChatMessage)
 
-    return project_todo_path(@project, @todo) if @reactable.is_a?(Todo)
+    return project_task_path(@project, @task) if @reactable.is_a?(Task)
 
-    project_todo_path(@project, @todo, anchor: ActionView::RecordIdentifier.dom_id(@reactable))
+    project_task_path(@project, @task, anchor: ActionView::RecordIdentifier.dom_id(@reactable))
   end
 end

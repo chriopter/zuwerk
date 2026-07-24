@@ -110,13 +110,13 @@
   .mobile-agent-presence #agent_presence { @apply m-0; }
   .agent-turn-strip { @apply shrink-0 px-4 sm:px-6 lg:px-8; }
   .agent-turn-strip .agent-turn-state-running { @apply hidden; }
-  .agent-turn-strip:empty, .todo-agent-turn:empty, .kanban-agent-turn:empty { @apply hidden; }
+  .agent-turn-strip:empty, .task-agent-turn:empty, .kanban-agent-turn:empty { @apply hidden; }
   .agent-turn-state { @apply flex min-h-8 items-center gap-2 text-xs font-medium text-stone-500; }
   .agent-turn-spinner { @apply h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-stone-300 border-t-[#e85f42]; }
   .agent-turn-state-failed { @apply text-red-700; }
   .agent-turn-state-cancelled { @apply text-stone-500; }
-  .todo-agent-turn { @apply mt-3; }
-  .todo-detail-heading .agent-turn-state-running { @apply hidden; }
+  .task-agent-turn { @apply mt-3; }
+  .task-detail-heading .agent-turn-state-running { @apply hidden; }
   .kanban-agent-turn { @apply mt-2; }
   .agent-approval-card { @apply mb-3 grid gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-stone-700 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center; }
   .agent-approval-card > div > span { @apply text-[9px] font-semibold uppercase tracking-[.12em] text-amber-700; }
@@ -238,7 +238,7 @@
   .boost-picker { @apply relative; }
   .boost-picker > summary { @apply grid h-6 w-6 cursor-pointer list-none place-items-center rounded-full border border-white/70 bg-white/60 text-xs text-stone-400 opacity-0 shadow-[inset_0_1px_0_rgba(255,255,255,.7)] backdrop-blur-md transition hover:border-white hover:text-stone-800 focus-visible:opacity-100 group-hover:opacity-100; }
   .boost-picker[open] > summary { @apply opacity-100 text-stone-800; }
-  #todo_reactions .boost-picker > summary, .todo-comments .boost-picker > summary { @apply opacity-100; }
+  #task_reactions .boost-picker > summary, .task-comments .boost-picker > summary { @apply opacity-100; }
   .boost-picker > summary::-webkit-details-marker { display: none; }
   .boost-picker-menu { @apply absolute bottom-8 left-1/2 z-30 grid w-max -translate-x-1/2 grid-cols-5 gap-0.5 rounded-2xl border border-white/60 bg-white/85 p-1.5 shadow-[0_20px_60px_rgba(28,25,23,.18),inset_0_1px_0_rgba(255,255,255,.6)] backdrop-blur-xl; }
   .message-bubble-row.is-own .boost-picker-menu { @apply left-auto right-0 translate-x-0; }
@@ -330,42 +330,42 @@
   .agent-invite-picker > p:not(.eyebrow) { @apply mb-8 mt-3 max-w-2xl text-sm leading-6 text-stone-500; }
   .agent-invite-back { @apply mt-8 inline-flex text-sm font-semibold text-stone-500 hover:text-stone-900; }
   .workspace-page-header { @apply flex flex-col gap-5 border-b border-stone-200 pb-6 sm:flex-row sm:items-end sm:justify-between; }
-  .workspace-page-header h1, .todo-form-card h1 { @apply font-serif text-4xl font-normal tracking-tight text-stone-950; }
-  .workspace-page-header > div > p:last-child, .todo-form-card > p:nth-child(3) { @apply mt-2 text-sm text-stone-500; }
+  .workspace-page-header h1, .task-form-card h1 { @apply font-serif text-4xl font-normal tracking-tight text-stone-950; }
+  .workspace-page-header > div > p:last-child, .task-form-card > p:nth-child(3) { @apply mt-2 text-sm text-stone-500; }
   .workspace-kicker { @apply mb-2 text-[10px] font-semibold uppercase tracking-[.14em] text-[#d9563b]; }
   .workspace-primary-action { @apply inline-flex h-10 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-[#27332d]/90 px-4 text-sm font-semibold text-white shadow-[0_8px_22px_-8px_rgba(39,51,45,.5),inset_0_1px_0_rgba(255,255,255,.18)] backdrop-blur-md transition hover:-translate-y-px hover:bg-[#27332d]; }
   .workspace-secondary-action { @apply inline-flex h-10 items-center justify-center rounded-lg border border-white/60 bg-white/50 px-4 text-sm font-semibold text-stone-700 shadow-[inset_0_1px_0_rgba(255,255,255,.6)] backdrop-blur-md transition hover:-translate-y-px hover:border-white/80 hover:bg-white/70; }
   .workspace-back-link { @apply mb-5 inline-flex text-xs font-semibold text-stone-500 transition hover:text-stone-900; }
 
-  .todo-lists-page { @apply mx-auto w-full max-w-[880px] pb-16; }
-  .todo-lists-grid { @apply mt-6 grid items-start gap-4 md:grid-cols-2; }
-  .todo-list-card { @apply p-4; }
-  .todo-list-card-header { @apply mb-3 flex cursor-grab items-center gap-2 border-b border-stone-100 px-1 pb-3; }
-  .todo-list-card-header h2 { @apply min-w-0 truncate font-serif text-xl font-normal tracking-tight text-stone-950; }
-  .todo-list-card-header span { @apply rounded-full bg-stone-200 px-2 py-0.5 text-[10px] font-semibold text-stone-500; }
-  .todo-list-rows { @apply mt-1 flex flex-col; }
-  .todo-lists-grid.is-focused { @apply mx-auto max-w-xl grid-cols-1; }
-  .todo-focus-back { @apply mt-2 text-xs font-semibold text-stone-500; }
-  .todo-focus-back a { @apply transition hover:text-stone-900; }
-  .todo-list-row { @apply flex min-h-10 cursor-grab items-center gap-2.5 rounded-xl px-2 py-1.5 transition hover:bg-white/70; }
-  .todo-list-row-main { @apply flex min-w-0 flex-1 items-center gap-2.5; }
-  .todo-check { @apply grid h-5 w-5 shrink-0 cursor-pointer place-items-center rounded-full border-2 border-stone-300 bg-transparent text-transparent transition hover:border-stone-500; }
-  .todo-check svg { @apply h-3 w-3; }
-  .todo-check-completed { @apply border-emerald-500 bg-emerald-500 text-white shadow-[0_2px_6px_rgba(16,185,129,.35)] hover:border-emerald-600; }
-  .todo-check:hover { @apply text-stone-300; }
-  .todo-check-completed:hover { @apply text-white; }
-  .todo-list-show-all { @apply mt-1 block rounded-xl px-2 py-2 text-center text-xs font-semibold text-stone-400 transition hover:bg-white/60 hover:text-stone-800; }
-  .todo-list-row-dragging { @apply scale-[.98] opacity-40; }
-  .todo-list-card.is-drop-target { @apply border-[#87968e] bg-white/75 ring-4 ring-[#dfe6e1]; }
-  .todo-list-row-title { @apply min-w-0 flex-1 truncate text-sm font-medium text-stone-800; }
-  .todo-list-row.is-completed .todo-list-row-title { @apply text-stone-400 line-through; }
-  .todo-list-dot { @apply h-2 w-2 shrink-0 rounded-full bg-stone-300; }
-  .todo-list-dot-completed { @apply bg-emerald-500; }
-  .todo-list-row-people { @apply flex shrink-0 items-center gap-1; }
-  .todo-list-row-people .avatar-stack-item { @apply h-6 w-6 border text-[9px]; }
-  .todo-list-row .kanban-agent-turn { @apply shrink-0; }
-  .todo-list-row .agent-turn-state { @apply min-h-0 text-[10px]; }
-  .todo-list-empty { @apply px-2 py-6 text-center text-sm text-stone-400; }
+  .task-lists-page { @apply mx-auto w-full max-w-[880px] pb-16; }
+  .task-lists-grid { @apply mt-6 grid items-start gap-4 md:grid-cols-2; }
+  .task-list-card { @apply p-4; }
+  .task-list-card-header { @apply mb-3 flex cursor-grab items-center gap-2 border-b border-stone-100 px-1 pb-3; }
+  .task-list-card-header h2 { @apply min-w-0 truncate font-serif text-xl font-normal tracking-tight text-stone-950; }
+  .task-list-card-header span { @apply rounded-full bg-stone-200 px-2 py-0.5 text-[10px] font-semibold text-stone-500; }
+  .task-list-rows { @apply mt-1 flex flex-col; }
+  .task-lists-grid.is-focused { @apply mx-auto max-w-xl grid-cols-1; }
+  .task-focus-back { @apply mt-2 text-xs font-semibold text-stone-500; }
+  .task-focus-back a { @apply transition hover:text-stone-900; }
+  .task-list-row { @apply flex min-h-10 cursor-grab items-center gap-2.5 rounded-xl px-2 py-1.5 transition hover:bg-white/70; }
+  .task-list-row-main { @apply flex min-w-0 flex-1 items-center gap-2.5; }
+  .task-check { @apply grid h-5 w-5 shrink-0 cursor-pointer place-items-center rounded-full border-2 border-stone-300 bg-transparent text-transparent transition hover:border-stone-500; }
+  .task-check svg { @apply h-3 w-3; }
+  .task-check-completed { @apply border-emerald-500 bg-emerald-500 text-white shadow-[0_2px_6px_rgba(16,185,129,.35)] hover:border-emerald-600; }
+  .task-check:hover { @apply text-stone-300; }
+  .task-check-completed:hover { @apply text-white; }
+  .task-list-show-all { @apply mt-1 block rounded-xl px-2 py-2 text-center text-xs font-semibold text-stone-400 transition hover:bg-white/60 hover:text-stone-800; }
+  .task-list-row-dragging { @apply scale-[.98] opacity-40; }
+  .task-list-card.is-drop-target { @apply border-[#87968e] bg-white/75 ring-4 ring-[#dfe6e1]; }
+  .task-list-row-title { @apply min-w-0 flex-1 truncate text-sm font-medium text-stone-800; }
+  .task-list-row.is-completed .task-list-row-title { @apply text-stone-400 line-through; }
+  .task-list-dot { @apply h-2 w-2 shrink-0 rounded-full bg-stone-300; }
+  .task-list-dot-completed { @apply bg-emerald-500; }
+  .task-list-row-people { @apply flex shrink-0 items-center gap-1; }
+  .task-list-row-people .avatar-stack-item { @apply h-6 w-6 border text-[9px]; }
+  .task-list-row .kanban-agent-turn { @apply shrink-0; }
+  .task-list-row .agent-turn-state { @apply min-h-0 text-[10px]; }
+  .task-list-empty { @apply px-2 py-6 text-center text-sm text-stone-400; }
   .list-create { @apply relative; }
   .list-create > summary { @apply cursor-pointer list-none; }
   .list-create > summary::-webkit-details-marker { display: none; }
@@ -385,56 +385,56 @@
   .kanban-create button[type="submit"] { @apply grid h-7 w-7 shrink-0 cursor-pointer place-items-center rounded-full border border-white/15 bg-[#27332d]/90 text-white shadow-[0_6px_16px_-6px_rgba(39,51,45,.55),inset_0_1px_0_rgba(255,255,255,.18)] transition hover:-translate-y-px hover:bg-[#27332d]; }
   .kanban-create button[type="submit"] svg { @apply h-3.5 w-3.5; }
 
-  .todo-detail-page, .todo-form-page { @apply mx-auto max-w-6xl pb-12; }
-  .todo-detail-shell { @apply overflow-visible; }
-  .todo-detail-header { @apply border-b border-stone-200/70 px-1 pb-6; }
-  .todo-detail-eyebrow { @apply mb-3 flex flex-wrap items-center gap-2 text-xs font-medium normal-case tracking-normal text-stone-400; }
-  .todo-detail-eyebrow a { @apply transition hover:text-stone-800; }
-  .todo-detail-heading h1 { @apply max-w-4xl font-serif text-3xl font-normal leading-tight tracking-tight text-stone-950 sm:text-4xl; }
-  .todo-title-line { @apply flex items-center gap-3; }
-  .todo-top-line { @apply flex items-start justify-between gap-4; }
-  .todo-top-line .avatar-stack { @apply shrink-0; }
-  .todo-check-lg { @apply h-7 w-7; }
-  .todo-check-lg svg { @apply h-4 w-4; }
-  .todo-title-input { @apply block w-full max-w-4xl border-0 bg-transparent font-serif text-3xl font-normal leading-tight tracking-tight text-stone-950 outline-none transition sm:text-4xl; }
-  .todo-title-input:hover { @apply bg-white/50; }
-  .todo-title-input:focus { @apply rounded-xl bg-white/70 ring-4 ring-[#dfe6e1]; }
-  .todo-description-edit { @apply mt-4; }
-  .todo-description-edit [role="button"] { @apply cursor-text rounded-xl transition hover:bg-white/50; }
-  .todo-description-placeholder { @apply max-w-4xl py-2 text-sm text-stone-400; }
-  .todo-detail-actions { @apply flex flex-wrap items-center gap-2.5; }
-  .todo-description { @apply max-w-4xl pt-2 text-sm leading-6 text-stone-600; }
-  .todo-status { @apply rounded-full px-2 py-0.5 text-[9px] tracking-normal; }
-  .todo-status-open { @apply bg-stone-100 text-stone-600; }
-  .todo-status-completed { @apply bg-emerald-50 text-emerald-700; }
-  .todo-meta-line { @apply mt-4 flex flex-wrap items-center gap-x-4 gap-y-2; }
-  #todo_reactions { @apply mt-2 px-1; }
-  #todo_reactions .boosts { @apply min-h-6; }
-  .todo-meta-context { @apply text-xs text-stone-400; }
-  .todo-created-inline { @apply ml-2 text-[11px] font-normal text-stone-400/80; }
-  .todo-meta-context a { @apply font-medium text-stone-600 hover:text-stone-900; }
-  .todo-conversation { @apply min-w-0 px-1 py-6 sm:pr-8; }
-  .todo-section-heading { @apply mb-4 flex items-center gap-2; }
-  .todo-section-heading h2 { @apply text-sm font-semibold text-stone-900; }
-  .todo-section-heading span { @apply rounded-full bg-stone-100 px-2 py-0.5 text-[10px] text-stone-500; }
-  .todo-comments { @apply divide-y divide-stone-100; }
-  .todo-comment-form { @apply mt-6 border-t border-stone-200 pt-6; }
-  .todo-properties { @apply border-t border-stone-200/70 p-5 lg:border-l lg:border-t-0 lg:p-6; }
-  .todo-properties > section { @apply border-b border-stone-200 py-5 first:pt-0 last:border-0 last:pb-0; }
-  .todo-properties h2 { @apply mb-3 text-[10px] font-semibold uppercase tracking-[.13em] text-stone-400; }
-  .todo-agent-list { @apply space-y-2; }
-  .todo-agent-list > div { @apply flex items-center gap-2 text-sm; }
-  .todo-agent-list strong { @apply min-w-0 flex-1 truncate font-medium; }
-  .todo-agent-list button { @apply text-stone-400 hover:text-red-600; }
-  .todo-agent-avatar { @apply grid h-7 w-7 place-items-center rounded-full bg-[#27332d] text-[9px] font-semibold text-white; }
-  .todo-agent-form { @apply mt-3 flex gap-2; }
-  .todo-context-list { @apply space-y-3 text-xs; }
-  .todo-context-list div { @apply grid grid-cols-[82px_minmax(0,1fr)] gap-2; }
-  .todo-context-list dt { @apply text-stone-400; }
-  .todo-context-list dd { @apply min-w-0 truncate font-medium text-stone-700; }
-  .todo-context-list a { @apply hover:text-[#d9563b]; }
-  .todo-form-card { @apply rounded-2xl border border-white/60 bg-white/55 p-5 shadow-[0_1px_2px_rgba(28,25,23,.04),inset_0_1px_0_rgba(255,255,255,.55)] backdrop-blur-md sm:p-8; }
-  .todo-form-card form { @apply mt-8; }
+  .task-detail-page, .task-form-page { @apply mx-auto max-w-6xl pb-12; }
+  .task-detail-shell { @apply overflow-visible; }
+  .task-detail-header { @apply border-b border-stone-200/70 px-1 pb-6; }
+  .task-detail-eyebrow { @apply mb-3 flex flex-wrap items-center gap-2 text-xs font-medium normal-case tracking-normal text-stone-400; }
+  .task-detail-eyebrow a { @apply transition hover:text-stone-800; }
+  .task-detail-heading h1 { @apply max-w-4xl font-serif text-3xl font-normal leading-tight tracking-tight text-stone-950 sm:text-4xl; }
+  .task-title-line { @apply flex items-center gap-3; }
+  .task-top-line { @apply flex items-start justify-between gap-4; }
+  .task-top-line .avatar-stack { @apply shrink-0; }
+  .task-check-lg { @apply h-7 w-7; }
+  .task-check-lg svg { @apply h-4 w-4; }
+  .task-title-input { @apply block w-full max-w-4xl border-0 bg-transparent font-serif text-3xl font-normal leading-tight tracking-tight text-stone-950 outline-none transition sm:text-4xl; }
+  .task-title-input:hover { @apply bg-white/50; }
+  .task-title-input:focus { @apply rounded-xl bg-white/70 ring-4 ring-[#dfe6e1]; }
+  .task-description-edit { @apply mt-4; }
+  .task-description-edit [role="button"] { @apply cursor-text rounded-xl transition hover:bg-white/50; }
+  .task-description-placeholder { @apply max-w-4xl py-2 text-sm text-stone-400; }
+  .task-detail-actions { @apply flex flex-wrap items-center gap-2.5; }
+  .task-description { @apply max-w-4xl pt-2 text-sm leading-6 text-stone-600; }
+  .task-status { @apply rounded-full px-2 py-0.5 text-[9px] tracking-normal; }
+  .task-status-open { @apply bg-stone-100 text-stone-600; }
+  .task-status-completed { @apply bg-emerald-50 text-emerald-700; }
+  .task-meta-line { @apply mt-4 flex flex-wrap items-center gap-x-4 gap-y-2; }
+  #task_reactions { @apply mt-2 px-1; }
+  #task_reactions .boosts { @apply min-h-6; }
+  .task-meta-context { @apply text-xs text-stone-400; }
+  .task-created-inline { @apply ml-2 text-[11px] font-normal text-stone-400/80; }
+  .task-meta-context a { @apply font-medium text-stone-600 hover:text-stone-900; }
+  .task-conversation { @apply min-w-0 px-1 py-6 sm:pr-8; }
+  .task-section-heading { @apply mb-4 flex items-center gap-2; }
+  .task-section-heading h2 { @apply text-sm font-semibold text-stone-900; }
+  .task-section-heading span { @apply rounded-full bg-stone-100 px-2 py-0.5 text-[10px] text-stone-500; }
+  .task-comments { @apply divide-y divide-stone-100; }
+  .task-comment-form { @apply mt-6 border-t border-stone-200 pt-6; }
+  .task-properties { @apply border-t border-stone-200/70 p-5 lg:border-l lg:border-t-0 lg:p-6; }
+  .task-properties > section { @apply border-b border-stone-200 py-5 first:pt-0 last:border-0 last:pb-0; }
+  .task-properties h2 { @apply mb-3 text-[10px] font-semibold uppercase tracking-[.13em] text-stone-400; }
+  .task-agent-list { @apply space-y-2; }
+  .task-agent-list > div { @apply flex items-center gap-2 text-sm; }
+  .task-agent-list strong { @apply min-w-0 flex-1 truncate font-medium; }
+  .task-agent-list button { @apply text-stone-400 hover:text-red-600; }
+  .task-agent-avatar { @apply grid h-7 w-7 place-items-center rounded-full bg-[#27332d] text-[9px] font-semibold text-white; }
+  .task-agent-form { @apply mt-3 flex gap-2; }
+  .task-context-list { @apply space-y-3 text-xs; }
+  .task-context-list div { @apply grid grid-cols-[82px_minmax(0,1fr)] gap-2; }
+  .task-context-list dt { @apply text-stone-400; }
+  .task-context-list dd { @apply min-w-0 truncate font-medium text-stone-700; }
+  .task-context-list a { @apply hover:text-[#d9563b]; }
+  .task-form-card { @apply rounded-2xl border border-white/60 bg-white/55 p-5 shadow-[0_1px_2px_rgba(28,25,23,.04),inset_0_1px_0_rgba(255,255,255,.55)] backdrop-blur-md sm:p-8; }
+  .task-form-card form { @apply mt-8; }
 
   .workspace-top-shell { @apply grid min-h-dvh grid-rows-[auto_minmax(0,1fr)] gap-3 bg-[#f5f7f6] p-2.5 sm:gap-3.5 sm:p-3.5;
     /* Oil-film iridescence: one continuous hue rotation around an off-center

@@ -1,0 +1,4 @@
+<% event = AgentEvent.latest_for_task(task) %>
+<div id="task_<%= task.id %>_agent_status" class="task-agent-turn" aria-live="polite">
+  <%= render "agent_events/status", event: event if event && event.state != "completed" %>
+</div>

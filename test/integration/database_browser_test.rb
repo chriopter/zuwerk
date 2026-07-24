@@ -21,7 +21,7 @@ class DatabaseBrowserTest < ActionDispatch::IntegrationTest
       end
     end
     assert_select "[data-table-group='users'] a[href='#{database_table_path("users")}']"
-    assert_select "[data-table-group='user-data'] a[href='#{database_table_path("messages")}']"
+    assert_select "[data-table-group='user-data'] a[href='#{database_table_path("chat_messages")}']"
     assert_select "[data-table-group='agents'] a[href='#{database_table_path("agent_events")}']"
     assert_select "[data-table-group='active-storage-action-text'] a[href='#{database_table_path("active_storage_blobs")}']"
     assert_select "[data-table-group='rails-internal'] a[href='#{database_table_path("schema_migrations")}']"

@@ -115,36 +115,36 @@ class ProjectSearch
     end
 
     def source_documents
-      [ *message_documents, *todo_documents, *comment_documents, *attachment_documents, *board_post_documents, *project_file_documents ]
+      [ *chat_message_documents, *task_documents, *comment_documents, *attachment_documents, *board_post_documents, *project_file_documents ]
     end
 
-    def message_documents
-      @project.messages.includes(:author).order(:id).map do |message|
-        result("message", message.id, "Chat · #{message.author.name}", message.body, chat_project_path(@project, anchor: "message_#{message.id}"), message.created_at)
+    def chat_message_documents
+      @project.chat_messages.includes(:author).order(:id).map do |message|
+        result("chat_message", message.id, "Chat · #{message.author.name}", message.body, project_chat_path(@project, anchor: "chat_message_#{message.id}"), message.created_at)
       end
     end
 
-    def todo_documents
-      @project.todos.includes(:rich_text_description).order(:id).map do |todo|
-        content = [ todo.title, todo.description.to_plain_text ].reject(&:blank?).join("\n")
-        result("todo", todo.id, "Task ##{todo.id} · #{todo.title}", content, project_todo_path(@project, todo), todo.created_at)
+    def task_documents
+      @project.tasks.includes(:rich_text_description).order(:id).map do |task|
+        content = [ task.title, task.description.to_plain_text ].reject(&:blank?).join("\n")
+        result("task", task.id, "Task ##{task.id} · #{task.title}", content, project_task_path(@project, task), task.created_at)
       end
     end
 
     def comment_documents
-      TodoComment.joins(:todo).where(todos: { project_id: @project.id }).includes(:author, :rich_text_body, :todo).order(:id).map do |comment|
-        result("todo_comment", comment.id, "Task ##{comment.todo_id} · Kommentar von #{comment.author.name}", comment.body.to_plain_text, project_todo_path(@project, comment.todo, anchor: "todo_comment_#{comment.id}"), comment.created_at)
+      TaskComment.joins(:task).where(tasks: { project_id: @project.id }).includes(:author, :rich_text_body, :task).order(:id).map do |comment|
+        result("task_comment", comment.id, "Task ##{comment.task_id} · comment by #{comment.author.name}", comment.body.to_plain_text, project_task_path(@project, comment.task, anchor: "task_comment_#{comment.id}"), comment.created_at)
       end
     end
 
     def attachment_documents
-      @project.messages.includes(attachments_attachments: :blob).order(:id).flat_map do |message|
+      @project.chat_messages.includes(attachments_attachments: :blob).order(:id).flat_map do |message|
         message.attachments.filter_map do |attachment|
           next unless attachment.blob.byte_size <= MAX_ATTACHMENT_BYTES
           next unless attachment.content_type.to_s.start_with?("text/")
 
           content = attachment.download.force_encoding(Encoding::UTF_8).scrub
-          result("attachment", attachment.id, "Datei · #{attachment.filename}", content, chat_project_path(@project, anchor: "message_#{message.id}"), message.created_at)
+          result("attachment", attachment.id, "File · #{attachment.filename}", content, project_chat_path(@project, anchor: "chat_message_#{message.id}"), message.created_at)
         end
       end
     end
@@ -186,12 +186,12 @@ class ProjectSearch
       (query_terms & source_terms).length.fdiv(query_terms.length)
     end
 
-    def chat_project_path(...)
-      Rails.application.routes.url_helpers.chat_project_path(...)
+    def project_chat_path(...)
+      Rails.application.routes.url_helpers.project_chat_path(...)
     end
 
-    def project_todo_path(...)
-      Rails.application.routes.url_helpers.project_todo_path(...)
+    def project_task_path(...)
+      Rails.application.routes.url_helpers.project_task_path(...)
     end
 
     def project_file_entries_path(...)

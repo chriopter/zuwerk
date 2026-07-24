@@ -16,8 +16,8 @@ class BoardFlowTest < ActionDispatch::IntegrationTest
     get project_board_posts_path(@project)
     assert_response :success
     assert_select ".workspace-breadcrumb a[href='#{project_path(@project)}']", text: @project.name
-    assert_select ".workspace-breadcrumb span[aria-current='page']", text: "Board"
-    assert_select "h1", text: "Board", count: 1
+    assert_select ".workspace-breadcrumb span[aria-current='page']", text: "Briefing"
+    assert_select "h1", text: "Briefing", count: 1
     assert_select ".topbar-account-menu a[aria-current='page']", count: 0
     assert_select "a[href='#{new_project_board_automation_path(@project)}']", text: /New automation/
   end
@@ -40,7 +40,7 @@ class BoardFlowTest < ActionDispatch::IntegrationTest
     assert_equal @agent, automation.agent
     assert_equal "Review current work and publish the priorities.", automation.prompt.to_plain_text
 
-    assert_difference [ -> { automation.board_posts.count }, -> { AgentEvent.where(event_type: "board_scheduled").count } ], 1 do
+    assert_difference [ -> { automation.board_posts.count }, -> { AgentEvent.where(event_type: "board_post_scheduled").count } ], 1 do
       post run_now_project_board_automation_path(@project, automation)
     end
     assert_redirected_to project_board_automation_path(@project, automation)

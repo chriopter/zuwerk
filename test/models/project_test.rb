@@ -16,27 +16,26 @@ class ProjectTest < ActiveSupport::TestCase
     assert duplicate.errors.added?(:name, :taken, value: "client PORTAL")
   end
 
-  test "creating a project creates its single room setting immediately" do
+  test "creating a project creates its default task list immediately" do
     project = Project.create!(name: "Ready chat")
 
-    assert_equal project, RoomSetting.find_by!(project_id: project.id).project
+    assert_equal [ "Tasks" ], project.task_lists.pluck(:name)
   end
 
-  test "messages and the single room setting belong to a project" do
+  test "chat messages belong to a project" do
     project = Project.create!(name: "Launch")
     human = User.create!(name: "Ada", email: "ada@example.com", password: "password1")
-    message = Message.create!(author: human, project: project, body: "Hello launch")
+    message = ChatMessage.create!(author: human, project: project, body: "Hello launch")
 
-    assert_equal [ message ], project.messages.to_a
-    assert_equal project, project.room_setting.project
-    assert_equal project.room_setting, project.room_setting
+    assert_equal [ message ], project.chat_messages.to_a
   end
 
-  test "messages without an explicit project use the default project" do
+  test "chat messages require an explicit project" do
     human = User.create!(name: "Ada", email: "ada@example.com", password: "password1")
 
-    message = Message.create!(author: human, body: "Legacy-compatible message")
+    message = ChatMessage.new(author: human, body: "Unscoped message")
 
-    assert_equal Project.default, message.project
+    assert_not message.valid?
+    assert message.errors.added?(:project, :blank)
   end
 end

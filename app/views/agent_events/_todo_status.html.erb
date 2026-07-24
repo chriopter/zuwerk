@@ -1,4 +1,0 @@
-<% event = AgentEvent.latest_for_todo(todo) %>
-<div id="todo_<%= todo.id %>_agent_status" class="todo-agent-turn" aria-live="polite">
-  <%= render "agent_events/status", event: event if event && event.state != "completed" %>
-</div>

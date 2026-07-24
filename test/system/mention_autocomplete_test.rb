@@ -15,7 +15,7 @@ class MentionAutocompleteTest < ApplicationSystemTestCase
   end
 
   test "typing @ suggests agents and Enter inserts the handle" do
-    visit chat_project_path(@project)
+    visit project_chat_path(@project)
 
     find(".composer-input").send_keys("Hey @fab")
     assert_selector ".mention-menu .mention-option", text: /Fable Dev/
@@ -26,7 +26,7 @@ class MentionAutocompleteTest < ApplicationSystemTestCase
   end
 
   test "arrow keys pick a different match and Escape closes the menu" do
-    visit chat_project_path(@project)
+    visit project_chat_path(@project)
 
     find(".composer-input").send_keys("@")
     assert_selector ".mention-menu .mention-option", count: 2

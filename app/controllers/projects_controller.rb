@@ -8,21 +8,21 @@ class ProjectsController < ApplicationController
 
   def show
     @project = Project.find(params[:id])
-    @task_counts = @project.todos.group(:status).count
-    @recent_todos = @project.todos.where.not(status: :completed).order(updated_at: :desc, id: :desc).limit(4)
-    @recent_messages = @project.messages.includes(:author).order(created_at: :desc, id: :desc).limit(3)
+    @task_counts = @project.tasks.group(:status).count
+    @recent_tasks = @project.tasks.where.not(status: :completed).order(updated_at: :desc, id: :desc).limit(4)
+    @recent_chat_messages = @project.chat_messages.includes(:author).order(created_at: :desc, id: :desc).limit(3)
     @recent_board_posts = @project.board_posts.published.includes(:author, :rich_text_body).limit(2)
     @active_board_automations_count = @project.board_automations.where(active: true).count
     @recent_file_entries = @project.file_entries.includes(file_attachment: :blob).order(updated_at: :desc, id: :desc).limit(4)
     @file_entries_count = @project.file_entries.count
-    @inbox_mentions = @project.messages.includes(:author)
+    @inbox_mentions = @project.chat_messages.includes(:author)
       .where("body LIKE ?", "%@#{current_user.handle}%")
       .order(created_at: :desc, id: :desc).limit(3)
     project_events = AgentEvent
-      .where(subject_type: "Message", subject_id: @project.messages.select(:id))
-      .or(AgentEvent.where(subject_type: "TodoAssignment", subject_id: TodoAssignment.joins(:todo).where(todos: { project_id: @project.id }).select(:id)))
+      .where(subject_type: "ChatMessage", subject_id: @project.chat_messages.select(:id))
+      .or(AgentEvent.where(subject_type: "TaskAssignment", subject_id: TaskAssignment.joins(:task).where(tasks: { project_id: @project.id }).select(:id)))
       .order(created_at: :desc, id: :desc).includes(:recipient, :subject).limit(60).to_a
-    subscribed = User.agent.where(id: @project.agent_subscriptions.select(:agent_id))
+    subscribed = User.agent.where(id: @project.chat_subscriptions.select(:agent_id))
     @project_agents = (project_events.map(&:recipient) + subscribed).uniq
     @agent_recent_events = project_events.group_by(&:recipient_id).transform_values { |events| events.first(3) }
   end
@@ -30,7 +30,6 @@ class ProjectsController < ApplicationController
   def create
     project = Project.new(project_params)
     if project.save
-      project.room_setting
       redirect_to projects_path
     else
       load_directory
@@ -51,10 +50,10 @@ class ProjectsController < ApplicationController
 
   private
     def load_directory
-      @projects = Project.includes(:todos).order(:position, :name)
-      author_pairs = Message.distinct.pluck(:project_id, :author_id)
-      assignment_pairs = TodoAssignment.joins(:todo).distinct.pluck("todos.project_id", :agent_id)
-      subscription_pairs = AgentSubscription.pluck(:project_id, :agent_id)
+      @projects = Project.includes(:tasks).order(:position, :name)
+      author_pairs = ChatMessage.distinct.pluck(:project_id, :author_id)
+      assignment_pairs = TaskAssignment.joins(:task).distinct.pluck("tasks.project_id", :agent_id)
+      subscription_pairs = ChatSubscription.pluck(:project_id, :agent_id)
       pairs = (author_pairs + assignment_pairs + subscription_pairs).uniq
       people = User.where(id: pairs.map(&:last)).index_by(&:id)
       @project_participants = pairs.group_by(&:first).transform_values do |entries|

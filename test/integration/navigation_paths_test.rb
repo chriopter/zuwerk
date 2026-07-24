@@ -11,8 +11,8 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
     [
       root_path,
       project_path(@first_project),
-      chat_project_path(@first_project),
-      project_todos_path(@first_project),
+      project_chat_path(@first_project),
+      project_tasks_path(@first_project),
       project_file_entries_path(@first_project),
       agents_path
     ].each do |path|
@@ -33,15 +33,15 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
     delete session_path
     assert_redirected_to new_session_path
 
-    get project_todos_path(@first_project)
+    get project_tasks_path(@first_project)
     assert_redirected_to new_session_path
   end
 
   test "project directory opens a project overview and tools use breadcrumbs" do
     sign_in
-    @first_project.todos.create!(creator: @human, title: "Open task", status: :open)
-    @first_project.todos.create!(creator: @human, title: "Active task", status: :open)
-    @first_project.messages.create!(author: @human, body: "Latest project note")
+    @first_project.tasks.create!(creator: @human, title: "Open task", status: :open)
+    @first_project.tasks.create!(creator: @human, title: "Active task", status: :open)
+    @first_project.chat_messages.create!(author: @human, body: "Latest project note")
 
     get root_path
     assert_response :success
@@ -49,8 +49,8 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
     assert_select ".project-directory-card", count: 2
     assert_select ".project-directory-card[data-project-id='#{@first_project.id}']" do
       assert_select "a[href='#{project_path(@first_project)}']", text: /Alpha/
-      assert_select "a[href='#{project_todos_path(@first_project)}']", count: 0
-      assert_select "a[href='#{chat_project_path(@first_project)}']", count: 0
+      assert_select "a[href='#{project_tasks_path(@first_project)}']", count: 0
+      assert_select "a[href='#{project_chat_path(@first_project)}']", count: 0
     end
 
     get project_path(@first_project)
@@ -63,22 +63,22 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
     assert_select ".topbar-global-nav, .topbar-account", count: 0
     assert_select ".project-home h1", text: "Alpha"
     assert_select ".project-tool-card", count: 6
-    assert_select "a[href='#{project_todos_path(@first_project)}']", text: /Tasks/
-    assert_select "a[href='#{chat_project_path(@first_project)}']", text: /Chat/
+    assert_select "a[href='#{project_tasks_path(@first_project)}']", text: /Tasks/
+    assert_select "a[href='#{project_chat_path(@first_project)}']", text: /Chat/
     assert_select "a[href='#{project_board_posts_path(@first_project)}']", text: /Briefing/
     assert_select "a[href='#{project_file_entries_path(@first_project)}']", text: /Files/
     assert_select ".project-tool-card", text: /Latest project note/
 
-    get chat_project_path(@first_project)
+    get project_chat_path(@first_project)
     assert_response :success
     assert_select ".project-context-nav", count: 0
     assert_select ".workspace-breadcrumb" do
       assert_select "a[href='#{project_path(@first_project)}']", text: "Alpha"
       assert_select "span[aria-current='page']", text: "Chat"
     end
-    assert_select "form[action='#{project_messages_path(@first_project)}']"
+    assert_select "form[action='#{project_chat_messages_path(@first_project)}']"
 
-    get project_todos_path(@first_project)
+    get project_tasks_path(@first_project)
     assert_response :success
     assert_select ".project-context-nav", count: 0
     assert_select ".workspace-breadcrumb" do
@@ -87,18 +87,18 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "empty chat todos and agents pages provide useful next actions" do
+  test "empty chat tasks and agents pages provide useful next actions" do
     sign_in
 
-    get chat_project_path(@first_project)
+    get project_chat_path(@first_project)
     assert_select ".empty-conversation", text: /Start the shared chat/
     assert_select "a[href='#{new_agent_invitation_path}']"
 
-    get project_todos_path(@first_project)
+    get project_tasks_path(@first_project)
     assert_select "h1", text: "Tasks"
-    assert_select ".todo-list-card", minimum: 1
-    assert_select ".list-create form[action='#{project_todo_lists_path(@first_project)}']"
-    assert_select ".kanban-create form[action='#{project_todos_path(@first_project)}']"
+    assert_select ".task-list-card", minimum: 1
+    assert_select ".list-create form[action='#{project_task_lists_path(@first_project)}']"
+    assert_select ".kanban-create form[action='#{project_tasks_path(@first_project)}']"
 
     get agents_path
     assert_select ".agents-empty", text: /No agents yet/
@@ -108,13 +108,13 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
 
   test "nested records cannot be reached through another project" do
     sign_in
-    todo = @first_project.todos.create!(creator: @human, title: "Private to Alpha")
-    message = @first_project.messages.create!(author: @human, body: "Alpha message")
+    task = @first_project.tasks.create!(creator: @human, title: "Private to Alpha")
+    message = @first_project.chat_messages.create!(author: @human, body: "Alpha message")
 
-    get project_todo_path(@second_project, todo)
+    get project_task_path(@second_project, task)
     assert_response :not_found
 
-    post project_message_reactions_path(@second_project, message), params: { emoji: "👍" }
+    post project_chat_message_reactions_path(@second_project, message), params: { emoji: "👍" }
     assert_response :not_found
     assert_empty message.reactions.reload
   end
@@ -122,14 +122,14 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
   test "missing workspace paths return not found without creating fallback records" do
     sign_in
 
-    assert_no_difference [ "Project.count", "Todo.count" ] do
+    assert_no_difference [ "Project.count", "Task.count" ] do
       get project_path(-1)
       assert_response :not_found
 
-      get chat_project_path(-1)
+      get project_chat_path(-1)
       assert_response :not_found
 
-      get project_todo_path(@first_project, -1)
+      get project_task_path(@first_project, -1)
       assert_response :not_found
 
       get "/this-route-does-not-exist"

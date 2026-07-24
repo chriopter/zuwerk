@@ -11,8 +11,8 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
     @agent.update_columns(connector_connection_id: "connection", connector_heartbeat_at: Time.current, connector_model: "Fable")
     offline = User.create!(name: "Builder", kind: :agent)
     project = Project.create!(name: "Prompt project")
-    message = project.messages.create!(author: @human, body: "Research this")
-    event = AgentEvent.create!(recipient: @agent, subject: message, event_type: "mentioned")
+    message = project.chat_messages.create!(author: @human, body: "Research this")
+    event = AgentEvent.create!(recipient: @agent, subject: message, event_type: "chat_message_mentioned")
     event.update!(prompt_snapshot: "You are Hermes.\nInvestigate the request.", prompted_at: Time.current)
 
     get agents_path
@@ -38,17 +38,17 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
 
   test "global navigation does not present sidebar-only work indicators" do
     project = Project.create!(name: "Sidebar work")
-    todo = project.todos.create!(creator: @human, title: "A deliberately long todo title that must remain stable in the sidebar")
-    event = todo.assignments.create!(agent: @agent, assigner: @human).agent_events.sole
+    task = project.tasks.create!(creator: @human, title: "A deliberately long task title that must remain stable in the sidebar")
+    event = task.assignments.create!(agent: @agent, assigned_by: @human).agent_events.sole
     event.update!(accepted_at: Time.current)
 
-    get project_todo_path(project, todo)
+    get project_task_path(project, task)
 
     assert_select ".workspace-topbar"
     assert_select ".agent-inline-work", count: 0
 
     event.update!(last_error: "Connector delivery failed permanently")
-    get project_todo_path(project, todo)
+    get project_task_path(project, task)
 
     assert_select ".agent-inline-work", count: 0
   end

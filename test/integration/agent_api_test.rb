@@ -20,14 +20,14 @@ class AgentApiTest < ActionDispatch::IntegrationTest
     assert_response :gone
 
     project = Project.default
-    get api_project_messages_path(project), as: :json
+    get api_project_chat_messages_path(project), as: :json
     assert_response :unauthorized
     headers = { "Authorization" => "Bearer #{api_token}" }
-    assert_difference "Message.count", 1 do
-      post api_project_messages_path(project), params: { body: "Agent update" }, headers: headers, as: :json
+    assert_difference "ChatMessage.count", 1 do
+      post api_project_chat_messages_path(project), params: { body: "Agent update" }, headers: headers, as: :json
     end
     assert_response :created
-    get api_project_messages_path(project), headers: headers, as: :json
+    get api_project_chat_messages_path(project), headers: headers, as: :json
     assert_response :success
     message = response.parsed_body.last
     assert_equal "Agent update", message.fetch("body")

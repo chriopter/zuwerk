@@ -10,8 +10,8 @@ class AgentEvent < ApplicationRecord
   }.freeze
   belongs_to :recipient, class_name: "User"
   belongs_to :subject, polymorphic: true
-  has_one :publication_message, class_name: "Message", dependent: :nullify
-  has_one :publication_comment, class_name: "TodoComment", dependent: :nullify
+  has_one :publication_chat_message, class_name: "ChatMessage", dependent: :nullify
+  has_one :publication_task_comment, class_name: "TaskComment", dependent: :nullify
   has_one :publication_board_post, class_name: "BoardPost", dependent: :nullify
   has_many :agent_approvals, dependent: :destroy
 
@@ -23,7 +23,7 @@ class AgentEvent < ApplicationRecord
   attr_readonly :public_id
 
   validates :public_id, presence: true, uniqueness: true
-  validates :event_type, inclusion: { in: %w[mentioned comment_mentioned todo_assigned board_scheduled] }
+  validates :event_type, inclusion: { in: %w[chat_message_mentioned task_comment_mentioned task_assigned board_post_scheduled] }
   validates :state, inclusion: { in: STATES }
   validates :recipient_id, uniqueness: { scope: [ :event_type, :subject_type, :subject_id ] }
 
@@ -119,21 +119,21 @@ class AgentEvent < ApplicationRecord
     accepted_at? && !delivered_at? && last_error.present?
   end
 
-  def todo
-    subject.todo if event_type.in?(%w[todo_assigned comment_mentioned])
+  def task
+    subject.task if event_type.in?(%w[task_assigned task_comment_mentioned])
   end
 
   def project
-    todo&.project || subject.project
+    task&.project || subject.project
   end
 
-  def self.latest_for_project(project)
-    where(subject_type: "Message", subject_id: project.messages.select(:id)).order(created_at: :desc, id: :desc).first
+  def self.latest_for_chat(project)
+    where(subject_type: "ChatMessage", subject_id: project.chat_messages.select(:id)).order(created_at: :desc, id: :desc).first
   end
 
-  def self.latest_for_todo(todo)
-    assignment_events = where(subject_type: "TodoAssignment", subject_id: todo.assignments.select(:id))
-    comment_events = where(subject_type: "TodoComment", subject_id: todo.comments.select(:id))
+  def self.latest_for_task(task)
+    assignment_events = where(subject_type: "TaskAssignment", subject_id: task.assignments.select(:id))
+    comment_events = where(subject_type: "TaskComment", subject_id: task.comments.select(:id))
     assignment_events.or(comment_events).order(created_at: :desc, id: :desc).first
   end
 
@@ -160,23 +160,23 @@ class AgentEvent < ApplicationRecord
 
   private
     def broadcast_work_status
-      broadcast_replace_to project.agent_turn_stream, target: "project_agent_turn_status", partial: "agent_events/project_status", locals: { project: project }
-      return unless todo
+      broadcast_replace_to project.agent_turn_stream, target: "chat_agent_turn_status", partial: "agent_events/chat_status", locals: { project: project }
+      return unless task
 
-      broadcast_replace_to "todo_#{todo.id}_status", target: "todo_#{todo.id}_agent_status", partial: "agent_events/todo_status", locals: { todo: todo }
-      broadcast_replace_to project.agent_turn_stream, target: "todo_#{todo.id}_kanban_agent_status", partial: "agent_events/kanban_status", locals: { todo: todo }
+      broadcast_replace_to "task_#{task.id}_status", target: "task_#{task.id}_agent_status", partial: "agent_events/task_status", locals: { task: task }
+      broadcast_replace_to project.agent_turn_stream, target: "task_#{task.id}_kanban_agent_status", partial: "agent_events/kanban_status", locals: { task: task }
     end
 
     def acknowledgement_target
-      return todo if event_type == "todo_assigned"
-      subject if event_type.in?(%w[mentioned comment_mentioned])
+      return task if event_type == "task_assigned"
+      subject if event_type.in?(%w[chat_message_mentioned task_comment_mentioned])
     end
 
     def event_context
       context = { project: { id: project.id, name: project.name } }
-      if event_type.in?(%w[todo_assigned comment_mentioned])
-        context.merge(todo: { id: todo.id, title: todo.title }, origin: "todo")
-      elsif event_type == "board_scheduled"
+      if event_type.in?(%w[task_assigned task_comment_mentioned])
+        context.merge(task: { id: task.id, title: task.title }, origin: "task")
+      elsif event_type == "board_post_scheduled"
         automation = subject.board_automation
         context.merge(board_automation: { id: automation.id, title: automation.title }, board_post: { id: subject.id, scheduled_for: subject.scheduled_for.iso8601 }, origin: "board")
       else

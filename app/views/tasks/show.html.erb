@@ -1,0 +1,78 @@
+<% content_for :title, "#{@task.title} · Tasks · Zuwerk" %>
+<%= turbo_stream_from "task_#{@task.id}_status" %>
+<%= turbo_stream_from @project.agent_turn_stream %>
+<%= turbo_stream_from "agent_presence" %>
+<section class="task-detail-page" data-controller="working-ring">
+  <div hidden><%= render "chat_messages/agent_presence", agents: @agents %></div>
+  <div class="task-detail-shell">
+    <header class="task-detail-header">
+      <div class="task-detail-heading">
+        <div class="task-top-line">
+        <nav class="task-detail-eyebrow workspace-breadcrumb" aria-label="Breadcrumb"><%= link_to @project.name, project_path(@project) %><span aria-hidden="true">/</span><%= link_to "Tasks", project_tasks_path(@project) %><span aria-hidden="true">/</span><span aria-current="page">#<%= @task.id %></span><span class="task-created-inline">Erstellt von <%= @task.creator.name %> · <%= @task.created_at.strftime("%d.%m.%Y") %></span></nav>
+        <div class="avatar-stack" aria-label="Zugewiesene Agenten">
+          <% assignments_by_agent = @task.assignments.includes(:agent).index_by(&:agent_id) %>
+          <% @agents.each do |agent| %>
+            <% assignment = assignments_by_agent[agent.id] %>
+            <% if assignment %>
+              <%= button_to project_task_assignment_path(@project, @task, assignment), method: :delete, class: "avatar-stack-form", form_class: "avatar-stack-form" do %>
+                <span class="avatar-stack-item is-agent <%= 'is-working' if agent.working? %>" data-agent-id="<%= agent.id %>" title="<%= agent.name %> — zugewiesen, Klick entfernt" aria-label="<%= agent.name %> entfernen">
+                  <%= agent.name.first.upcase %>
+                  <i class="avatar-stack-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg></i>
+                  <% if agent.external_connector_present? %><i class="avatar-stack-dot" aria-hidden="true"></i><% end %>
+                </span>
+              <% end %>
+            <% else %>
+              <%= button_to project_task_assignments_path(@project, @task), params: { agent_id: agent.id }, class: "avatar-stack-form", form_class: "avatar-stack-form" do %>
+                <span class="avatar-stack-item is-agent is-unassigned <%= 'is-working' if agent.working? %>" data-agent-id="<%= agent.id %>" title="<%= agent.name %> zuweisen" aria-label="<%= agent.name %> zuweisen"><%= agent.name.first.upcase %><% if agent.external_connector_present? %><i class="avatar-stack-dot" aria-hidden="true"></i><% end %></span>
+              <% end %>
+            <% end %>
+          <% end %>
+        </div>
+        </div>
+        <div class="task-title-line" data-controller="inline-edit">
+          <%= button_to project_task_path(@project, @task), method: :patch,
+                params: { task: { status: @task.completed? ? "open" : "completed" } },
+                class: "task-check task-check-lg task-check-#{@task.status.dasherize}",
+                aria: { label: @task.completed? ? "Wieder öffnen" : "Erledigen" } do %>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg>
+          <% end %>
+          <%= form_with model: [ @project, @task ], method: :patch, class: "min-w-0 flex-1" do %>
+            <%= hidden_field_tag :return_to, "detail" %>
+            <%= text_field_tag "task[title]", @task.title, required: true, maxlength: 200, class: "task-title-input",
+                  data: { inline_edit_target: "input", action: "blur->inline-edit#submitIfChanged keydown->inline-edit#keydown" },
+                  aria: { label: "Titel bearbeiten" } %>
+          <% end %>
+        </div>
+        <div class="task-meta-line">
+          <% if @task.parent %><span class="task-meta-context">Übergeordnet: <%= link_to @task.parent.title, project_task_path(@project, @task.parent) %></span><% end %>
+        </div>
+        <% # broadcast target id must stay: reactions/_reaction_frame %>
+        <%= render "agent_events/task_status", task: @task %>
+      </div>
+      <div class="task-description-edit" data-controller="inline-edit">
+        <div data-inline-edit-target="display" data-action="click->inline-edit#reveal" role="button" tabindex="0" title="Klicken zum Bearbeiten">
+          <% if @task.description.present? %>
+            <div class="task-description lexxy-content"><%= @task.description %></div>
+          <% else %>
+            <p class="task-description-placeholder">Beschreibung hinzufügen…</p>
+          <% end %>
+        </div>
+        <div hidden data-inline-edit-target="editor">
+          <%= form_with model: [ @project, @task ], method: :patch do |form| %>
+            <%= hidden_field_tag :return_to, "detail" %>
+            <%= form.rich_text_area :description do %><%= render "shared/mention_prompt", agents: @agents %><% end %>
+            <div class="mt-2 flex justify-end"><%= form.submit "Speichern", class: "pill-primary" %></div>
+          <% end %>
+        </div>
+      </div>
+      <div id="task_reactions">
+          <%= render "reactions/reactions", reactable: @task, current_user: current_user, path: project_task_reactions_path(@project, @task) %>
+      </div>
+    </header>
+    <section class="task-conversation" aria-labelledby="comments-heading">
+      <div class="task-section-heading"><h2 id="comments-heading">Aktivität</h2><span><%= @task.comments.count %></span></div>
+      <div class="task-comments"><%= render partial: "task_comments/comment", collection: @task.comments.includes(:author, :rich_text_body, reactions: :author).order(:created_at) %></div>
+      <%= form_with model: @comment, url: project_task_comments_path(@project, @task), class: "task-comment-form" do |form| %><% if @comment.errors.any? %><p class="mb-2 text-sm text-red-600"><%= @comment.errors.full_messages.to_sentence %></p><% end %><%= form.rich_text_area :body, placeholder: "Update, Entscheidung oder Kontext hinzufügen…" do %><%= render "shared/mention_prompt", agents: @agents %><% end %><div class="mt-3 flex justify-end"><%= form.submit "Kommentar hinzufügen", class: "pill-primary" %></div><% end %>
+    </section>
+  </div>
+</section>

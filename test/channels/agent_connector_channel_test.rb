@@ -58,7 +58,7 @@ class AgentConnectorChannelTest < ActionCable::Channel::TestCase
   test "registration does not steal an event already claimed by fallback" do
     human = User.create!(name: "Fallback Human", email: "fallback-human@example.com", password: "password1")
     project = Project.create!(name: "Fallback Claim Project")
-    event = AgentEvent.create!(recipient: @agent, subject: Message.create!(author: human, project: project, body: "Fallback"), event_type: "mentioned")
+    event = AgentEvent.create!(recipient: @agent, subject: ChatMessage.create!(author: human, project: project, body: "Fallback"), event_type: "chat_message_mentioned")
     assert_equal event, AgentEvent.claim_for_fallback!(event)
 
     @agent.register_connector!("late-connector")
@@ -70,8 +70,8 @@ class AgentConnectorChannelTest < ActionCable::Channel::TestCase
   test "cable-owned lifecycle claims FIFO work and dispatches it exactly once" do
     human = User.create!(name: "Cable Human", email: "cable-human@example.com", password: "password1")
     project = Project.create!(name: "Cable Project")
-    first = AgentEvent.create!(recipient: @agent, subject: Message.create!(author: human, project: project, body: "First"), event_type: "mentioned")
-    second = AgentEvent.create!(recipient: @agent, subject: Message.create!(author: human, project: project, body: "Second"), event_type: "mentioned")
+    first = AgentEvent.create!(recipient: @agent, subject: ChatMessage.create!(author: human, project: project, body: "First"), event_type: "chat_message_mentioned")
+    second = AgentEvent.create!(recipient: @agent, subject: ChatMessage.create!(author: human, project: project, body: "Second"), event_type: "chat_message_mentioned")
     publications = []
     dispatcher = ->(event) do
       Struct.new(:event, :publications) do
@@ -109,7 +109,7 @@ class AgentConnectorChannelTest < ActionCable::Channel::TestCase
   test "a replaced lifecycle is fenced immediately before dispatch" do
     human = User.create!(name: "Fence Human", email: "fence-human@example.com", password: "password1")
     project = Project.create!(name: "Fence Project")
-    event = AgentEvent.create!(recipient: @agent, subject: Message.create!(author: human, project: project, body: "Fence"), event_type: "mentioned")
+    event = AgentEvent.create!(recipient: @agent, subject: ChatMessage.create!(author: human, project: project, body: "Fence"), event_type: "chat_message_mentioned")
     delivered = []
     original_registry = AgentConnectors.registry
     registry = AgentConnectors::Registry.new
@@ -139,7 +139,7 @@ class AgentConnectorChannelTest < ActionCable::Channel::TestCase
   test "lifecycle releases its database checkout before connector IO" do
     human = User.create!(name: "Checkout Human", email: "checkout-human@example.com", password: "password1")
     project = Project.create!(name: "Checkout Project")
-    AgentEvent.create!(recipient: @agent, subject: Message.create!(author: human, project: project, body: "Checkout"), event_type: "mentioned")
+    AgentEvent.create!(recipient: @agent, subject: ChatMessage.create!(author: human, project: project, body: "Checkout"), event_type: "chat_message_mentioned")
     original_registry = AgentConnectors.registry
     registry = AgentConnectors::Registry.new
     AgentConnectors.registry = registry

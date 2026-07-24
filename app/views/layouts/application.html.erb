@@ -14,16 +14,16 @@
     <% end %>
     <%= javascript_importmap_tags %>
   </head>
-  <% todo_page = controller_name.in?([ "todos", "todo_comments", "todo_assignments" ]) %>
-  <% chat_page = controller_name == "messages" && action_name == "index" %>
+  <% task_page = controller_name.in?([ "tasks", "task_comments", "task_assignments" ]) %>
+  <% chat_page = controller_name.in?([ "chats", "chat_messages" ]) %>
   <% board_page = controller_name.in?([ "board_posts", "board_automations" ]) %>
   <% files_page = controller_name == "file_entries" %>
   <% active_section = if controller_name == "projects"
     :projects
   elsif controller_name == "database"
     :database
-  elsif todo_page
-    :todos
+  elsif task_page
+    :tasks
   elsif chat_page
     :chat
   elsif board_page

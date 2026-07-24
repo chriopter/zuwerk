@@ -1,5 +1,0 @@
-<% content_for :title, "#{@todo.title} bearbeiten · Zuwerk" %>
-<section class="todo-form-page">
-  <%= link_to "← Zurück zum Todo", project_todo_path(@project, @todo), class: "workspace-back-link" %>
-  <div class="todo-form-card"><p class="workspace-kicker">TODO #<%= @todo.id %></p><h1>Todo bearbeiten</h1><p>Titel, Status, Hierarchie und Kontext anpassen.</p><%= render "form", todo: @todo %></div>
-</section>

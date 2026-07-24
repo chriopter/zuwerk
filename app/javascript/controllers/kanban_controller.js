@@ -7,7 +7,7 @@ export default class extends Controller {
   dragStart(event) {
     this.dragged = event.currentTarget
     event.dataTransfer.effectAllowed = "move"
-    event.dataTransfer.setData("text/plain", this.dragged.dataset.todoId)
+    event.dataTransfer.setData("text/plain", this.dragged.dataset.taskId)
     requestAnimationFrame(() => this.dragged.classList.add("kanban-card-dragging"))
   }
 
@@ -28,10 +28,10 @@ export default class extends Controller {
     const column = event.currentTarget
     column.classList.remove("kanban-column-over")
     if (!this.dragged) return
-    const response = await fetch(`/projects/${this.projectIdValue}/todos/${this.dragged.dataset.todoId}`, {
+    const response = await fetch(`/projects/${this.projectIdValue}/tasks/${this.dragged.dataset.taskId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", "Accept": "text/html", "X-CSRF-Token": document.querySelector("meta[name='csrf-token']")?.content },
-      body: JSON.stringify({ todo: { status: column.dataset.status } })
+      body: JSON.stringify({ task: { status: column.dataset.status } })
     })
     if (response.ok) Turbo.visit(window.location.href, { action: "replace" })
     else window.location.reload()

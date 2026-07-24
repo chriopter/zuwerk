@@ -1,17 +1,17 @@
 class User < ApplicationRecord
   has_secure_password validations: false
   enum :kind, { human: 0, agent: 1 }
-  has_many :messages, foreign_key: :author_id, dependent: :restrict_with_error
+  has_many :chat_messages, foreign_key: :author_id, dependent: :restrict_with_error
   has_many :reactions, foreign_key: :author_id, dependent: :destroy
   has_many :agent_invitations, foreign_key: :inviter_id, dependent: :restrict_with_error
   has_many :agent_events, foreign_key: :recipient_id, dependent: :restrict_with_error
-  has_many :todo_assignments, foreign_key: :agent_id, dependent: :destroy
-  has_many :agent_subscriptions, foreign_key: :agent_id, dependent: :destroy
+  has_many :task_assignments, foreign_key: :agent_id, dependent: :destroy
+  has_many :chat_subscriptions, foreign_key: :agent_id, dependent: :destroy
   has_many :board_automations, foreign_key: :agent_id, dependent: :restrict_with_error
   has_many :created_board_automations, class_name: "BoardAutomation", foreign_key: :creator_id, dependent: :restrict_with_error
   has_many :created_file_entries, class_name: "ProjectFileEntry", foreign_key: :creator_id, dependent: :restrict_with_error
   has_many :authored_board_posts, class_name: "BoardPost", foreign_key: :author_id, dependent: :restrict_with_error
-  has_many :assigned_todo_assignments, class_name: "TodoAssignment", foreign_key: :assigner_id, dependent: :destroy
+  has_many :assigned_task_assignments, class_name: "TaskAssignment", foreign_key: :assigned_by_id, dependent: :destroy
 
   before_validation :normalize_email
   validates :name, presence: true, length: { maximum: 80 }
@@ -76,7 +76,7 @@ class User < ApplicationRecord
     end
 
     def broadcast_presence
-      broadcast_replace_to "agent_presence", target: "agent_presence", partial: "messages/agent_presence", locals: { agents: User.agent.order(:name) }
+      broadcast_replace_to "agent_presence", target: "agent_presence", partial: "chat_messages/agent_presence", locals: { agents: User.agent.order(:name) }
     end
 
     def normalize_email

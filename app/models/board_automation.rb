@@ -63,7 +63,7 @@ class BoardAutomation < ApplicationRecord
   def create_occurrence!(scheduled_for)
     transaction do
       post = board_posts.create!(author: agent, title: title, scheduled_for: scheduled_for, prompt_snapshot: prompt.to_plain_text)
-      event = post.agent_events.create!(recipient: agent, event_type: "board_scheduled")
+      event = post.agent_events.create!(recipient: agent, event_type: "board_post_scheduled")
       post.update!(agent_event: event)
       post
     end

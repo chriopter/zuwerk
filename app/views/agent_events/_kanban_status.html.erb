@@ -1,4 +1,4 @@
-<% event = AgentEvent.latest_for_todo(todo) %>
-<div id="todo_<%= todo.id %>_kanban_agent_status" class="kanban-agent-turn" aria-live="polite">
+<% event = AgentEvent.latest_for_task(task) %>
+<div id="task_<%= task.id %>_kanban_agent_status" class="kanban-agent-turn" aria-live="polite">
   <%= render "agent_events/status", event: event, compact: true if event && event.state != "completed" %>
 </div>
