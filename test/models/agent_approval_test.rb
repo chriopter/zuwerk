@@ -4,7 +4,7 @@ class AgentApprovalTest < ActiveSupport::TestCase
   setup do
     @human = User.create!(name: "Approval Human", email: "approval-human@example.com", password: "password1")
     @agent = User.create!(name: "Approval Agent", kind: :agent)
-    @event = AgentEvent.create!(recipient: @agent, subject: ChatMessage.create!(author: @human, project: Project.default, body: "Approval"), event_type: "chat_message_mentioned")
+    @event = AgentEvent.create!(recipient: @agent, subject: Project.default.chat.messages.create!(author: @human, body: "Approval"), event_type: "chat_message_mentioned")
     @event.transition_to!("running")
     @approval = AgentApproval.create!(agent_event: @event, request_id: { "nested" => [ 1, "x" ] }, options: [ { "optionId" => "allow", "kind" => "allow_once" }, { "optionId" => "reject", "kind" => "reject_once" } ], details: { "tool" => "shell" })
   end
@@ -17,7 +17,7 @@ class AgentApprovalTest < ActiveSupport::TestCase
 
   test "accepts false as an exact JSON request ID" do
     @approval.expire!
-    event = AgentEvent.create!(recipient: @agent, subject: ChatMessage.create!(author: @human, project: Project.default, body: "Another approval"), event_type: "chat_message_mentioned")
+    event = AgentEvent.create!(recipient: @agent, subject: Project.default.chat.messages.create!(author: @human, body: "Another approval"), event_type: "chat_message_mentioned")
     event.transition_to!("running")
 
     approval = AgentApproval.create!(agent_event: event, request_id: false, options: [ { "optionId" => nil } ])

@@ -11,27 +11,30 @@
   </nav>
 
   <header class="files-header">
-    <div><p class="files-kicker">Project files</p><h1>Files</h1><p>Organize shared project material in folders.</p></div>
+    <h1>Files</h1>
+    <div class="files-header-actions">
+      <details class="list-create" data-controller="reveal-focus" data-action="toggle->reveal-focus#focus">
+        <summary aria-label="Neuen Ordner anlegen"><span class="tb-pill"><span aria-hidden="true">＋</span><span>Ordner</span></span></summary>
+        <div>
+          <%= form_with url: project_file_entries_path(@project, folder_id: @folder&.id), scope: :project_file_entry do |form| %>
+            <%= form.hidden_field :kind, value: "folder" %>
+            <%= form.text_field :name, required: true, maxlength: 160, placeholder: "Ordnername…" %>
+            <button type="submit" aria-label="Anlegen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button>
+          <% end %>
+        </div>
+      </details>
+      <%= form_with url: project_file_entries_path(@project, folder_id: @folder&.id), multipart: true, data: { controller: "auto-submit" } do %>
+        <label class="pill-primary files-upload-pill">
+          <span aria-hidden="true">↑</span><span>Upload</span>
+          <%= file_field_tag "uploads[]", multiple: true, class: "sr-only", data: { action: "change->auto-submit#submit" } %>
+        </label>
+      <% end %>
+    </div>
   </header>
 
   <% if @errors.present? %><div class="board-form-errors" role="alert"><strong>Could not save this item.</strong><p><%= @errors.to_sentence %></p></div><% end %>
 
-  <div class="files-actions">
-    <%= form_with url: project_file_entries_path(@project, folder_id: @folder&.id), scope: :project_file_entry, class: "files-folder-form" do |form| %>
-      <%= form.hidden_field :kind, value: "folder" %>
-      <%= form.label :name, "New folder", class: "sr-only" %>
-      <%= form.text_field :name, required: true, maxlength: 160, placeholder: "Folder name", class: "input input-bordered bg-white" %>
-      <%= form.submit "Create folder", class: "btn btn-outline" %>
-    <% end %>
-
-    <%= form_with url: project_file_entries_path(@project, folder_id: @folder&.id), multipart: true, class: "files-upload-form" do |form| %>
-      <%= form.label :uploads, "Upload files", class: "sr-only" %>
-      <%= form.file_field :uploads, multiple: true, required: true, name: "uploads[]", class: "file-input file-input-bordered bg-white" %>
-      <%= form.submit "Upload", class: "btn bg-stone-900 text-white hover:bg-stone-700" %>
-    <% end %>
-  </div>
-
-  <section class="files-browser" aria-label="Folder contents">
+  <section class="files-browser glass-card" aria-label="Folder contents">
     <% if @folder %>
       <%= link_to project_file_entries_path(@project, folder_id: @folder.parent_id), class: "file-row file-row-parent" do %><span class="file-icon" aria-hidden="true">↰</span><span><strong>Parent folder</strong><small>Go up one level</small></span><% end %>
     <% end %>

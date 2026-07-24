@@ -6,20 +6,20 @@
   </header>
 
   <div class="project-tool-grid">
-    <%= link_to project_chat_path(@project), class: "project-tool-card glass-card glass-card-hover" do %>
+    <%= link_to inbox_path(project_id: @project.id), class: "project-tool-card glass-card glass-card-hover" do %>
       <header>
         <span><strong>Inbox</strong></span>
       </header>
       <div class="project-tool-preview">
-        <% if @inbox_mentions.any? %>
-          <% @inbox_mentions.each do |message| %>
+        <% if @inbox_items.any? %>
+          <% @inbox_items.each do |item| %>
             <span class="project-message-preview">
-              <i aria-hidden="true"><%= message.author.name.first.upcase %></i>
-              <span><strong><%= message.author.name %></strong><small><%= truncate(strip_tags(render_message_markdown(message.body)).squish, length: 90) %></small></span>
+              <i aria-hidden="true"><%= item.latest_activity.actor.name.first.upcase %></i>
+              <span><strong><%= inbox_item_title(item) %></strong><small><%= inbox_item_excerpt(item) %></small></span>
             </span>
           <% end %>
         <% else %>
-          <span class="project-tool-empty">Mentions and unread messages land here.</span>
+          <span class="project-tool-empty">Updates on work you joined will appear here.</span>
         <% end %>
       </div>
     <% end %>
@@ -57,17 +57,18 @@
       </div>
     <% end %>
 
-    <%= link_to project_board_posts_path(@project), class: "project-tool-card glass-card glass-card-hover" do %>
+    <%= link_to project_briefings_path(@project), class: "project-tool-card glass-card glass-card-hover" do %>
       <header>
         <span><strong>Briefing</strong></span>
       </header>
       <div class="project-tool-preview">
-        <% if @recent_board_posts.any? %>
-          <% @recent_board_posts.each do |post| %>
-            <span class="project-board-preview"><strong><%= post.title %></strong><small><%= truncate(post.body.to_plain_text.squish, length: 110) %></small><i><%= post.author.name %> · <%= time_ago_in_words(post.published_at) %> ago</i></span>
+        <% if @recent_briefings.any? %>
+          <% @recent_briefings.each do |briefing| %>
+            <% latest_comment = briefing.comments.select(&:published_at?).max_by(&:published_at) %>
+            <span class="project-briefing-preview"><strong><%= briefing.title %></strong><small><%= latest_comment ? truncate(latest_comment.body.to_plain_text.squish, length: 110) : "No comments yet." %></small><i><%= briefing.agent.name %> · <%= briefing.frequency_label %></i></span>
           <% end %>
         <% else %>
-          <span class="project-tool-empty">Recurring agent publications will appear here.</span>
+          <span class="project-tool-empty">Recurring agent updates will appear here.</span>
         <% end %>
       </div>
     <% end %>
@@ -99,7 +100,7 @@
                   <%= case event.event_type
                     when "chat_message_mentioned" then "Answered in chat"
                     when "task_assigned" then "Task: #{event.task&.title}".truncate(46)
-                    when "board_post_scheduled" then "Published a briefing"
+                    when "briefing_scheduled" then "Updated a briefing"
                   end %>
                   · <%= time_ago_in_words(event.created_at) %> ago
                 </span>

@@ -13,6 +13,7 @@ class TasksController < ApplicationController
 
   def show
     @comment = @task.comments.new
+    InboxItem.find_by(user: current_user, trackable: @task)&.mark_read!
   end
 
   def new

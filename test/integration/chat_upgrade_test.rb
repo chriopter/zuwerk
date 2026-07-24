@@ -29,8 +29,8 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
   test "each project has one isolated chat and bot subscriptions" do
     first = Project.default
     second = Project.create!(name: "Second project")
-    first.chat_messages.create!(author: @human, body: "First-only message")
-    second.chat_messages.create!(author: @human, body: "Second-only message")
+    first.chat.messages.create!(author: @human, body: "First-only message")
+    second.chat.messages.create!(author: @human, body: "Second-only message")
 
     get project_chat_path(first)
     assert_response :success
@@ -51,8 +51,8 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
 
     patch project_chat_subscription_path(second, @agent), params: { enabled: "1" }
     assert_redirected_to project_chat_path(second)
-    assert second.chat_subscriptions.exists?(agent: @agent)
-    assert_not first.chat_subscriptions.exists?(agent: @agent)
+    assert second.chat.subscriptions.exists?(agent: @agent)
+    assert_not first.chat.subscriptions.exists?(agent: @agent)
   end
 
   test "renders the focused shared chat shell with project navigation" do
@@ -98,7 +98,7 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
     patch project_chat_subscription_path(project, @agent), params: { enabled: "1" }
 
     assert_redirected_to new_session_path
-    assert_not project.chat_subscriptions.exists?(agent: @agent)
+    assert_not project.chat.subscriptions.exists?(agent: @agent)
   end
 
   test "authenticated humans toggle one bot without changing another" do
@@ -107,31 +107,31 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
 
     patch project_chat_subscription_path(project, @agent), params: { enabled: "1" }
     assert_redirected_to project_chat_path(project)
-    assert project.chat_subscriptions.exists?(agent: @agent)
-    assert_not project.chat_subscriptions.exists?(agent: other)
+    assert project.chat.subscriptions.exists?(agent: @agent)
+    assert_not project.chat.subscriptions.exists?(agent: other)
 
     patch project_chat_subscription_path(project, @agent), params: { enabled: "0" }
-    assert_not project.chat_subscriptions.exists?(agent: @agent)
+    assert_not project.chat.subscriptions.exists?(agent: @agent)
   end
 
   test "subscriptions and explicit mentions wake each selected bot once" do
     other = User.create!(name: "Scout", kind: :agent, api_token: "other-token")
     project = Project.default
-    project.chat_subscriptions.create!(agent: other)
+    project.chat.subscriptions.create!(agent: other)
 
     assert_difference "AgentEvent.count", 2 do
-      project.chat_messages.create!(author: @human, body: "Hello @hermes")
+      project.chat.messages.create!(author: @human, body: "Hello @hermes")
     end
     assert_equal [ @agent.id, other.id ].sort, AgentEvent.last(2).map(&:recipient_id).sort
 
     assert_no_difference "AgentEvent.count" do
-      project.chat_messages.create!(author: @agent, body: "Agent response @scout")
+      project.chat.messages.create!(author: @agent, body: "Agent response @scout")
     end
   end
 
   test "without a chat subscription only explicit mentions wake agents" do
     assert_difference "AgentEvent.count", 1 do
-      @human.chat_messages.create!(project: Project.default, body: "Please ask @hermes")
+      @human.chat_messages.create!(chat: Project.default.chat, body: "Please ask @hermes")
     end
     assert_equal @agent, AgentEvent.last.recipient
   end

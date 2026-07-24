@@ -461,7 +461,7 @@
   .is-chat-shell .workspace-topbar { @apply relative top-0; }
   .workspace-topbar-inner { @apply mx-auto grid w-full max-w-[1000px] grid-cols-[1fr_auto_1fr] items-center gap-2.5 px-0.5; }
   .topbar-zone { @apply flex min-w-0 items-center; }
-  .topbar-zone-start { @apply justify-start; }
+  .topbar-zone-start { @apply justify-start gap-2.5; }
   .topbar-zone-center { @apply justify-center; }
   .topbar-zone-end { @apply justify-end gap-2.5; }
   /* One shared glass pill for every floating topbar control. */
@@ -473,12 +473,14 @@
   .pill-primary { @apply inline-flex h-10 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full border border-white/15 bg-[#27332d]/90 px-4 text-sm font-semibold text-white shadow-[0_10px_26px_-10px_rgba(39,51,45,.6),inset_0_1px_0_rgba(255,255,255,.18)] backdrop-blur-md transition hover:-translate-y-px hover:bg-[#27332d]; }
   .glass-card { @apply rounded-2xl border border-white/60 bg-white/55 shadow-[0_1px_2px_rgba(28,25,23,.04),inset_0_1px_0_rgba(255,255,255,.55)] backdrop-blur-md; }
   .glass-card-hover { @apply transition hover:-translate-y-0.5 hover:border-white/80 hover:bg-white/70 hover:shadow-[0_12px_32px_-8px_rgba(28,25,23,.14),inset_0_1px_0_rgba(255,255,255,.6)]; }
+  .glass-input { @apply h-9 min-w-0 flex-1 rounded-full border border-stone-300 bg-white px-3.5 text-sm text-stone-900 outline-none placeholder:text-stone-400 focus:border-stone-500 focus:ring-4 focus:ring-stone-200/60; }
+  .glass-file-input { @apply min-w-0 flex-1 text-xs text-stone-500 file:mr-2 file:h-9 file:cursor-pointer file:rounded-full file:border file:border-white/70 file:bg-white/70 file:px-3.5 file:text-xs file:font-semibold file:text-stone-600 hover:file:bg-white; }
   .glass-pop { @apply rounded-2xl border border-white/60 bg-white/80 shadow-[0_20px_60px_rgba(28,25,23,.16),inset_0_1px_0_rgba(255,255,255,.6)] backdrop-blur-xl; }
   .topbar-agents-dot { @apply h-1.5 w-1.5 shrink-0 rounded-full bg-stone-300; }
   .topbar-agents-dot.is-online { @apply bg-emerald-500; }
   .tb-pill-hit { @apply block cursor-pointer list-none; }
   .tb-pill-hit::-webkit-details-marker { display: none; }
-  .topbar-home svg { @apply h-4 w-4 shrink-0; }
+  .topbar-home svg, .topbar-back svg { @apply h-4 w-4 shrink-0; }
   .workspace-topbar .project-switcher { @apply relative min-w-0; }
   .workspace-topbar .project-switcher > summary { @apply h-11 min-w-0 max-w-[min(60vw,22rem)] justify-start px-4; }
   .project-switcher-name { @apply min-w-0 truncate text-sm font-semibold text-stone-900; }
@@ -554,76 +556,65 @@
   .workspace-breadcrumb a { @apply min-w-0 truncate text-stone-600 transition hover:text-stone-950; }
   .workspace-breadcrumb span[aria-current="page"] { @apply truncate text-stone-950; }
 
-  .project-board-preview { @apply rounded-xl px-2 py-2.5; }
-  .project-board-preview strong, .project-board-preview small, .project-board-preview i { @apply block; }
-  .project-board-preview strong { @apply truncate text-xs font-semibold text-stone-800; }
-  .project-board-preview small { @apply mt-1 line-clamp-2 text-xs leading-5 text-stone-500; }
-  .project-board-preview i { @apply mt-1 text-[10px] not-italic text-stone-400; }
+  .inbox-page { @apply mx-auto w-full max-w-[880px] pb-16; }
+  .inbox-list { @apply mt-6 divide-y divide-stone-100 overflow-hidden; }
+  .inbox-row { @apply flex items-start gap-3 px-4 py-4 transition hover:bg-white/70; }
+  .inbox-row.is-unread { @apply bg-white/45; }
+  .inbox-unread-dot { @apply mt-3 h-2 w-2 shrink-0 rounded-full bg-transparent; }
+  .inbox-row.is-unread .inbox-unread-dot { @apply bg-[#e85f42]; }
+  .inbox-row-copy { @apply min-w-0 flex-1; }
+  .inbox-row-heading { @apply flex min-w-0 items-baseline justify-between gap-3; }
+  .inbox-row-heading strong { @apply truncate text-sm font-semibold text-stone-900; }
+  .inbox-row-heading small { @apply shrink-0 text-[10px] font-medium text-stone-400; }
+  .inbox-row-excerpt { @apply mt-1 line-clamp-2 text-sm leading-5 text-stone-600; }
+  .inbox-row-meta { @apply mt-2 block text-[11px] text-stone-400; }
+  .inbox-empty { @apply mt-6 px-6 py-12 text-center; }
+  .inbox-empty strong { @apply text-base font-semibold text-stone-800; }
+  .inbox-empty p { @apply mt-2 text-sm text-stone-500; }
 
-  .board-page, .board-form-page, .board-automation-page, .board-post-page { @apply mx-auto w-full max-w-5xl pb-20 pt-4; }
-  .board-page-header, .board-automation-header { @apply mt-5 flex items-start justify-between gap-6 border-b border-stone-200 pb-7; }
-  .board-page-header h1, .board-form-page h1, .board-automation-header h1, .board-post-header h1 { @apply mt-2 font-serif text-4xl font-normal tracking-tight text-stone-950; }
-  .board-page-header p, .board-form-page > header p, .board-automation-header p { @apply mt-2 text-sm text-stone-500; }
-  .board-automations, .board-publications, .board-run-history { @apply mt-10; }
-  .board-section-heading { @apply mb-4 flex items-center gap-2 border-b border-stone-200 pb-3; }
-  .board-section-heading h2 { @apply text-sm font-semibold uppercase tracking-[.08em] text-stone-600; }
-  .board-section-heading > span { @apply rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-stone-500; }
-  .board-automation-list { @apply divide-y divide-stone-100 rounded-2xl border border-stone-200 bg-white; }
-  .board-automation-row { @apply flex items-center gap-3 px-4 py-3.5 transition hover:bg-stone-50; }
-  .board-automation-copy { @apply min-w-0 flex-1; }
-  .board-automation-copy strong, .board-automation-copy small { @apply block truncate; }
-  .board-automation-copy strong { @apply text-sm font-semibold text-stone-900; }
-  .board-automation-copy small { @apply mt-1 text-xs text-stone-500; }
-  .board-automation-state, .board-run-state { @apply rounded-full bg-stone-100 px-2.5 py-1 text-[10px] font-semibold text-stone-500; }
-  .board-automation-state.is-active { @apply bg-emerald-50 text-emerald-700; }
+  .project-briefing-preview { @apply rounded-xl px-2 py-2.5; }
+  .project-briefing-preview strong, .project-briefing-preview small, .project-briefing-preview i { @apply block; }
+  .project-briefing-preview strong { @apply truncate text-xs font-semibold text-stone-800; }
+  .project-briefing-preview small { @apply mt-1 line-clamp-2 text-xs leading-5 text-stone-500; }
+  .project-briefing-preview i { @apply mt-1 text-[10px] not-italic text-stone-400; }
+
+  .briefings-page, .briefing-detail-page, .briefing-form-page { @apply mx-auto w-full max-w-[880px] pb-16; }
+  .briefing-list { @apply mt-6 divide-y divide-stone-100 overflow-hidden; }
+  .briefing-row { @apply flex items-start gap-3 px-4 py-4 transition hover:bg-white/70; }
+  .briefing-row-copy { @apply min-w-0 flex-1; }
+  .briefing-row-title, .briefing-row-excerpt, .briefing-row-meta { @apply block; }
+  .briefing-row-title { @apply truncate text-sm font-semibold text-stone-900; }
+  .briefing-row-excerpt { @apply mt-1 line-clamp-2 text-sm leading-5 text-stone-600; }
+  .briefing-row-meta { @apply mt-2 text-[11px] text-stone-400; }
+  .briefing-row-activity { @apply shrink-0 pt-0.5 text-[10px] font-medium text-stone-400; }
+  .briefing-empty { @apply mt-6 px-6 py-12 text-center; }
+  .briefing-empty strong { @apply text-base font-semibold text-stone-800; }
+  .briefing-empty p { @apply mb-5 mt-2 text-sm text-stone-500; }
   .project-avatar-small { @apply grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#edf0eb] text-[10px] font-bold text-[#27332d]; }
-  .board-post-list { @apply divide-y divide-stone-200; }
-  .board-post-entry { @apply py-8 first:pt-2; }
-  .board-post-meta { @apply flex items-center gap-2 text-xs text-stone-500; }
-  .board-post-entry h3 { @apply mt-4 text-2xl font-semibold tracking-[-.025em] text-stone-950; }
-  .board-post-entry h3 a { @apply hover:text-[#526257]; }
-  .board-post-excerpt { @apply mt-3 max-w-3xl text-sm leading-7 text-stone-600; }
-  .board-read-link { @apply mt-4 inline-block text-xs font-semibold text-stone-700 hover:text-stone-950; }
-  .board-empty-state { @apply rounded-2xl border border-dashed border-stone-300 px-6 py-12 text-center; }
-  .board-empty-state strong { @apply text-base font-semibold text-stone-800; }
-  .board-empty-state p, .board-empty-compact { @apply mt-2 text-sm text-stone-500; }
-  .board-form-page > header { @apply mb-7 mt-5; }
-  .board-automation-form { @apply space-y-6 rounded-2xl border border-stone-200 bg-white p-6; }
-  .board-automation-form label { @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-600; }
-  .board-form-grid { @apply grid gap-5 sm:grid-cols-2; }
-  .board-field-hint { @apply mb-3 text-xs text-stone-500; }
-  .board-field-error { @apply mt-1.5 text-xs font-medium text-red-700; }
-  .board-form-actions, .board-automation-actions { @apply flex flex-wrap justify-end gap-2; }
-  .board-form-errors { @apply rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700; }
-  .board-automation-kicker { @apply text-xs font-semibold uppercase tracking-[.08em] text-emerald-700; }
-  .board-automation-summary { @apply mt-7 grid gap-3 sm:grid-cols-3; }
-  .board-automation-summary > div { @apply rounded-xl border border-stone-200 bg-white p-4; }
-  .board-automation-summary span, .board-automation-summary strong { @apply block; }
-  .board-automation-summary span { @apply text-[10px] font-semibold uppercase tracking-wide text-stone-400; }
-  .board-automation-summary strong { @apply mt-1 text-sm text-stone-800; }
-  .board-prompt-card { @apply mt-7 rounded-2xl border border-stone-200 bg-white p-6; }
-  .board-prompt-card h2 { @apply mb-4 text-sm font-semibold uppercase tracking-[.08em] text-stone-500; }
-  .board-run-history { @apply mb-8; }
-  .board-run-row { @apply flex items-center justify-between gap-4 border-b border-stone-100 py-3; }
-  .board-run-row strong, .board-run-row small { @apply block; }
-  .board-run-row strong { @apply text-sm font-medium text-stone-800; }
-  .board-run-row small { @apply mt-1 text-xs text-stone-500; }
-  .board-run-row .board-run-error { @apply max-w-2xl text-red-700; }
-  .board-run-row a { @apply text-xs font-semibold text-stone-700 underline decoration-stone-300 underline-offset-4; }
-  .board-post-page { @apply max-w-3xl; }
-  .board-post-header { @apply mt-7 border-b border-stone-200 pb-7; }
-  .board-post-header .board-post-meta { @apply mt-4; }
-  .board-post-body { @apply py-9 text-stone-800; }
+  .briefing-detail-header { @apply border-b border-stone-200/70 pb-6; }
+  .briefing-top-line { @apply flex items-start justify-between gap-5; }
+  .briefing-actions { @apply flex shrink-0 flex-wrap justify-end gap-2; }
+  .briefing-detail-header h1, .briefing-form-heading h1, .briefing-form-card h1 { @apply mt-4 font-serif text-4xl font-normal tracking-tight text-stone-950; }
+  .briefing-schedule { @apply mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-stone-400; }
+  .briefing-schedule strong { @apply font-semibold text-stone-700; }
+  .briefing-prompt { @apply mt-6 max-w-4xl text-sm leading-6 text-stone-600; }
+  .briefing-run-error { @apply mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700; }
+  .briefing-conversation { @apply px-1 py-6; }
+  .briefing-form-heading { @apply mb-6; }
+  .briefing-form-heading p { @apply mt-2 text-sm text-stone-500; }
+  .briefing-form-card { @apply space-y-6 rounded-2xl border border-white/60 bg-white/55 p-6 shadow-[0_1px_2px_rgba(28,25,23,.04),inset_0_1px_0_rgba(255,255,255,.55)] backdrop-blur-md; }
+  .briefing-form-card label { @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-600; }
+  .briefing-form-grid { @apply grid gap-5 sm:grid-cols-2; }
+  .briefing-field-hint { @apply mb-3 text-xs text-stone-500; }
+  .briefing-form-actions { @apply flex flex-wrap justify-end gap-2; }
+  .briefing-form-errors, .board-form-errors { @apply rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700; }
 
-  .files-page { @apply mx-auto w-full max-w-6xl pb-20 pt-4; }
-  .files-header { @apply mt-5 border-b border-stone-200 pb-7; }
+  .files-page { @apply mx-auto w-full max-w-[880px] pb-16; }
+  .files-header { @apply mt-4 flex min-h-14 items-center justify-between gap-4 border-b border-stone-200/70 pb-6; }
+  .files-header-actions { @apply flex shrink-0 items-center gap-2.5; }
+  .files-upload-pill { @apply cursor-pointer; }
   .files-header h1 { @apply mt-2 font-serif text-4xl font-normal tracking-tight text-stone-950; }
-  .files-header p { @apply mt-2 text-sm text-stone-500; }
-  .files-kicker { @apply text-xs font-semibold uppercase tracking-[.08em] text-[#d95037]; }
-  .files-actions { @apply my-7 grid gap-3 lg:grid-cols-2; }
-  .files-folder-form, .files-upload-form { @apply flex min-w-0 gap-2 rounded-2xl border border-stone-200 bg-white p-3; }
-  .files-folder-form input, .files-upload-form input { @apply min-w-0 flex-1; }
-  .files-browser { @apply overflow-hidden rounded-2xl border border-stone-200 bg-white; }
+  .files-browser { @apply overflow-hidden; }
   .file-row-wrap { @apply grid grid-cols-[minmax(0,1fr)_auto] items-stretch border-b border-stone-100 last:border-b-0; }
   .file-row { @apply flex min-w-0 items-center gap-3 px-4 py-3.5 transition hover:bg-stone-50; }
   .file-row > span:nth-child(2) { @apply min-w-0 flex-1; }
@@ -653,15 +644,12 @@
     .project-directory-link { @apply min-h-28; }
       .project-tool-card { @apply min-h-52 p-4; }
     .project-tool-preview { @apply min-h-32; }
-    .board-page-header, .board-automation-header { @apply flex-col; }
-    .board-page-header h1, .board-form-page h1, .board-automation-header h1, .board-post-header h1 { @apply text-3xl; }
-    .board-page-header > a { @apply w-full; }
-    .board-automation-form, .board-prompt-card { @apply p-4; }
-    .board-automation-actions { @apply w-full justify-start; }
-    .board-run-row { @apply items-start; }
+    .briefing-top-line { @apply flex-col; }
+    .briefing-actions { @apply w-full justify-start; }
+    .briefing-detail-header h1, .briefing-form-heading h1, .briefing-form-card h1 { @apply text-3xl; }
+    .briefing-form-card { @apply p-4; }
     .files-header h1 { @apply text-3xl; }
-    .files-folder-form, .files-upload-form { @apply flex-col; }
-    .file-download { @apply hidden; }
+      .file-download { @apply hidden; }
   }
 }
 

@@ -19,7 +19,7 @@ class ProjectApiTest < ActionDispatch::IntegrationTest
   end
 
   test "search reports an unavailable local embedding model without leaking internals" do
-    @project.chat_messages.create!(author: @agent, body: "Searchable context")
+    @project.chat.messages.create!(author: @agent, body: "Searchable context")
     failing_embedder = Object.new
     failing_embedder.define_singleton_method(:call) { |_texts| raise ProjectSearch::Unavailable, "Semantic search is temporarily unavailable." }
     original_factory = ProjectSearch.embedder_factory
@@ -36,11 +36,11 @@ class ProjectApiTest < ActionDispatch::IntegrationTest
 
   test "agent semantically searches chat tasks comments and text attachments within a project" do
     human = User.create!(name: "Search Author", email: "search-api@example.com", password: "password1")
-    message = @project.chat_messages.create!(author: human, body: "Die Netzwerkverbindung wurde durch einen Neustart repariert.")
+    message = @project.chat.messages.create!(author: human, body: "Die Netzwerkverbindung wurde durch einen Neustart repariert.")
     task = @project.tasks.create!(creator: human, title: "Unrelated title", description: "Connection failure dauerhaft verhindern")
     task.comments.create!(author: human, body: "Socket heartbeat ergänzen")
     message.attachments.attach(io: StringIO.new("Proxy und Tunnel prüfen"), filename: "diagnose.txt", content_type: "text/plain")
-    @other_project.chat_messages.create!(author: human, body: "Verbindungsproblem darf nicht sichtbar sein")
+    @other_project.chat.messages.create!(author: human, body: "Verbindungsproblem darf nicht sichtbar sein")
     embedder = Object.new
     embedder.define_singleton_method(:call) do |texts|
       Array(texts).map { |text| text.match?(/Verbindungsproblem|Netzwerkverbindung|Connection failure/i) ? [ 1.0, 0.0 ] : [ 0.0, 1.0 ] }
@@ -79,7 +79,7 @@ class ProjectApiTest < ActionDispatch::IntegrationTest
 
   test "recipient explicitly acknowledges an active event" do
     human = User.create!(name: "Ack Human", email: "ack@example.com", password: "password1")
-    source = @project.chat_messages.create!(author: human, body: "@Helper please investigate")
+    source = @project.chat.messages.create!(author: human, body: "@Helper please investigate")
     event = source.agent_events.find_by!(recipient: @agent)
     event.transition_to!("running")
 
@@ -100,7 +100,7 @@ class ProjectApiTest < ActionDispatch::IntegrationTest
   test "agent cannot acknowledge another recipient's or queued event" do
     human = User.create!(name: "Other Ack Human", email: "other-ack@example.com", password: "password1")
     other_agent = User.create!(name: "Other Ack Agent", kind: :agent, api_token: "other-ack-token")
-    source = @project.chat_messages.create!(author: human, body: "@Helper acknowledge")
+    source = @project.chat.messages.create!(author: human, body: "@Helper acknowledge")
     event = source.agent_events.find_by!(recipient: @agent)
 
     post api_acknowledge_agent_event_path(event.public_id), headers: @headers, as: :json
@@ -137,7 +137,7 @@ class ProjectApiTest < ActionDispatch::IntegrationTest
   end
 
   test "agent sees attachment metadata and can download message attachments" do
-    message = @project.chat_messages.create!(author: @agent, body: "Review this")
+    message = @project.chat.messages.create!(author: @agent, body: "Review this")
     message.attachments.attach(io: StringIO.new("attachment contents"), filename: "brief.txt", content_type: "text/plain")
     attachment = message.attachments.first
 
@@ -156,8 +156,8 @@ class ProjectApiTest < ActionDispatch::IntegrationTest
   end
 
   test "agent lists and creates messages only through a project" do
-    @project.chat_messages.create!(author: @agent, body: "Launch message")
-    @other_project.chat_messages.create!(author: @agent, body: "Archived message")
+    @project.chat.messages.create!(author: @agent, body: "Launch message")
+    @other_project.chat.messages.create!(author: @agent, body: "Archived message")
 
     get api_project_chat_messages_path(@project), headers: @headers, as: :json
 
@@ -176,7 +176,7 @@ class ProjectApiTest < ActionDispatch::IntegrationTest
 
   test "event-correlated message creation is idempotent" do
     human = User.create!(name: "Ada", email: "ada-event@example.com", password: "password1")
-    source = ChatMessage.create!(author: human, project: @project, body: "@Helper answer once")
+    source = @project.chat.messages.create!(author: human, body: "@Helper answer once")
     event = source.agent_events.find_by!(recipient: @agent)
 
     assert_difference "ChatMessage.count", 1 do
@@ -196,7 +196,7 @@ class ProjectApiTest < ActionDispatch::IntegrationTest
   test "an event can only be published by its recipient in its project" do
     other_agent = User.create!(name: "Other", kind: :agent, api_token: "other-token")
     human = User.create!(name: "Grace", email: "grace-event@example.com", password: "password1")
-    source = ChatMessage.create!(author: human, project: @project, body: "@Helper answer")
+    source = @project.chat.messages.create!(author: human, body: "@Helper answer")
     event = source.agent_events.find_by!(recipient: @agent)
 
     post api_project_chat_messages_path(@other_project), params: { body: "Wrong project", event_id: event.public_id }, headers: @headers, as: :json
@@ -224,7 +224,7 @@ class ProjectApiTest < ActionDispatch::IntegrationTest
 
   test "invalid event-correlated message can be retried and missing events return JSON" do
     human = User.create!(name: "Mina", email: "mina-event@example.com", password: "password1")
-    source = ChatMessage.create!(author: human, project: @project, body: "@Helper respond")
+    source = @project.chat.messages.create!(author: human, body: "@Helper respond")
     event = source.agent_events.find_by!(recipient: @agent)
 
     post api_project_chat_messages_path(@project), params: { body: "", event_id: event.public_id }, headers: @headers, as: :json
@@ -389,7 +389,7 @@ class ProjectApiTest < ActionDispatch::IntegrationTest
     task = @project.tasks.create!(creator: human, title: "Expected task")
     other_task = @project.tasks.create!(creator: human, title: "Other task")
     assignment_event = other_task.assignments.create!(agent: @agent, assigned_by: human).agent_events.sole
-    mention_event = ChatMessage.create!(author: human, project: @project, body: "@Helper hello").agent_events.sole
+    mention_event = @project.chat.messages.create!(author: human, body: "@Helper hello").agent_events.sole
 
     [ assignment_event, mention_event ].each do |event|
       assert_no_difference "TaskComment.count" do

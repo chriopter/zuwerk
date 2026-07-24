@@ -1,0 +1,6 @@
+<% content_for :title, "New briefing · #{@project.name} · Zuwerk" %>
+<section class="briefing-form-page">
+  <%= link_to "← Briefings", project_briefings_path(@project), class: "workspace-back-link" %>
+  <div class="briefing-form-heading"><h1>New briefing</h1><p>Schedule a recurring prompt for one connected agent.</p></div>
+  <%= render "form", briefing: @briefing %>
+</section>

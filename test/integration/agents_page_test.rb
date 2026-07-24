@@ -11,7 +11,7 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
     @agent.update_columns(connector_connection_id: "connection", connector_heartbeat_at: Time.current, connector_model: "Fable")
     offline = User.create!(name: "Builder", kind: :agent)
     project = Project.create!(name: "Prompt project")
-    message = project.chat_messages.create!(author: @human, body: "Research this")
+    message = project.chat.messages.create!(author: @human, body: "Research this")
     event = AgentEvent.create!(recipient: @agent, subject: message, event_type: "chat_message_mentioned")
     event.update!(prompt_snapshot: "You are Hermes.\nInvestigate the request.", prompted_at: Time.current)
 

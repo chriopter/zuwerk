@@ -6,10 +6,10 @@ class ChatSubscriptionsController < ApplicationController
     agent = User.agent.find(params[:id])
 
     if ActiveModel::Type::Boolean.new.cast(params[:enabled])
-      project.chat_subscriptions.find_or_create_by!(agent: agent)
+      project.chat.subscriptions.find_or_create_by!(agent: agent)
       notice = "#{agent.name} will now answer on every message."
     else
-      project.chat_subscriptions.where(agent: agent).destroy_all
+      project.chat.subscriptions.where(agent: agent).destroy_all
       notice = "#{agent.name} will only answer when tagged."
     end
 

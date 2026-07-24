@@ -1,6 +1,6 @@
 class Reaction < ApplicationRecord
   EMOJIS = %w[👍 ❤️ 🎉 😂 😮 😢 🙏 🚀 👀 ✅].freeze
-  REACTABLE_TYPES = %w[ChatMessage Task TaskComment].freeze
+  REACTABLE_TYPES = %w[BriefingComment ChatMessage Task TaskComment].freeze
 
   belongs_to :author, class_name: "User"
   belongs_to :reactable, polymorphic: true
@@ -14,7 +14,7 @@ class Reaction < ApplicationRecord
     def refresh_reactable
       case reactable_type
       when "ChatMessage"
-        reactable.reload.broadcast_replace_to reactable.project.chat_message_stream,
+        reactable.reload.broadcast_replace_to reactable.chat.message_stream,
           target: ActionView::RecordIdentifier.dom_id(reactable), partial: "chat_messages/chat_message",
           locals: { chat_message: reactable, current_user: nil }
       when "Task"

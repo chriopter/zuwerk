@@ -65,7 +65,7 @@ class AgentConnectors::RemotePoolTest < ActiveSupport::TestCase
   test "disconnect cancels a pending approval and its event" do
     human = User.create!(name: "Pool Human", email: "pool-human@example.com", password: "password1")
     agent = User.create!(name: "Pool Agent", kind: :agent)
-    event = AgentEvent.create!(recipient: agent, subject: ChatMessage.create!(author: human, project: Project.default, body: "Approve"), event_type: "chat_message_mentioned")
+    event = AgentEvent.create!(recipient: agent, subject: Project.default.chat.messages.create!(author: human, body: "Approve"), event_type: "chat_message_mentioned")
     event.transition_to!("running")
     dead_client = Struct.new(:alive?).new(false)
 
@@ -84,7 +84,7 @@ class AgentConnectors::RemotePoolTest < ActiveSupport::TestCase
   test "does not return a resolved approval to a connector that lost event ownership" do
     human = User.create!(name: "Approval Human", email: "approval-human@example.com", password: "password1")
     agent = User.create!(name: "Approval Agent", kind: :agent)
-    event = AgentEvent.create!(recipient: agent, subject: ChatMessage.create!(author: human, project: Project.default, body: "Approve"), event_type: "chat_message_mentioned")
+    event = AgentEvent.create!(recipient: agent, subject: Project.default.chat.messages.create!(author: human, body: "Approve"), event_type: "chat_message_mentioned")
     event.update!(state: "running", connector_connection_id: "old-owner")
     client = Struct.new(:alive?).new(true)
     result = Queue.new
@@ -121,7 +121,7 @@ class AgentConnectors::RemotePoolTest < ActiveSupport::TestCase
   test "cancels a stale pending approval and makes its replacement-owned event dispatchable" do
     human = User.create!(name: "Pending Human", email: "pending-human@example.com", password: "password1")
     agent = User.create!(name: "Pending Agent", kind: :agent)
-    event = AgentEvent.create!(recipient: agent, subject: ChatMessage.create!(author: human, project: Project.default, body: "Pending"), event_type: "chat_message_mentioned")
+    event = AgentEvent.create!(recipient: agent, subject: Project.default.chat.messages.create!(author: human, body: "Pending"), event_type: "chat_message_mentioned")
     event.update!(state: "running", connector_connection_id: "old-owner")
     client = Struct.new(:alive) { alias_method :alive?, :alive }.new(true)
     result = Queue.new

@@ -41,7 +41,7 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
     sign_in
     @first_project.tasks.create!(creator: @human, title: "Open task", status: :open)
     @first_project.tasks.create!(creator: @human, title: "Active task", status: :open)
-    @first_project.chat_messages.create!(author: @human, body: "Latest project note")
+    @first_project.chat.messages.create!(author: @human, body: "Latest project note")
 
     get root_path
     assert_response :success
@@ -65,7 +65,7 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
     assert_select ".project-tool-card", count: 6
     assert_select "a[href='#{project_tasks_path(@first_project)}']", text: /Tasks/
     assert_select "a[href='#{project_chat_path(@first_project)}']", text: /Chat/
-    assert_select "a[href='#{project_board_posts_path(@first_project)}']", text: /Briefing/
+    assert_select "a[href='#{project_briefings_path(@first_project)}']", text: /Briefing/
     assert_select "a[href='#{project_file_entries_path(@first_project)}']", text: /Files/
     assert_select ".project-tool-card", text: /Latest project note/
 
@@ -109,7 +109,7 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
   test "nested records cannot be reached through another project" do
     sign_in
     task = @first_project.tasks.create!(creator: @human, title: "Private to Alpha")
-    message = @first_project.chat_messages.create!(author: @human, body: "Alpha message")
+    message = @first_project.chat.messages.create!(author: @human, body: "Alpha message")
 
     get project_task_path(@second_project, task)
     assert_response :not_found

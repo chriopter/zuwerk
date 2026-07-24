@@ -4,6 +4,11 @@
       <%= link_to root_path, class: "tb-pill tb-pill-round topbar-home #{'is-active' if active == :projects && project.blank?}", aria: { label: "Home" } do %>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/></svg>
       <% end %>
+      <% if project.present? && active != :projects %>
+        <%= link_to project_path(project), class: "tb-pill tb-pill-round topbar-back", aria: { label: "Zurück zu #{project.name}" }, title: project.name do %>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg>
+        <% end %>
+      <% end %>
     </div>
 
     <div class="topbar-zone topbar-zone-center">

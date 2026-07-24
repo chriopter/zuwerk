@@ -1,8 +1,8 @@
 class ChatSubscription < ApplicationRecord
-  belongs_to :project
+  belongs_to :chat
   belongs_to :agent, class_name: "User"
 
-  validates :agent_id, uniqueness: { scope: :project_id }
+  validates :agent_id, uniqueness: { scope: :chat_id }
   validate :agent_identity
 
   private

@@ -16,26 +16,27 @@ class ProjectTest < ActiveSupport::TestCase
     assert duplicate.errors.added?(:name, :taken, value: "client PORTAL")
   end
 
-  test "creating a project creates its default task list immediately" do
+  test "creating a project creates its chat and default task list immediately" do
     project = Project.create!(name: "Ready chat")
 
     assert_equal [ "Tasks" ], project.task_lists.pluck(:name)
+    assert_predicate project.chat, :persisted?
   end
 
   test "chat messages belong to a project" do
     project = Project.create!(name: "Launch")
     human = User.create!(name: "Ada", email: "ada@example.com", password: "password1")
-    message = ChatMessage.create!(author: human, project: project, body: "Hello launch")
+    message = project.chat.messages.create!(author: human, body: "Hello launch")
 
-    assert_equal [ message ], project.chat_messages.to_a
+    assert_equal [ message ], project.chat.messages.to_a
   end
 
-  test "chat messages require an explicit project" do
+  test "chat messages require an explicit chat" do
     human = User.create!(name: "Ada", email: "ada@example.com", password: "password1")
 
     message = ChatMessage.new(author: human, body: "Unscoped message")
 
     assert_not message.valid?
-    assert message.errors.added?(:project, :blank)
+    assert message.errors.added?(:chat, :blank)
   end
 end

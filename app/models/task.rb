@@ -1,4 +1,6 @@
 class Task < ApplicationRecord
+  include ActivityTrackable
+
   has_ancestry orphan_strategy: :restrict
 
   belongs_to :project
@@ -10,6 +12,8 @@ class Task < ApplicationRecord
   has_many :reactions, as: :reactable, dependent: :destroy
   has_rich_text :description
   before_validation :assign_default_task_list, on: :create
+  before_validation :set_initial_activity, on: :create
+  after_create_commit :register_creator_participation
 
   enum :status, { open: 0, completed: 1 }
 
@@ -50,6 +54,14 @@ class Task < ApplicationRecord
   end
 
   private
+
+  def set_initial_activity
+    self.last_activity_at ||= Time.current
+  end
+
+  def register_creator_participation
+    register_participant!(creator)
+  end
 
   def assign_default_task_list
     self.task_list ||= parent&.task_list || project&.default_task_list

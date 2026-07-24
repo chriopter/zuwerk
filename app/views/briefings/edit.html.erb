@@ -1,0 +1,6 @@
+<% content_for :title, "Edit #{@briefing.title} · Briefings · Zuwerk" %>
+<section class="briefing-form-page">
+  <%= link_to "← #{@briefing.title}", project_briefing_path(@project, @briefing), class: "workspace-back-link" %>
+  <div class="briefing-form-heading"><h1>Edit briefing</h1><p>Changes apply to future runs.</p></div>
+  <%= render "form", briefing: @briefing %>
+</section>

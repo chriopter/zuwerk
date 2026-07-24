@@ -10,8 +10,8 @@
 #     schedule: at 5am every day
 
 production:
-  dispatch_due_board_automations:
-    class: DispatchDueBoardAutomationsJob
+  dispatch_due_briefings:
+    class: DispatchDueBriefingsJob
     queue: default
     schedule: every minute
   clear_solid_queue_finished_jobs:

@@ -4,7 +4,7 @@ class ReactionsTest < ActionDispatch::IntegrationTest
   setup do
     @user = User.create!(name: "Human", email: "human-reactions@example.com", password: "password1")
     @project = Project.create!(name: "Reaction project")
-    @message = ChatMessage.create!(project: @project, author: @user, body: "Hi")
+    @message = @project.chat.messages.create!(author: @user, body: "Hi")
     @task = Task.create!(project: @project, creator: @user, title: "Discuss")
     @comment = TaskComment.create!(task: @task, author: @user, body: "Update")
     post session_path, params: { email: @user.email, password: "password1" }

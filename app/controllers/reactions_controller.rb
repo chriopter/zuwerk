@@ -17,7 +17,10 @@ class ReactionsController < ApplicationController
   def load_reactable
     @project = Project.find(params[:project_id])
     if params[:message_id]
-      @reactable = @project.chat_messages.find(params[:message_id])
+      @reactable = @project.chat.messages.find(params[:message_id])
+    elsif params[:briefing_id]
+      @briefing = @project.briefings.find(params[:briefing_id])
+      @reactable = @briefing.comments.published.find(params[:comment_id])
     else
       @task = @project.tasks.find(params[:task_id])
       @reactable = params[:comment_id] ? @task.comments.find(params[:comment_id]) : @task
@@ -26,6 +29,7 @@ class ReactionsController < ApplicationController
 
   def return_path
     return project_chat_path(@project) if @reactable.is_a?(ChatMessage)
+    return project_briefing_path(@project, @briefing, anchor: ActionView::RecordIdentifier.dom_id(@reactable)) if @reactable.is_a?(BriefingComment)
 
     return project_task_path(@project, @task) if @reactable.is_a?(Task)
 

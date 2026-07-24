@@ -1,12 +1,14 @@
 class ChatMessage < ApplicationRecord
   MAX_BODY_LENGTH = 4_000
 
-  belongs_to :project
+  belongs_to :chat
   belongs_to :author, class_name: "User"
   belongs_to :agent_event, optional: true
   has_many_attached :attachments
   has_many :reactions, as: :reactable, dependent: :destroy
   has_many :agent_events, as: :subject, dependent: :destroy
+  has_many :activities, as: :subject
+  delegate :project, to: :chat
 
   validates :body, presence: true
   validates :body, length: { maximum: MAX_BODY_LENGTH }
@@ -14,6 +16,7 @@ class ChatMessage < ApplicationRecord
   validate :agent_event_matches_message
   after_create :create_mention_events
   after_create_commit :broadcast_append
+  after_create_commit :record_activity
   after_update_commit :broadcast_replace
   after_destroy_commit :broadcast_remove
 
@@ -35,22 +38,22 @@ class ChatMessage < ApplicationRecord
     end
 
     def broadcast_append
-      broadcast_append_to project.chat_message_stream, target: "messages", partial: "chat_messages/chat_message", locals: { current_user: nil }
+      broadcast_append_to chat.message_stream, target: "messages", partial: "chat_messages/chat_message", locals: { current_user: nil }
     end
 
     def broadcast_replace
-      broadcast_replace_to project.chat_message_stream, partial: "chat_messages/chat_message", locals: { current_user: nil }
+      broadcast_replace_to chat.message_stream, partial: "chat_messages/chat_message", locals: { current_user: nil }
     end
 
     def broadcast_remove
-      broadcast_remove_to project.chat_message_stream
+      broadcast_remove_to chat.message_stream
     end
 
 
     def create_mention_events
       return unless author.human?
 
-      automatically_notified_ids = project.chat_subscriptions.pluck(:agent_id)
+      automatically_notified_ids = chat.subscriptions.pluck(:agent_id)
       User.agent.find_each do |agent|
         escaped_handle = Regexp.escape(agent.handle)
         chat_message_mentioned = body.match?(/(?<![[:alnum:]_-])@#{escaped_handle}(?![[:alnum:]_-])/i)
@@ -58,5 +61,9 @@ class ChatMessage < ApplicationRecord
 
         agent_events.create!(event_type: "chat_message_mentioned", recipient: agent)
       end
+    end
+
+    def record_activity
+      Activity.record!(trackable: chat, subject: self, actor: author, activity_type: "chat_message_created")
     end
 end

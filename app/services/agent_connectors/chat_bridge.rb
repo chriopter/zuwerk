@@ -85,17 +85,17 @@ module AgentConnectors
         @event.subject.task if task_event?
       end
 
-      def board_post
-        @event.subject if board_event?
+      def briefing_comment
+        @event.subject if briefing_event?
       end
 
-      def board_automation
-        board_post&.board_automation
+      def briefing
+        briefing_comment&.briefing
       end
 
       def origin
         return task if task_event?
-        return board_automation if board_event?
+        return briefing if briefing_event?
 
         project
       end
@@ -108,8 +108,8 @@ module AgentConnectors
         @event.event_type == "task_comment_mentioned"
       end
 
-      def board_event?
-        @event.event_type == "board_post_scheduled"
+      def briefing_event?
+        @event.event_type == "briefing_scheduled"
       end
 
       def publish_automatic_response(chunks)
@@ -117,15 +117,15 @@ module AgentConnectors
         return if body.blank?
         mutate_owned_event do
           @event.reload
-          next if @event.publication_chat_message || @event.publication_task_comment || @event.publication_board_post&.published_at?
+          next if @event.publication_chat_message || @event.publication_task_comment || @event.publication_briefing_comment&.published_at?
 
           if task_event?
             task.comments.create!(author: @event.recipient, body: body, agent_event: @event)
-          elsif board_event?
-            board_post.publish!(body, event: @event)
+          elsif briefing_event?
+            briefing_comment.publish!(body, event: @event)
           else
             body = body.truncate(ChatMessage::MAX_BODY_LENGTH, omission: "")
-            @event.recipient.chat_messages.create!(project: project, body: body, agent_event: @event)
+            @event.recipient.chat_messages.create!(chat: project.chat, body: body, agent_event: @event)
           end
         end
       rescue ActiveRecord::RecordNotUnique
@@ -133,7 +133,7 @@ module AgentConnectors
       end
 
       def stream_project_response(chunks, force: false)
-        return if task_event? || board_event?
+        return if task_event? || briefing_event?
         return if !force && !stream_flush_due?
 
         body = chunks.strip.truncate(ChatMessage::MAX_BODY_LENGTH, omission: "")
@@ -147,7 +147,7 @@ module AgentConnectors
 
             publication.update!(body:) unless publication.body == body
           else
-            @streamed_message = @event.recipient.chat_messages.create!(project: project, body:, agent_event: @event)
+            @streamed_message = @event.recipient.chat_messages.create!(chat: project.chat, body:, agent_event: @event)
           end
           @last_stream_flush_at = monotonic_time
         end
@@ -182,7 +182,7 @@ module AgentConnectors
       def correlated_publication?
         @event.reload
         return @event.publication_task_comment.present? if task_event?
-        return @event.publication_board_post&.published_at? if board_event?
+        return @event.publication_briefing_comment&.published_at? if briefing_event?
 
         @event.publication_chat_message.present?
       end
@@ -200,10 +200,10 @@ module AgentConnectors
           published = @event.publication_task_comment
           valid = published&.author == @event.recipient && published.task == task
           raise DeliveryError, "Recipient did not create an event-correlated task comment" unless valid
-        elsif board_event?
-          published = @event.publication_board_post
-          valid = published == board_post && published&.author == @event.recipient && published.published_at?
-          raise DeliveryError, "Recipient did not create an event-correlated board post" unless valid
+        elsif briefing_event?
+          published = @event.publication_briefing_comment
+          valid = published == briefing_comment && published&.author == @event.recipient && published.published_at?
+          raise DeliveryError, "Recipient did not create an event-correlated briefing comment" unless valid
         else
           published = @event.publication_chat_message
           valid = published&.author == @event.recipient && published.project == project
@@ -255,7 +255,7 @@ module AgentConnectors
 
       def prompt_text
         return task_prompt_text if task_event?
-        return board_prompt_text if board_event?
+        return briefing_prompt_text if briefing_event?
 
         <<~PROMPT
           You are #{@event.recipient.name}, an agent connected to Zuwerk through ACP.
@@ -286,39 +286,39 @@ module AgentConnectors
       def working_label
         label = if task_event?
           "Working on #{task.title}"
-        elsif board_event?
-          "Writing #{board_automation.title}"
+        elsif briefing_event?
+          "Updating #{briefing.title}"
         else
           "Replying in shared chat"
         end
         label.truncate(80)
       end
 
-      def board_prompt_text
+      def briefing_prompt_text
         <<~PROMPT
-          You are #{@event.recipient.name}, the selected agent for a recurring Zuwerk Board publication.
-          Complete the requested work now and return one polished, self-contained Board post.
-          ACP text output is automatically published as the single correlated Action Text Board post.
+          You are #{@event.recipient.name}, the selected agent for a recurring Zuwerk briefing.
+          Complete the requested work now and return one polished, self-contained briefing update.
+          ACP text output is automatically published as the single correlated Action Text briefing comment.
           Do not publish the same result through the Zuwerk CLI/API or chat.
 
           Event ID: #{@event.public_id}
           Project ID: #{project.id}
           Project name: #{project.name}
-          Board automation: #{board_automation.title}
-          Scheduled for: #{board_post.scheduled_for.iso8601}
+          Briefing: #{briefing.title}
+          Scheduled for: #{briefing_comment.scheduled_for.iso8601}
 
           Acknowledge this event before doing any other work:
           zuwerk events acknowledge #{@event.public_id}
 
           Recurring prompt:
-          #{board_post.prompt_snapshot}
+          #{briefing_comment.prompt_snapshot}
 
           Refresh project context when needed with:
           zuwerk chat list --project #{project.id}
           zuwerk tasks list --project #{project.id}
           zuwerk search --project #{project.id} --query "<what you need to know>"
 
-          Format the final publication with Markdown when useful. Return only the reader-facing post through ACP.
+          Format the final update with Markdown when useful. Return only the reader-facing briefing comment through ACP.
         PROMPT
       end
 

@@ -1,4 +1,4 @@
-<%= turbo_stream_from @project.chat_message_stream %>
+<%= turbo_stream_from @chat.message_stream %>
 <%= turbo_stream_from @project.agent_turn_stream %>
 <%= turbo_stream_from "agent_presence" %>
 

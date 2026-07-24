@@ -1,0 +1,37 @@
+<% content_for :title, "Inbox · Zuwerk" %>
+
+<section class="inbox-page">
+  <header class="workspace-page-header">
+    <div>
+      <% if @project %>
+        <nav class="workspace-breadcrumb" aria-label="Breadcrumb"><%= link_to @project.name, project_path(@project) %><span aria-hidden="true">/</span><span aria-current="page">Inbox</span></nav>
+      <% end %>
+      <h1>Inbox</h1>
+      <p>Updates on chats, tasks, and briefings you have worked on.</p>
+    </div>
+    <% if @items.any? { |item| !item.read? } %>
+      <%= button_to "Mark all read", mark_all_read_inbox_path(project_id: @project&.id), method: :patch, class: "workspace-secondary-action" %>
+    <% end %>
+  </header>
+
+  <% if @items.any? %>
+    <div class="inbox-list glass-card">
+      <% @items.each do |item| %>
+        <%= link_to inbox_item_destination(item), class: "inbox-row #{'is-unread' unless item.read?}" do %>
+          <span class="inbox-unread-dot" aria-hidden="true"></span>
+          <span class="project-avatar project-avatar-small" aria-hidden="true"><%= item.latest_activity.actor.name.first.upcase %></span>
+          <span class="inbox-row-copy">
+            <span class="inbox-row-heading"><strong><%= inbox_item_title(item) %></strong><small><%= inbox_item_kind(item) %> · <%= item.project.name %></small></span>
+            <span class="inbox-row-excerpt"><%= inbox_item_excerpt(item) %></span>
+            <span class="inbox-row-meta"><%= item.latest_activity.actor.name %> · <%= time_ago_in_words(item.latest_activity.created_at) %> ago</span>
+          </span>
+        <% end %>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="inbox-empty glass-card">
+      <strong>Nothing new</strong>
+      <p>When work you participated in receives an update, it will appear here.</p>
+    </div>
+  <% end %>
+</section>

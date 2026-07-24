@@ -9,7 +9,7 @@ class AgentWorkUiTest < ActionDispatch::IntegrationTest
   end
 
   test "chat derives its compact turn strip from the latest concrete event state" do
-    message = @project.chat_messages.create!(author: @human, body: "@ui-agent work")
+    message = @project.chat.messages.create!(author: @human, body: "@ui-agent work")
     event = message.agent_events.find_by!(recipient: @agent)
 
     get project_chat_path(@project)
@@ -27,7 +27,7 @@ class AgentWorkUiTest < ActionDispatch::IntegrationTest
   end
 
   test "approval card is safely rendered at its chat origin without a spinner" do
-    message = @project.chat_messages.create!(author: @human, body: "@ui-agent deploy")
+    message = @project.chat.messages.create!(author: @human, body: "@ui-agent deploy")
     event = message.agent_events.find_by!(recipient: @agent)
     event.transition_to!("running")
     approval = AgentApproval.create!(

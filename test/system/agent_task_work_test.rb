@@ -87,7 +87,7 @@ class AgentTaskWorkTest < ApplicationSystemTestCase
   end
 
   test "approval replaces the chat spinner and its exact indexed option resumes the turn" do
-    message = @project.chat_messages.create!(author: @human, body: "@codex-browser approve deployment")
+    message = @project.chat.messages.create!(author: @human, body: "@codex-browser approve deployment")
     event = message.agent_events.find_by!(recipient: @agent)
     event.transition_to!("running")
 

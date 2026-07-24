@@ -66,7 +66,7 @@ class IntensiveAgentRunSimulationTest < ActionDispatch::IntegrationTest
         if event.event_type == "task_assigned"
           origin.comments.create!(author: event.recipient, agent_event: event, body: "Completed deterministic run #{number}")
         else
-          origin.chat_messages.create!(author: event.recipient, agent_event: event, body: "Completed deterministic run #{number}")
+          origin.chat.messages.create!(author: event.recipient, agent_event: event, body: "Completed deterministic run #{number}")
         end
       end
 
@@ -129,7 +129,7 @@ class IntensiveAgentRunSimulationTest < ActionDispatch::IntegrationTest
           events << assignment.agent_events.sole
         end
         agent = agents[events.length % agents.length]
-        message = project.chat_messages.create!(author: human, body: "@#{agent.handle} run project chat #{project_index + 1}")
+        message = project.chat.messages.create!(author: human, body: "@#{agent.handle} run project chat #{project_index + 1}")
         events << message.agent_events.sole
       end
 

@@ -1,5 +1,8 @@
 Rails.application.routes.draw do
   root "projects#index"
+  resource :inbox, only: :show do
+    patch :mark_all_read
+  end
   resource :onboarding, only: %i[new create]
   resource :session, only: %i[new create destroy]
   resources :projects, only: [ :index, :show, :create ] do
@@ -10,10 +13,12 @@ Rails.application.routes.draw do
       end
       resources :subscriptions, controller: "chat_subscriptions", only: :update
     end
-    resources :board_posts, path: "board", only: %i[index show]
-    resources :board_automations, path: "board/automations", only: %i[new create show edit update] do
+    resources :briefings, except: :destroy do
       post :run_now, on: :member
       patch :toggle, on: :member
+      resources :comments, controller: "briefing_comments", only: %i[create edit update destroy] do
+        resources :reactions, only: :create
+      end
     end
     resources :file_entries, path: "files", only: %i[index create destroy] do
       get :download, on: :member

@@ -1,0 +1,38 @@
+<% content_for :title, "#{@briefing.title} · Briefings · Zuwerk" %>
+<%= turbo_stream_from @project.agent_turn_stream %>
+<%= turbo_stream_from "agent_presence" %>
+
+<section class="briefing-detail-page">
+  <header class="briefing-detail-header">
+    <div class="briefing-top-line">
+      <nav class="workspace-breadcrumb" aria-label="Breadcrumb"><%= link_to @project.name, project_path(@project) %><span aria-hidden="true">/</span><%= link_to "Briefings", project_briefings_path(@project) %><span aria-hidden="true">/</span><span aria-current="page"><%= @briefing.title %></span></nav>
+      <div class="briefing-actions">
+        <%= button_to @latest_run&.agent_event&.state == "failed" ? "Retry now" : "Run now", run_now_project_briefing_path(@project, @briefing), class: "workspace-primary-action" %>
+        <%= link_to "Edit", edit_project_briefing_path(@project, @briefing), class: "workspace-secondary-action" %>
+        <%= button_to @briefing.active? ? "Pause" : "Resume", toggle_project_briefing_path(@project, @briefing), method: :patch, class: "workspace-secondary-action" %>
+      </div>
+    </div>
+    <h1><%= @briefing.title %></h1>
+    <div class="briefing-schedule">
+      <span><strong><%= @briefing.agent.name %></strong> agent</span>
+      <span><strong><%= @briefing.frequency_label %></strong></span>
+      <span><strong><%= @briefing.active? ? @briefing.next_run_at.to_fs(:long) : "Paused" %></strong> next run</span>
+    </div>
+    <div class="briefing-prompt lexxy-content"><%= @briefing.prompt %></div>
+    <% if @latest_run&.agent_event&.last_error.present? %>
+      <p class="briefing-run-error">The latest run failed: <%= @latest_run.agent_event.last_error %></p>
+    <% end %>
+  </header>
+
+  <section class="briefing-conversation" aria-labelledby="briefing-comments-heading">
+    <div class="task-section-heading"><h2 id="briefing-comments-heading">Updates</h2><span><%= @comments.size %></span></div>
+    <div class="task-comments">
+      <%= render partial: "briefing_comments/comment", collection: @comments %>
+    </div>
+    <%= form_with model: @comment, url: project_briefing_comments_path(@project, @briefing), class: "task-comment-form" do |form| %>
+      <% if @comment.errors.any? %><p class="mb-2 text-sm text-red-600"><%= @comment.errors.full_messages.to_sentence %></p><% end %>
+      <%= form.rich_text_area :body, placeholder: "Add context, a question, or an update…" do %><%= render "shared/mention_prompt", agents: @agents %><% end %>
+      <div class="mt-3 flex justify-end"><%= form.submit "Add comment", class: "workspace-primary-action" %></div>
+    <% end %>
+  </section>
+</section>

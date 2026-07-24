@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_24_182000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_24_191000) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
@@ -47,6 +47,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_24_182000) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "activities", force: :cascade do |t|
+    t.string "activity_type", null: false
+    t.integer "actor_id", null: false
+    t.datetime "created_at", null: false
+    t.integer "project_id", null: false
+    t.integer "subject_id", null: false
+    t.string "subject_type", null: false
+    t.text "summary", null: false
+    t.integer "trackable_id", null: false
+    t.string "trackable_type", null: false
+    t.datetime "updated_at", null: false
+    t.index ["actor_id"], name: "index_activities_on_actor_id"
+    t.index ["project_id", "created_at"], name: "index_activities_on_project_id_and_created_at"
+    t.index ["project_id"], name: "index_activities_on_project_id"
+    t.index ["subject_type", "subject_id"], name: "index_activities_on_subject"
+    t.index ["trackable_type", "trackable_id"], name: "index_activities_on_trackable"
   end
 
   create_table "agent_approvals", force: :cascade do |t|
@@ -105,59 +123,100 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_24_182000) do
     t.index ["token_digest"], name: "index_agent_invitations_on_token_digest", unique: true
   end
 
-  create_table "board_automations", force: :cascade do |t|
+  create_table "briefing_comments", force: :cascade do |t|
+    t.integer "agent_event_id"
+    t.integer "author_id", null: false
+    t.integer "briefing_id", null: false
+    t.datetime "created_at", null: false
+    t.text "prompt_snapshot"
+    t.datetime "published_at"
+    t.datetime "scheduled_for"
+    t.string "title"
+    t.datetime "updated_at", null: false
+    t.index ["agent_event_id"], name: "index_briefing_comments_on_agent_event_id", unique: true
+    t.index ["author_id"], name: "index_briefing_comments_on_author_id"
+    t.index ["briefing_id", "scheduled_for"], name: "index_briefing_comments_on_briefing_id_and_scheduled_for", unique: true
+    t.index ["briefing_id"], name: "index_briefing_comments_on_briefing_id"
+    t.index ["published_at"], name: "index_briefing_comments_on_published_at"
+  end
+
+  create_table "briefings", force: :cascade do |t|
     t.boolean "active", default: true, null: false
     t.integer "agent_id", null: false
-    t.string "cadence", null: false
     t.datetime "created_at", null: false
     t.integer "creator_id", null: false
+    t.string "frequency", null: false
+    t.datetime "last_activity_at", null: false
     t.datetime "next_run_at", null: false
     t.integer "project_id", null: false
     t.string "title", null: false
     t.datetime "updated_at", null: false
-    t.index ["active", "next_run_at"], name: "index_board_automations_on_active_and_next_run_at"
-    t.index ["agent_id"], name: "index_board_automations_on_agent_id"
-    t.index ["creator_id"], name: "index_board_automations_on_creator_id"
-    t.index ["project_id"], name: "index_board_automations_on_project_id"
-  end
-
-  create_table "board_posts", force: :cascade do |t|
-    t.integer "agent_event_id"
-    t.integer "author_id", null: false
-    t.integer "board_automation_id", null: false
-    t.datetime "created_at", null: false
-    t.text "prompt_snapshot", null: false
-    t.datetime "published_at"
-    t.datetime "scheduled_for", null: false
-    t.string "title", null: false
-    t.datetime "updated_at", null: false
-    t.index ["agent_event_id"], name: "index_board_posts_on_agent_event_id", unique: true
-    t.index ["author_id"], name: "index_board_posts_on_author_id"
-    t.index ["board_automation_id", "scheduled_for"], name: "index_board_posts_on_board_automation_id_and_scheduled_for", unique: true
-    t.index ["board_automation_id"], name: "index_board_posts_on_board_automation_id"
-    t.index ["published_at"], name: "index_board_posts_on_published_at"
+    t.index ["active", "next_run_at"], name: "index_briefings_on_active_and_next_run_at"
+    t.index ["agent_id"], name: "index_briefings_on_agent_id"
+    t.index ["creator_id"], name: "index_briefings_on_creator_id"
+    t.index ["project_id", "last_activity_at"], name: "index_briefings_on_project_id_and_last_activity_at"
+    t.index ["project_id"], name: "index_briefings_on_project_id"
   end
 
   create_table "chat_messages", force: :cascade do |t|
     t.integer "agent_event_id"
     t.integer "author_id", null: false
     t.text "body", null: false
+    t.integer "chat_id", null: false
     t.datetime "created_at", null: false
-    t.integer "project_id", null: false
     t.datetime "updated_at", null: false
     t.index ["agent_event_id"], name: "index_chat_messages_on_agent_event_id", unique: true
     t.index ["author_id"], name: "index_chat_messages_on_author_id"
-    t.index ["project_id"], name: "index_chat_messages_on_project_id"
+    t.index ["chat_id"], name: "index_chat_messages_on_chat_id"
   end
 
   create_table "chat_subscriptions", force: :cascade do |t|
     t.integer "agent_id", null: false
+    t.integer "chat_id", null: false
     t.datetime "created_at", null: false
-    t.integer "project_id", null: false
     t.datetime "updated_at", null: false
     t.index ["agent_id"], name: "index_chat_subscriptions_on_agent_id"
-    t.index ["project_id", "agent_id"], name: "index_chat_subscriptions_on_project_id_and_agent_id", unique: true
-    t.index ["project_id"], name: "index_chat_subscriptions_on_project_id"
+    t.index ["chat_id", "agent_id"], name: "index_chat_subscriptions_on_chat_id_and_agent_id", unique: true
+    t.index ["chat_id"], name: "index_chat_subscriptions_on_chat_id"
+  end
+
+  create_table "chats", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "last_activity_at", null: false
+    t.integer "project_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["project_id"], name: "index_chats_on_project_id", unique: true
+  end
+
+  create_table "inbox_items", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "latest_activity_id", null: false
+    t.integer "project_id", null: false
+    t.datetime "read_at"
+    t.integer "trackable_id", null: false
+    t.string "trackable_type", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["latest_activity_id"], name: "index_inbox_items_on_latest_activity_id"
+    t.index ["project_id"], name: "index_inbox_items_on_project_id"
+    t.index ["trackable_type", "trackable_id"], name: "index_inbox_items_on_trackable"
+    t.index ["user_id", "read_at", "updated_at"], name: "index_inbox_items_on_user_id_and_read_at_and_updated_at"
+    t.index ["user_id", "trackable_type", "trackable_id"], name: "index_inbox_items_on_user_and_trackable", unique: true
+    t.index ["user_id"], name: "index_inbox_items_on_user_id"
+  end
+
+  create_table "participations", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "project_id", null: false
+    t.integer "trackable_id", null: false
+    t.string "trackable_type", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["project_id", "user_id"], name: "index_participations_on_project_id_and_user_id"
+    t.index ["project_id"], name: "index_participations_on_project_id"
+    t.index ["trackable_type", "trackable_id"], name: "index_participations_on_trackable"
+    t.index ["user_id", "trackable_type", "trackable_id"], name: "index_participations_on_user_and_trackable", unique: true
+    t.index ["user_id"], name: "index_participations_on_user_id"
   end
 
   create_table "project_file_entries", force: :cascade do |t|
@@ -250,6 +309,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_24_182000) do
     t.string "ancestry"
     t.datetime "created_at", null: false
     t.integer "creator_id", null: false
+    t.datetime "last_activity_at", null: false
     t.integer "position", default: 0, null: false
     t.integer "project_id", null: false
     t.integer "status", default: 0, null: false
@@ -259,6 +319,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_24_182000) do
     t.index ["ancestry"], name: "index_tasks_on_ancestry"
     t.index ["creator_id"], name: "index_tasks_on_creator_id"
     t.index ["project_id", "ancestry", "position"], name: "index_tasks_on_project_id_and_ancestry_and_position"
+    t.index ["project_id", "last_activity_at"], name: "index_tasks_on_project_id_and_last_activity_at"
     t.index ["project_id"], name: "index_tasks_on_project_id"
     t.index ["task_list_id", "ancestry", "position"], name: "index_tasks_on_task_list_id_and_ancestry_and_position"
     t.index ["task_list_id"], name: "index_tasks_on_task_list_id"
@@ -286,21 +347,29 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_24_182000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "activities", "projects"
+  add_foreign_key "activities", "users", column: "actor_id"
   add_foreign_key "agent_approvals", "agent_events"
   add_foreign_key "agent_approvals", "users", column: "resolved_by_id"
   add_foreign_key "agent_events", "users", column: "recipient_id"
   add_foreign_key "agent_invitations", "users", column: "inviter_id"
-  add_foreign_key "board_automations", "projects"
-  add_foreign_key "board_automations", "users", column: "agent_id"
-  add_foreign_key "board_automations", "users", column: "creator_id"
-  add_foreign_key "board_posts", "agent_events"
-  add_foreign_key "board_posts", "board_automations"
-  add_foreign_key "board_posts", "users", column: "author_id"
+  add_foreign_key "briefing_comments", "agent_events"
+  add_foreign_key "briefing_comments", "briefings"
+  add_foreign_key "briefing_comments", "users", column: "author_id"
+  add_foreign_key "briefings", "projects"
+  add_foreign_key "briefings", "users", column: "agent_id"
+  add_foreign_key "briefings", "users", column: "creator_id"
   add_foreign_key "chat_messages", "agent_events"
-  add_foreign_key "chat_messages", "projects"
+  add_foreign_key "chat_messages", "chats"
   add_foreign_key "chat_messages", "users", column: "author_id"
-  add_foreign_key "chat_subscriptions", "projects"
+  add_foreign_key "chat_subscriptions", "chats"
   add_foreign_key "chat_subscriptions", "users", column: "agent_id"
+  add_foreign_key "chats", "projects"
+  add_foreign_key "inbox_items", "activities", column: "latest_activity_id"
+  add_foreign_key "inbox_items", "projects"
+  add_foreign_key "inbox_items", "users"
+  add_foreign_key "participations", "projects"
+  add_foreign_key "participations", "users"
   add_foreign_key "project_file_entries", "project_file_entries", column: "parent_id"
   add_foreign_key "project_file_entries", "projects"
   add_foreign_key "project_file_entries", "users", column: "creator_id"

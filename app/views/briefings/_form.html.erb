@@ -1,0 +1,35 @@
+<%= form_with model: [ @project, briefing ], class: "briefing-form-card" do |form| %>
+  <% if briefing.errors.any? %>
+    <div class="briefing-form-errors" role="alert" tabindex="-1" autofocus>
+      <strong>Could not save this briefing.</strong>
+      <p><%= briefing.errors.full_messages.to_sentence %></p>
+    </div>
+  <% end %>
+
+  <div>
+    <%= form.label :title %>
+    <%= form.text_field :title, required: true, maxlength: 160, placeholder: "Weekly project status", class: "input input-bordered w-full bg-white" %>
+  </div>
+
+  <div class="briefing-form-grid">
+    <div>
+      <%= form.label :agent_id, "Agent" %>
+      <%= form.collection_select :agent_id, @agents, :id, :name, { prompt: "Select an agent" }, required: true, class: "select select-bordered w-full bg-white" %>
+    </div>
+    <div>
+      <%= form.label :frequency %>
+      <%= form.select :frequency, [["Every hour", "hourly"], ["Every day", "daily"], ["Every week", "weekly"], ["Every month", "monthly"]], {}, class: "select select-bordered w-full bg-white" %>
+    </div>
+  </div>
+
+  <div>
+    <%= form.label :prompt %>
+    <p class="briefing-field-hint">Tell the agent what to investigate and include in each update.</p>
+    <%= form.rich_text_area :prompt, required: true, placeholder: "Review the project and summarize…" %>
+  </div>
+
+  <div class="briefing-form-actions">
+    <%= link_to "Cancel", briefing.persisted? ? project_briefing_path(@project, briefing) : project_briefings_path(@project), class: "workspace-secondary-action" %>
+    <%= form.submit briefing.persisted? ? "Save briefing" : "Create briefing", class: "workspace-primary-action" %>
+  </div>
+<% end %>

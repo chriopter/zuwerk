@@ -3,12 +3,14 @@ class TaskComment < ApplicationRecord
   belongs_to :author, class_name: "User"
   belongs_to :agent_event, optional: true
   has_many :agent_events, as: :subject, dependent: :destroy
+  has_many :activities, as: :subject
   has_many :reactions, as: :reactable, dependent: :destroy
   has_rich_text :body
 
   validates :body, presence: true
   validate :agent_event_matches_comment
   after_create_commit :create_mention_events
+  after_create_commit :record_activity
 
   scope :chronologically, -> { order(:created_at, :id) }
 
@@ -38,5 +40,9 @@ class TaskComment < ApplicationRecord
 
       agent_events.create!(event_type: "task_comment_mentioned", recipient: agent)
     end
+  end
+
+  def record_activity
+    Activity.record!(trackable: task, subject: self, actor: author, activity_type: "task_comment_created")
   end
 end

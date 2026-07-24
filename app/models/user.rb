@@ -7,10 +7,13 @@ class User < ApplicationRecord
   has_many :agent_events, foreign_key: :recipient_id, dependent: :restrict_with_error
   has_many :task_assignments, foreign_key: :agent_id, dependent: :destroy
   has_many :chat_subscriptions, foreign_key: :agent_id, dependent: :destroy
-  has_many :board_automations, foreign_key: :agent_id, dependent: :restrict_with_error
-  has_many :created_board_automations, class_name: "BoardAutomation", foreign_key: :creator_id, dependent: :restrict_with_error
+  has_many :activities, foreign_key: :actor_id, dependent: :restrict_with_error
+  has_many :participations, dependent: :destroy
+  has_many :inbox_items, dependent: :destroy
+  has_many :briefings, foreign_key: :agent_id, dependent: :restrict_with_error
+  has_many :created_briefings, class_name: "Briefing", foreign_key: :creator_id, dependent: :restrict_with_error
   has_many :created_file_entries, class_name: "ProjectFileEntry", foreign_key: :creator_id, dependent: :restrict_with_error
-  has_many :authored_board_posts, class_name: "BoardPost", foreign_key: :author_id, dependent: :restrict_with_error
+  has_many :briefing_comments, foreign_key: :author_id, dependent: :restrict_with_error
   has_many :assigned_task_assignments, class_name: "TaskAssignment", foreign_key: :assigned_by_id, dependent: :destroy
 
   before_validation :normalize_email

@@ -1,6 +1,0 @@
-<% content_for :title, "New Board automation · #{@project.name} · Zuwerk" %>
-<section class="board-form-page">
-  <nav class="workspace-breadcrumb" aria-label="Breadcrumb"><%= link_to @project.name, project_path(@project) %><span aria-hidden="true">/</span><%= link_to "Board", project_board_posts_path(@project) %><span aria-hidden="true">/</span><span aria-current="page">New automation</span></nav>
-  <header><h1>New Board automation</h1><p>Run one prompt repeatedly and publish each agent result to the Board.</p></header>
-  <%= render "form", automation: @automation %>
-</section>

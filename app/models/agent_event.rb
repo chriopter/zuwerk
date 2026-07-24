@@ -12,7 +12,7 @@ class AgentEvent < ApplicationRecord
   belongs_to :subject, polymorphic: true
   has_one :publication_chat_message, class_name: "ChatMessage", dependent: :nullify
   has_one :publication_task_comment, class_name: "TaskComment", dependent: :nullify
-  has_one :publication_board_post, class_name: "BoardPost", dependent: :nullify
+  has_one :publication_briefing_comment, class_name: "BriefingComment", dependent: :nullify
   has_many :agent_approvals, dependent: :destroy
 
   before_validation :assign_public_id, on: :create
@@ -23,7 +23,7 @@ class AgentEvent < ApplicationRecord
   attr_readonly :public_id
 
   validates :public_id, presence: true, uniqueness: true
-  validates :event_type, inclusion: { in: %w[chat_message_mentioned task_comment_mentioned task_assigned board_post_scheduled] }
+  validates :event_type, inclusion: { in: %w[chat_message_mentioned task_comment_mentioned task_assigned briefing_scheduled] }
   validates :state, inclusion: { in: STATES }
   validates :recipient_id, uniqueness: { scope: [ :event_type, :subject_type, :subject_id ] }
 
@@ -128,7 +128,7 @@ class AgentEvent < ApplicationRecord
   end
 
   def self.latest_for_chat(project)
-    where(subject_type: "ChatMessage", subject_id: project.chat_messages.select(:id)).order(created_at: :desc, id: :desc).first
+    where(subject_type: "ChatMessage", subject_id: project.chat.messages.select(:id)).order(created_at: :desc, id: :desc).first
   end
 
   def self.latest_for_task(task)
@@ -169,16 +169,16 @@ class AgentEvent < ApplicationRecord
 
     def acknowledgement_target
       return task if event_type == "task_assigned"
-      subject if event_type.in?(%w[chat_message_mentioned task_comment_mentioned])
+      subject if event_type.in?(%w[briefing_scheduled chat_message_mentioned task_comment_mentioned])
     end
 
     def event_context
       context = { project: { id: project.id, name: project.name } }
       if event_type.in?(%w[task_assigned task_comment_mentioned])
         context.merge(task: { id: task.id, title: task.title }, origin: "task")
-      elsif event_type == "board_post_scheduled"
-        automation = subject.board_automation
-        context.merge(board_automation: { id: automation.id, title: automation.title }, board_post: { id: subject.id, scheduled_for: subject.scheduled_for.iso8601 }, origin: "board")
+      elsif event_type == "briefing_scheduled"
+        briefing = subject.briefing
+        context.merge(briefing: { id: briefing.id, title: briefing.title }, briefing_comment: { id: subject.id, scheduled_for: subject.scheduled_for.iso8601 }, origin: "briefing")
       else
         context.merge(conversation: "chat")
       end

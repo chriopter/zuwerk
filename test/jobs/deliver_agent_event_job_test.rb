@@ -46,16 +46,16 @@ class DeliverAgentEventJobTest < ActiveJob::TestCase
     end
   end
 
-  test "board work waits for an ACP connector" do
-    automation = BoardAutomation.create!(
+  test "briefing work waits for an ACP connector" do
+    briefing = Briefing.create!(
       project: @project,
       creator: @human,
       agent: @agent,
       title: "Report",
-      cadence: "daily",
+      frequency: "daily",
       prompt: "Publish"
     )
-    event = automation.run_now!.agent_event
+    event = briefing.run_now!.agent_event
     DeliverAgentEventJob.fallback_delivery_factory = ->(*) { raise "must not deliver" }
 
     DeliverAgentEventJob.perform_now(event)
@@ -66,7 +66,7 @@ class DeliverAgentEventJobTest < ActiveJob::TestCase
 
   private
     def mention_event
-      message = ChatMessage.create!(author: @human, project: @project, body: "Please work")
+      message = @project.chat.messages.create!(author: @human, body: "Please work")
       AgentEvent.create!(recipient: @agent, subject: message, event_type: "chat_message_mentioned")
     end
 end

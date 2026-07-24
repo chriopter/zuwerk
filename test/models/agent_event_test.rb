@@ -11,29 +11,29 @@ class AgentEventTest < ActiveSupport::TestCase
 
   test "message creates one chat_message_mentioned event per chat_message_mentioned agent after matching case insensitively" do
     assert_enqueued_jobs 2, only: DeliverAgentEventJob do
-      message = ChatMessage.create!(author: @human, project: Project.default, body: "@HERMES please ask @build-agent and @hermes again")
+      message = Project.default.chat.messages.create!(author: @human, body: "@HERMES please ask @build-agent and @hermes again")
       assert_equal [ @hermes, @build_agent ].sort_by(&:id), message.agent_events.map(&:recipient).sort_by(&:id)
     end
   end
 
   test "mention requires a complete handle boundary" do
-    message = ChatMessage.create!(author: @human, project: Project.default, body: "@hermes2 and x@hermes but not the agent")
+    message = Project.default.chat.messages.create!(author: @human, body: "@hermes2 and x@hermes but not the agent")
 
     assert_empty message.agent_events
   end
 
   test "human names do not create chat_message_mentioned events" do
-    message = ChatMessage.create!(author: @human, project: Project.default, body: "@human hello")
+    message = Project.default.chat.messages.create!(author: @human, body: "@human hello")
 
     assert_empty message.agent_events
   end
 
   test "agent subscriptions create one project event per selected agent without a mention" do
     project = Project.create!(name: "Alerts")
-    project.chat_subscriptions.create!(agent: @hermes)
-    project.chat_subscriptions.create!(agent: @build_agent)
+    project.chat.subscriptions.create!(agent: @hermes)
+    project.chat.subscriptions.create!(agent: @build_agent)
 
-    message = ChatMessage.create!(author: @human, project: project, body: "Status update")
+    message = project.chat.messages.create!(author: @human, body: "Status update")
 
     assert_equal [ @hermes, @build_agent ].sort_by(&:id), message.agent_events.map(&:recipient).sort_by(&:id)
     assert message.agent_events.all? { |event| event.payload.dig(:context, :project, :id) == project.id }
@@ -41,9 +41,9 @@ class AgentEventTest < ActiveSupport::TestCase
 
   test "agent-authored messages never create mention events" do
     project = Project.create!(name: "Agent chat")
-    project.chat_subscriptions.create!(agent: @build_agent)
+    project.chat.subscriptions.create!(agent: @build_agent)
 
-    message = ChatMessage.create!(author: @hermes, project: project, body: "@build-agent status")
+    message = project.chat.messages.create!(author: @hermes, body: "@build-agent status")
 
     assert_empty message.agent_events
   end
@@ -51,16 +51,16 @@ class AgentEventTest < ActiveSupport::TestCase
   test "event-correlated messages must match the recipient event type and project" do
     project = Project.create!(name: "Responses")
     other_project = Project.create!(name: "Other responses")
-    source = ChatMessage.create!(author: @human, project: project, body: "@hermes respond")
+    source = project.chat.messages.create!(author: @human, body: "@hermes respond")
     event = source.agent_events.sole
 
-    assert ChatMessage.new(author: @hermes, project: project, body: "Done", agent_event: event).valid?
-    assert_not ChatMessage.new(author: @build_agent, project: project, body: "Wrong agent", agent_event: event).valid?
-    assert_not ChatMessage.new(author: @hermes, project: other_project, body: "Wrong project", agent_event: event).valid?
+    assert ChatMessage.new(author: @hermes, chat: project.chat, body: "Done", agent_event: event).valid?
+    assert_not ChatMessage.new(author: @build_agent, chat: project.chat, body: "Wrong agent", agent_event: event).valid?
+    assert_not ChatMessage.new(author: @hermes, chat: other_project.chat, body: "Wrong project", agent_event: event).valid?
   end
 
   test "event uniqueness prevents duplicate recipient and message events" do
-    message = ChatMessage.create!(author: @human, project: Project.default, body: "@hermes")
+    message = Project.default.chat.messages.create!(author: @human, body: "@hermes")
     duplicate = AgentEvent.new(event_type: "chat_message_mentioned", recipient: @hermes, subject: message)
 
     assert_not duplicate.valid?
@@ -68,7 +68,7 @@ class AgentEventTest < ActiveSupport::TestCase
   end
 
   test "payload contains identifiers but no conversation content" do
-    message = ChatMessage.create!(author: @human, project: Project.default, body: "private conversation text @hermes")
+    message = Project.default.chat.messages.create!(author: @human, body: "private conversation text @hermes")
     event = message.agent_events.sole
     payload = event.payload
 
@@ -82,7 +82,7 @@ class AgentEventTest < ActiveSupport::TestCase
   end
 
   test "persists durable state timestamps and only permits valid transitions" do
-    event = ChatMessage.create!(author: @human, project: Project.default, body: "@hermes state").agent_events.sole
+    event = Project.default.chat.messages.create!(author: @human, body: "@hermes state").agent_events.sole
 
     assert_equal "queued", event.state
     event.transition_to!("running")
@@ -95,8 +95,8 @@ class AgentEventTest < ActiveSupport::TestCase
   end
 
   test "atomically claims one event per recipient in FIFO order" do
-    first = ChatMessage.create!(author: @human, project: Project.default, body: "@hermes first").agent_events.sole
-    second = ChatMessage.create!(author: @human, project: Project.default, body: "@hermes second").agent_events.sole
+    first = Project.default.chat.messages.create!(author: @human, body: "@hermes first").agent_events.sole
+    second = Project.default.chat.messages.create!(author: @human, body: "@hermes second").agent_events.sole
 
     assert_equal first, AgentEvent.claim_next_for!(@hermes)
     assert_nil AgentEvent.claim_next_for!(@hermes)

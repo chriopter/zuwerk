@@ -5,7 +5,7 @@ class AgentEventDeliveryTest < ActiveSupport::TestCase
   setup do
     human = User.create!(name: "Human", email: "delivery-human@example.com", password: "password1")
     agent = User.create!(name: "Hermes", kind: :agent)
-    @event = ChatMessage.create!(author: human, project: Project.default, body: "secret body @hermes").agent_events.sole
+    @event = Project.default.chat.messages.create!(author: human, body: "secret body @hermes").agent_events.sole
   end
 
   test "sends signed trigger-only JSON and marks the event delivered" do

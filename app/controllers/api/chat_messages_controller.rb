@@ -1,18 +1,18 @@
 module Api
   class ChatMessagesController < BaseController
     def index
-      messages = project.chat_messages.includes(:author, attachments_attachments: :blob).order(:created_at).last(200)
+      messages = project.chat.messages.includes(:author, attachments_attachments: :blob).order(:created_at).last(200)
       render json: messages.map { |message| serialize(message) }
     end
 
     def create
       return create_for_event if params[:event_id].present?
 
-      save_message(@current_agent.chat_messages.new(body: params[:body], attachments: params[:attachments], project: project))
+      save_message(@current_agent.chat_messages.new(body: params[:body], attachments: params[:attachments], chat: project.chat))
     end
 
     def attachment
-      message = project.chat_messages.find(params[:message_id])
+      message = project.chat.messages.find(params[:message_id])
       attachment = message.attachments.find(params[:id])
       send_data attachment.download,
         filename: attachment.filename.to_s,
@@ -33,7 +33,7 @@ module Api
             filename: attachment.filename.to_s,
             content_type: attachment.content_type,
             byte_size: attachment.byte_size,
-            download_path: "/api/projects/#{message.project_id}/chat/messages/#{message.id}/attachments/#{attachment.id}"
+            download_path: "/api/projects/#{message.project.id}/chat/messages/#{message.id}/attachments/#{attachment.id}"
           }
         end
       }
@@ -58,7 +58,7 @@ module Api
           if event.publication_chat_message
             render json: serialize(event.publication_chat_message), status: :ok
           else
-            save_message(@current_agent.chat_messages.new(body: params[:body], attachments: params[:attachments], project: project, agent_event: event))
+            save_message(@current_agent.chat_messages.new(body: params[:body], attachments: params[:attachments], chat: project.chat, agent_event: event))
           end
         end
       end

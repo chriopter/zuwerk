@@ -1,5 +1,7 @@
-class BoardAutomation < ApplicationRecord
-  CADENCES = {
+class Briefing < ApplicationRecord
+  include ActivityTrackable
+
+  FREQUENCIES = {
     "hourly" => 1.hour,
     "daily" => 1.day,
     "weekly" => 1.week,
@@ -9,33 +11,35 @@ class BoardAutomation < ApplicationRecord
   belongs_to :project
   belongs_to :creator, class_name: "User"
   belongs_to :agent, class_name: "User"
-  has_many :board_posts, dependent: :destroy
+  has_many :comments, class_name: "BriefingComment", dependent: :destroy
   has_rich_text :prompt
 
   before_validation :set_initial_next_run_at, on: :create
-  before_validation :reschedule_for_changed_cadence, on: :update
+  before_validation :set_initial_activity, on: :create
+  before_validation :reschedule_for_changed_frequency, on: :update
 
   validates :title, presence: true, length: { maximum: 160 }
   validates :prompt, presence: true
-  validates :cadence, inclusion: { in: CADENCES.keys }
+  validates :frequency, inclusion: { in: FREQUENCIES.keys }
   validate :agent_identity
   validate :prompt_length
 
   scope :due, -> { where(active: true, next_run_at: ..Time.current) }
+  after_create_commit :register_creator_participation
 
   def dispatch_due!
     with_lock do
       return unless active? && next_run_at <= Time.current
 
       scheduled_for = next_run_at
-      post = create_occurrence!(scheduled_for)
+      comment = create_occurrence!(scheduled_for)
       self.next_run_at = next_occurrence_from([ scheduled_for, Time.current ].max)
       save!
-      post
+      comment
     end
   rescue ActiveRecord::RecordNotUnique
     with_lock do
-      occurrence = board_posts.find_by!(scheduled_for: next_run_at)
+      occurrence = comments.find_by!(scheduled_for: next_run_at)
       self.next_run_at = next_occurrence_from([ next_run_at, Time.current ].max)
       save!
       occurrence
@@ -54,31 +58,49 @@ class BoardAutomation < ApplicationRecord
     with_lock { update!(active: true, next_run_at: next_occurrence_from(Time.current)) }
   end
 
-  def cadence_label
-    { "hourly" => "Every hour", "daily" => "Every day", "weekly" => "Every week", "monthly" => "Every month" }.fetch(cadence)
+  def frequency_label
+    {
+      "hourly" => "Every hour",
+      "daily" => "Every day",
+      "weekly" => "Every week",
+      "monthly" => "Every month"
+    }.fetch(frequency)
   end
 
   private
 
   def create_occurrence!(scheduled_for)
     transaction do
-      post = board_posts.create!(author: agent, title: title, scheduled_for: scheduled_for, prompt_snapshot: prompt.to_plain_text)
-      event = post.agent_events.create!(recipient: agent, event_type: "board_post_scheduled")
-      post.update!(agent_event: event)
-      post
+      comment = comments.create!(
+        author: agent,
+        title: title,
+        scheduled_for: scheduled_for,
+        prompt_snapshot: prompt.to_plain_text
+      )
+      event = comment.agent_events.create!(recipient: agent, event_type: "briefing_scheduled")
+      comment.update!(agent_event: event)
+      comment
     end
   end
 
   def set_initial_next_run_at
-    self.next_run_at ||= next_occurrence_from(Time.current) if CADENCES.key?(cadence)
+    self.next_run_at ||= next_occurrence_from(Time.current) if FREQUENCIES.key?(frequency)
   end
 
-  def reschedule_for_changed_cadence
-    self.next_run_at = next_occurrence_from(Time.current) if will_save_change_to_cadence? && CADENCES.key?(cadence)
+  def set_initial_activity
+    self.last_activity_at ||= Time.current
+  end
+
+  def register_creator_participation
+    register_participant!(creator)
+  end
+
+  def reschedule_for_changed_frequency
+    self.next_run_at = next_occurrence_from(Time.current) if will_save_change_to_frequency? && FREQUENCIES.key?(frequency)
   end
 
   def next_occurrence_from(time)
-    time + CADENCES.fetch(cadence)
+    time + FREQUENCIES.fetch(frequency)
   end
 
   def agent_identity

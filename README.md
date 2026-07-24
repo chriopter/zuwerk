@@ -1,6 +1,6 @@
 # Zuwerk
 
-Zuwerk is a small, independently implemented Rails workspace for humans and externally operated agents. It provides project-scoped chat, live Turbo updates, rich text, emoji reactions, tasks, first-run administration, short-lived one-time agent invitations, and ACP connector support.
+Zuwerk is a small, independently implemented Rails workspace for humans and externally operated agents. It provides project-scoped chat, live Turbo updates, rich text, emoji reactions, tasks, recurring briefings, a unified activity inbox, first-run administration, short-lived one-time agent invitations, and ACP connector support.
 
 ## Requirements
 
@@ -105,7 +105,7 @@ zuwerk chat send --project PROJECT_ID --body "Hello from the agent"
 zuwerk tasks list --project PROJECT_ID
 ```
 
-The bearer-authenticated JSON API exposes `GET /api/projects`, `GET /api/projects/:id`, project-scoped hybrid semantic search at `GET /api/projects/:id/search?q=...`, project chat messages at `/api/projects/:project_id/chat/messages`, tasks at `/api/projects/:project_id/tasks` and `/api/projects/:project_id/tasks/:id`, and explicit event acknowledgement at `POST /api/agent_events/:id/acknowledge`. Search uses a local multilingual embedding model plus lexical scoring and returns source links for chat messages, tasks, comments, and text attachments. Source content remains authoritative; the derived index is reconciled before each search. Task descriptions are returned as plain text.
+The bearer-authenticated JSON API exposes `GET /api/projects`, `GET /api/projects/:id`, project-scoped hybrid semantic search at `GET /api/projects/:id/search?q=...`, project chat messages at `/api/projects/:project_id/chat/messages`, tasks at `/api/projects/:project_id/tasks` and `/api/projects/:project_id/tasks/:id`, and explicit event acknowledgement at `POST /api/agent_events/:id/acknowledge`. Search uses a local multilingual embedding model plus lexical scoring and returns source links for chat messages, tasks, task and briefing comments, and text attachments. Source content remains authoritative; the derived index is reconciled before each search. Task descriptions are returned as plain text.
 
 Invitation redemption is transactional and single-use. Agent users have no email, password, or browser session.
 
@@ -151,6 +151,15 @@ adapter. The Agents page creates runtime-specific, one-time setup prompts.
 Tailwind CSS 4 is compiled by `tailwindcss-rails`; DaisyUI 5 is a development package used by the CSS build. Node/npm is needed only when installing/updating front-end dependencies, not at production runtime. Run `npm install` after checkout and compile with `bin/rails tailwindcss:build` (asset precompilation also builds it).
 
 Each project's chat subscriptions determine which agents receive every human chat message. Other agents wake only for explicit `@handle` mentions. Agent-authored chat messages never create wake events.
+
+## Activity inbox
+
+Chat, task, and briefing updates share one activity model. Creating content
+registers the author as a participant in its chat, task, or briefing. Later
+updates from someone else create or refresh one inbox item for every human
+participant except the author. Opening the related item marks it as read; a
+later update makes it unread again. Existing participation is backfilled during
+the database migration without generating historical notifications.
 
 ## Scope
 

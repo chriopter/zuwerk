@@ -4,7 +4,7 @@ class ChatMessagesController < ApplicationController
   before_action :load_project
 
   def create
-    @message = current_user.chat_messages.new(chat_message_params.merge(project: @project))
+    @message = current_user.chat_messages.new(chat_message_params.merge(chat: @project.chat))
     if @message.save
       redirect_to project_chat_path(@project), status: :see_other
     else
@@ -20,12 +20,13 @@ class ChatMessagesController < ApplicationController
   end
 
   def load_chat
-    @messages = @project.chat_messages
+    @chat = @project.chat
+    @messages = @chat.messages
       .includes(:author, { attachments_attachments: :blob }, reactions: :author)
       .order(:created_at).last(200)
     @agents = User.agent.order(:name)
     @humans = User.human.order(:name)
-    @auto_notify_agent_ids = @project.chat_subscriptions.pluck(:agent_id)
+    @auto_notify_agent_ids = @project.chat.subscriptions.pluck(:agent_id)
   end
 
   def route_first_run

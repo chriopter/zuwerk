@@ -1,0 +1,35 @@
+<% content_for :title, "Briefings · #{@project.name} · Zuwerk" %>
+
+<section class="briefings-page">
+  <header class="workspace-page-header">
+    <div>
+      <nav class="workspace-breadcrumb" aria-label="Breadcrumb"><%= link_to @project.name, project_path(@project) %><span aria-hidden="true">/</span><span aria-current="page">Briefings</span></nav>
+      <h1>Briefings</h1>
+      <p>Recurring agent updates, ordered by the latest comment.</p>
+    </div>
+    <%= link_to "New briefing", new_project_briefing_path(@project), class: "workspace-primary-action" %>
+  </header>
+
+  <% if @briefings.any? %>
+    <div class="briefing-list glass-card">
+      <% @briefings.each do |briefing| %>
+        <% latest_comment = briefing.comments.select(&:published_at?).max_by(&:published_at) %>
+        <%= link_to project_briefing_path(@project, briefing), class: "briefing-row" do %>
+          <span class="project-avatar project-avatar-small" aria-hidden="true"><%= briefing.agent.name.first.upcase %></span>
+          <span class="briefing-row-copy">
+            <span class="briefing-row-title"><%= briefing.title %></span>
+            <span class="briefing-row-excerpt"><%= latest_comment ? truncate(latest_comment.body.to_plain_text.squish, length: 150) : "No comments yet." %></span>
+            <span class="briefing-row-meta"><%= briefing.agent.name %> · <%= briefing.frequency_label %> · <%= briefing.active? ? "Next run #{time_ago_in_words(briefing.next_run_at)} from now" : "Paused" %></span>
+          </span>
+          <span class="briefing-row-activity"><%= latest_comment ? "#{time_ago_in_words(latest_comment.published_at)} ago" : "New" %></span>
+        <% end %>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="briefing-empty glass-card">
+      <strong>No briefings yet</strong>
+      <p>Create a briefing to ask an agent for recurring project updates.</p>
+      <%= link_to "Create briefing", new_project_briefing_path(@project), class: "workspace-primary-action" %>
+    </div>
+  <% end %>
+</section>

@@ -19,7 +19,7 @@ class AgentConnectors::ChatBridgeTest < ActiveSupport::TestCase
 
     def prompt(_agent, origin, _text, **)
       raise "wrong origin" unless origin == @project
-      @agent.chat_messages.create!(project: @project, body: "Published through the API", agent_event: @event)
+      @agent.chat_messages.create!(chat: @project.chat, body: "Published through the API", agent_event: @event)
     end
   end
 
@@ -137,12 +137,40 @@ class AgentConnectors::ChatBridgeTest < ActiveSupport::TestCase
     assert_includes event.prompt_snapshot, source.body.to_plain_text
   end
 
+  test "publishes recurring ACP output as a briefing comment" do
+    human = User.create!(name: "Briefing Human", email: "briefing-human@example.com", password: "password1")
+    agent = User.create!(name: "Briefing Agent", kind: :agent)
+    project = Project.create!(name: "Status Project")
+    briefing = Briefing.create!(
+      project: project,
+      creator: human,
+      agent: agent,
+      title: "Weekly status",
+      frequency: "weekly",
+      prompt: "Summarize risks and next steps."
+    )
+    comment = briefing.run_now!
+    event = comment.agent_event
+    event.transition_to!("running")
+    event.update_columns(connector_connection_id: "connector")
+
+    bridge(event, pool: ChunkPool.new("No blockers. ", "Ship next.")).deliver
+
+    assert_equal comment, event.reload.publication_briefing_comment
+    assert_equal "No blockers. Ship next.", comment.reload.body.to_plain_text
+    assert comment.published_at?
+    assert_equal comment.activities.sole.created_at, briefing.reload.last_activity_at
+    assert_equal "completed", event.state
+    assert_includes event.prompt_snapshot, "Briefing: Weekly status"
+    assert_includes event.prompt_snapshot, "Summarize risks and next steps."
+  end
+
   private
     def build_event
       human = User.create!(name: "ACP Human", email: "acp-#{SecureRandom.hex(4)}@example.com", password: "password1")
       agent = User.create!(name: "ACP Agent #{SecureRandom.hex(2)}", kind: :agent)
       project = Project.create!(name: "ACP Project")
-      message = ChatMessage.create!(author: human, project:, body: "Please answer")
+      message = project.chat.messages.create!(author: human, body: "Please answer")
       event = AgentEvent.create!(recipient: agent, subject: message, event_type: "chat_message_mentioned")
       event.transition_to!("running")
       event.update_columns(connector_connection_id: "connector")

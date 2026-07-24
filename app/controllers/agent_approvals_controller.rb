@@ -27,7 +27,7 @@ class AgentApprovalsController < ApplicationController
     def origin_path(approval)
       event = approval.agent_event
       return project_task_path(event.project, event.task) if event.task
-      return project_board_automation_path(event.project, event.subject.board_automation) if event.event_type == "board_post_scheduled"
+      return project_briefing_path(event.project, event.subject.briefing) if event.event_type == "briefing_scheduled"
 
       project_chat_path(event.project)
     end

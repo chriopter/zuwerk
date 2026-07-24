@@ -16,8 +16,9 @@
   </head>
   <% task_page = controller_name.in?([ "tasks", "task_comments", "task_assignments" ]) %>
   <% chat_page = controller_name.in?([ "chats", "chat_messages" ]) %>
-  <% board_page = controller_name.in?([ "board_posts", "board_automations" ]) %>
+  <% briefing_page = controller_name.in?([ "briefings", "briefing_comments" ]) %>
   <% files_page = controller_name == "file_entries" %>
+  <% inbox_page = controller_name == "inboxes" %>
   <% active_section = if controller_name == "projects"
     :projects
   elsif controller_name == "database"
@@ -26,10 +27,12 @@
     :tasks
   elsif chat_page
     :chat
-  elsif board_page
-    :board
+  elsif briefing_page
+    :briefing
   elsif files_page
     :files
+  elsif inbox_page
+    :inbox
   else
     :agents
   end %>

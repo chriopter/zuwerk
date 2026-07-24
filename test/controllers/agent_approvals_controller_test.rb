@@ -4,7 +4,7 @@ class AgentApprovalsControllerTest < ActionDispatch::IntegrationTest
   setup do
     @human = User.create!(name: "Resolver", email: "resolver@example.com", password: "password1")
     @agent = User.create!(name: "Approval Bot", kind: :agent)
-    event = AgentEvent.create!(recipient: @agent, subject: ChatMessage.create!(author: @human, project: Project.default, body: "Approve"), event_type: "chat_message_mentioned")
+    event = AgentEvent.create!(recipient: @agent, subject: Project.default.chat.messages.create!(author: @human, body: "Approve"), event_type: "chat_message_mentioned")
     event.transition_to!("running")
     @approval = AgentApproval.create!(agent_event: event, request_id: "request", options: [ { "optionId" => "allow" }, { "optionId" => "reject" } ], details: {})
   end
@@ -35,18 +35,18 @@ class AgentApprovalsControllerTest < ActionDispatch::IntegrationTest
     assert_equal option_id, @approval.reload.selected_option_id
   end
 
-  test "HTML resolution returns Board work to its automation" do
-    board_agent = User.create!(name: "Board Approval Bot", kind: :agent)
-    project = Project.create!(name: "Approval Board")
-    automation = BoardAutomation.create!(project: project, creator: @human, agent: board_agent, title: "Digest", cadence: "daily", prompt: "Publish")
-    event = automation.run_now!.agent_event
+  test "HTML resolution returns briefing work to its briefing" do
+    briefing_agent = User.create!(name: "Briefing Approval Bot", kind: :agent)
+    project = Project.create!(name: "Approval Briefing")
+    briefing = Briefing.create!(project: project, creator: @human, agent: briefing_agent, title: "Digest", frequency: "daily", prompt: "Publish")
+    event = briefing.run_now!.agent_event
     event.transition_to!("running")
-    approval = AgentApproval.create!(agent_event: event, request_id: "board-request", options: [ { "optionId" => "allow" } ], details: {})
+    approval = AgentApproval.create!(agent_event: event, request_id: "briefing-request", options: [ { "optionId" => "allow" } ], details: {})
     post session_path, params: { email: @human.email, password: "password1" }
 
     patch agent_approval_path(approval), params: { option_index: "0" }
 
-    assert_redirected_to project_board_automation_path(project, automation)
+    assert_redirected_to project_briefing_path(project, briefing)
   end
 
   test "rejects an invalid HTML option index" do

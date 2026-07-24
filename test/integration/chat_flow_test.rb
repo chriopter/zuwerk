@@ -35,8 +35,8 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     other = Project.create!(name: "Other")
     post session_path, params: { email: user.email, password: "password1" }
 
-    assert_difference -> { selected.chat_messages.count }, 1 do
-      assert_no_difference -> { other.chat_messages.count } do
+    assert_difference -> { selected.chat.messages.count }, 1 do
+      assert_no_difference -> { other.chat.messages.count } do
         post project_chat_messages_path(selected), params: { chat_message: { body: "Selected only" } }
       end
     end

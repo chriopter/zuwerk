@@ -115,11 +115,11 @@ class ProjectSearch
     end
 
     def source_documents
-      [ *chat_message_documents, *task_documents, *comment_documents, *attachment_documents, *board_post_documents, *project_file_documents ]
+      [ *chat_message_documents, *task_documents, *comment_documents, *attachment_documents, *briefing_comment_documents, *project_file_documents ]
     end
 
     def chat_message_documents
-      @project.chat_messages.includes(:author).order(:id).map do |message|
+      @project.chat.messages.includes(:author).order(:id).map do |message|
         result("chat_message", message.id, "Chat · #{message.author.name}", message.body, project_chat_path(@project, anchor: "chat_message_#{message.id}"), message.created_at)
       end
     end
@@ -138,7 +138,7 @@ class ProjectSearch
     end
 
     def attachment_documents
-      @project.chat_messages.includes(attachments_attachments: :blob).order(:id).flat_map do |message|
+      @project.chat.messages.includes(attachments_attachments: :blob).order(:id).flat_map do |message|
         message.attachments.filter_map do |attachment|
           next unless attachment.blob.byte_size <= MAX_ATTACHMENT_BYTES
           next unless attachment.content_type.to_s.start_with?("text/")
@@ -149,9 +149,9 @@ class ProjectSearch
       end
     end
 
-    def board_post_documents
-      @project.board_posts.published.includes(:author, :rich_text_body).order(:id).map do |post|
-        result("board_post", post.id, "Board · #{post.title}", post.body.to_plain_text, project_board_post_path(@project, post), post.published_at)
+    def briefing_comment_documents
+      @project.briefing_comments.published.includes(:author, :briefing, :rich_text_body).order(:id).map do |comment|
+        result("briefing_comment", comment.id, "Briefing · #{comment.briefing.title}", comment.body.to_plain_text, project_briefing_path(@project, comment.briefing, anchor: "briefing_comment_#{comment.id}"), comment.published_at)
       end
     end
 
@@ -198,7 +198,7 @@ class ProjectSearch
       Rails.application.routes.url_helpers.project_file_entries_path(...)
     end
 
-    def project_board_post_path(...)
-      Rails.application.routes.url_helpers.project_board_post_path(...)
+    def project_briefing_path(...)
+      Rails.application.routes.url_helpers.project_briefing_path(...)
     end
 end
