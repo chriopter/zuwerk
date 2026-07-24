@@ -53,5 +53,6 @@ class BriefingCommentsController < ApplicationController
     @agents = User.agent.order(:name)
     @comments = @briefing.comments.published.chronologically.includes(:author, :rich_text_body, reactions: :author)
     @latest_run = @briefing.comments.where.not(scheduled_for: nil).includes(:agent_event).order(scheduled_for: :desc, id: :desc).first
+    @latest_result = @briefing.comments.published.where.not(scheduled_for: nil).includes(:author, :rich_text_body).order(scheduled_for: :desc, id: :desc).first
   end
 end

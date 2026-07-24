@@ -26,9 +26,16 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
     assert_select "[data-agent-id='#{@agent.id}']", text: /Working/
     assert_select "[data-agent-id='#{@agent.id}'] .agents-model", text: "Model: Fable"
     assert_select "[data-agent-id='#{offline.id}']", text: /Offline/
-    assert_select "[data-agent-id='#{@agent.id}'] .agents-prompt" do
-      assert_select "summary", text: /View last prompt/
-      assert_select "pre", text: /Investigate the request/
+    assert_select ".agent-master-template", count: 1 do
+      assert_select "select[data-prompt-preview-target='select'] option", count: 4
+      assert_select "option[value='chat']", text: "Chat mention"
+      assert_select "option[value='task']", text: "Task"
+      assert_select "option[value='briefing_scheduled']", text: "Scheduled briefing"
+      assert_select "option[value='briefing_mention']", text: "Briefing mention"
+      assert_select "pre[data-prompt-preview-target='output']", text: /Work type: chat/
+      assert_select "pre[data-prompt-preview-target='output']", text: /Example workspace/
+      assert_select "pre[data-prompt-preview-target='output']", text: /\{\{/, count: 0
+      assert_select ".agent-master-source pre", text: /Work type: \{\{work_type\}\}/
     end
     assert_select "[data-agent-profile]", count: 3
     assert_select "[data-agent-profile='claude']", text: /zuwerk connect claude/

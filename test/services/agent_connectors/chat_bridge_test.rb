@@ -165,6 +165,27 @@ class AgentConnectors::ChatBridgeTest < ActiveSupport::TestCase
     assert_includes event.prompt_snapshot, "Summarize risks and next steps."
   end
 
+  test "delivers a briefing comment mention and saves ACP output on that briefing" do
+    human = User.create!(name: "Briefing Human", email: "briefing-mention-human@example.com", password: "password1")
+    agent = User.create!(name: "Briefing Agent", kind: :agent)
+    project = Project.create!(name: "Status Project")
+    briefing = Briefing.create!(project:, creator: human, agent:, title: "Weekly status", frequency: "weekly", prompt: "Summarize risks.")
+    source = briefing.comments.create!(author: human, body: "@briefing-agent clarify this", published_at: Time.current)
+    event = source.agent_events.sole
+    event.transition_to!("running")
+    event.update_columns(connector_connection_id: "connector")
+
+    bridge(event, pool: ChunkPool.new("Here is the clarification.")).deliver
+
+    response = event.reload.publication_briefing_comment
+    assert_not_equal source, response
+    assert_equal briefing, response.briefing
+    assert_equal agent, response.author
+    assert_equal "Here is the clarification.", response.body.to_plain_text
+    assert_equal "completed", event.state
+    assert_includes event.prompt_snapshot, "Trigger: You were mentioned in comment ##{source.id}"
+  end
+
   private
     def build_event
       human = User.create!(name: "ACP Human", email: "acp-#{SecureRandom.hex(4)}@example.com", password: "password1")

@@ -62,6 +62,46 @@ class BriefingsFlowTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "mentions an agent from a briefing comment" do
+    briefing = create_briefing
+
+    assert_difference -> { AgentEvent.where(event_type: "briefing_comment_mentioned").count }, 1 do
+      post project_briefing_comments_path(@project, briefing), params: { briefing_comment: { body: "Please check this, @#{@agent.handle}." } }
+    end
+
+    event = briefing.comments.published.last.agent_events.sole
+    assert_equal @agent, event.recipient
+    assert_equal "queued", event.state
+  end
+
+  test "shows the assigned agent avatar" do
+    briefing = create_briefing
+
+    get project_briefing_path(@project, briefing)
+
+    assert_response :success
+    assert_select ".briefing-actions .avatar-stack-item[data-agent-id='#{@agent.id}']", text: @agent.name.first
+  end
+
+  test "pins the latest completed briefing result above the update feed" do
+    briefing = create_briefing
+    older = create_result(briefing, "Older report", 2.days.ago)
+    latest = create_result(briefing, "Latest report", 1.day.ago)
+    briefing.comments.create!(author: @agent, body: "A later conversational reply", published_at: Time.current)
+
+    get project_briefing_path(@project, briefing)
+
+    assert_response :success
+    assert_select ".briefing-pinned-result", count: 1 do
+      assert_select ".briefing-pinned-body", text: /Latest report/
+      assert_select ".briefing-pinned-body", text: /Older report/, count: 0
+      assert_select ".briefing-pinned-body", text: /conversational reply/, count: 0
+      assert_select "a[href='##{dom_id(latest)}']", text: /View in updates/
+    end
+    assert_select "##{dom_id(older)}", count: 1
+    assert_select "##{dom_id(latest)}", count: 1
+  end
+
   test "keeps briefings inside their project" do
     briefing = create_briefing
     other_project = Project.create!(name: "Other Briefing Workspace")
@@ -86,5 +126,16 @@ class BriefingsFlowTest < ActionDispatch::IntegrationTest
 
   def create_briefing(title = "Monday briefing")
     Briefing.create!(project: @project, creator: @human, agent: @agent, title: title, frequency: "weekly", prompt: "Publish")
+  end
+
+  def create_result(briefing, body, scheduled_for)
+    briefing.comments.create!(
+      author: @agent,
+      title: briefing.title,
+      body: body,
+      prompt_snapshot: briefing.prompt.to_plain_text,
+      scheduled_for: scheduled_for,
+      published_at: scheduled_for
+    )
   end
 end

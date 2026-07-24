@@ -23,7 +23,7 @@ class AgentEvent < ApplicationRecord
   attr_readonly :public_id
 
   validates :public_id, presence: true, uniqueness: true
-  validates :event_type, inclusion: { in: %w[chat_message_mentioned task_comment_mentioned task_assigned briefing_scheduled] }
+  validates :event_type, inclusion: { in: %w[chat_message_mentioned task_comment_mentioned task_assigned briefing_comment_mentioned briefing_scheduled] }
   validates :state, inclusion: { in: STATES }
   validates :recipient_id, uniqueness: { scope: [ :event_type, :subject_type, :subject_id ] }
 
@@ -169,16 +169,18 @@ class AgentEvent < ApplicationRecord
 
     def acknowledgement_target
       return task if event_type == "task_assigned"
-      subject if event_type.in?(%w[briefing_scheduled chat_message_mentioned task_comment_mentioned])
+      subject if event_type.in?(%w[briefing_comment_mentioned briefing_scheduled chat_message_mentioned task_comment_mentioned])
     end
 
     def event_context
       context = { project: { id: project.id, name: project.name } }
       if event_type.in?(%w[task_assigned task_comment_mentioned])
         context.merge(task: { id: task.id, title: task.title }, origin: "task")
-      elsif event_type == "briefing_scheduled"
+      elsif event_type.in?(%w[briefing_comment_mentioned briefing_scheduled])
         briefing = subject.briefing
-        context.merge(briefing: { id: briefing.id, title: briefing.title }, briefing_comment: { id: subject.id, scheduled_for: subject.scheduled_for.iso8601 }, origin: "briefing")
+        comment = { id: subject.id }
+        comment[:scheduled_for] = subject.scheduled_for.iso8601 if subject.scheduled_for
+        context.merge(briefing: { id: briefing.id, title: briefing.title }, briefing_comment: comment, origin: "briefing")
       else
         context.merge(conversation: "chat")
       end

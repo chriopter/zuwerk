@@ -2,11 +2,18 @@
 <%= turbo_stream_from @project.agent_turn_stream %>
 <%= turbo_stream_from "agent_presence" %>
 
-<section class="briefing-detail-page">
+<section class="briefing-detail-page" data-controller="working-ring">
+  <div hidden><%= render "chat_messages/agent_presence", agents: @agents %></div>
   <header class="briefing-detail-header">
     <div class="briefing-top-line">
       <nav class="workspace-breadcrumb" aria-label="Breadcrumb"><%= link_to @project.name, project_path(@project) %><span aria-hidden="true">/</span><%= link_to "Briefings", project_briefings_path(@project) %><span aria-hidden="true">/</span><span aria-current="page"><%= @briefing.title %></span></nav>
       <div class="briefing-actions">
+        <div class="avatar-stack" aria-label="Assigned agent">
+          <span class="avatar-stack-item is-agent <%= 'is-working' if @briefing.agent.working? %>" data-agent-id="<%= @briefing.agent.id %>" title="<%= @briefing.agent.name %> — assigned agent">
+            <%= @briefing.agent.name.first.upcase %>
+            <% if @briefing.agent.external_connector_present? %><i class="avatar-stack-dot" aria-hidden="true"></i><% end %>
+          </span>
+        </div>
         <%= button_to @latest_run&.agent_event&.state == "failed" ? "Retry now" : "Run now", run_now_project_briefing_path(@project, @briefing), class: "workspace-primary-action" %>
         <%= link_to "Edit", edit_project_briefing_path(@project, @briefing), class: "workspace-secondary-action" %>
         <%= button_to @briefing.active? ? "Pause" : "Resume", toggle_project_briefing_path(@project, @briefing), method: :patch, class: "workspace-secondary-action" %>
@@ -18,6 +25,16 @@
       <span><strong><%= @briefing.frequency_label %></strong></span>
       <span><strong><%= @briefing.active? ? @briefing.next_run_at.to_fs(:long) : "Paused" %></strong> next run</span>
     </div>
+    <% if @latest_result %>
+      <article class="briefing-pinned-result" aria-labelledby="latest-briefing-result">
+        <header>
+          <span class="briefing-pinned-label" id="latest-briefing-result">Latest briefing</span>
+          <time datetime="<%= @latest_result.published_at.iso8601 %>"><%= time_ago_in_words(@latest_result.published_at) %> ago</time>
+        </header>
+        <div class="briefing-pinned-body lexxy-content"><%= @latest_result.body %></div>
+        <%= link_to "View in updates ↓", "##{dom_id(@latest_result)}", class: "briefing-pinned-link" %>
+      </article>
+    <% end %>
     <div class="briefing-prompt lexxy-content"><%= @briefing.prompt %></div>
     <% if @latest_run&.agent_event&.last_error.present? %>
       <p class="briefing-run-error">The latest run failed: <%= @latest_run.agent_event.last_error %></p>

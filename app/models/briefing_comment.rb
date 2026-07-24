@@ -17,6 +17,7 @@ class BriefingComment < ApplicationRecord
   scope :published, -> { where.not(published_at: nil) }
   scope :chronologically, -> { order(:published_at, :id) }
 
+  after_create_commit :create_mention_events
   after_commit :update_briefing_activity
 
   def publish!(markdown, event:)
@@ -39,9 +40,25 @@ class BriefingComment < ApplicationRecord
 
   def publication_event_matches
     return unless agent_event
-    return if agent_event.event_type == "briefing_scheduled" && agent_event.subject == self && agent_event.recipient == author
+    scheduled_publication = agent_event.event_type == "briefing_scheduled" && agent_event.subject == self
+    mention_publication = agent_event.event_type == "briefing_comment_mentioned" &&
+      agent_event.subject.is_a?(BriefingComment) &&
+      agent_event.subject.briefing == briefing
+    return if agent_event.recipient == author && (scheduled_publication || mention_publication)
 
-    errors.add(:agent_event, "must be this comment's scheduled agent event")
+    errors.add(:agent_event, "must be this comment's agent event")
+  end
+
+  def create_mention_events
+    return unless author.human? && published_at?
+
+    text = body.to_plain_text
+    User.agent.find_each do |agent|
+      escaped_handle = Regexp.escape(agent.handle)
+      next unless text.match?(/(?<![[:alnum:]_-])@#{escaped_handle}(?![[:alnum:]_-])/i)
+
+      agent_events.create!(event_type: "briefing_comment_mentioned", recipient: agent)
+    end
   end
 
   def update_briefing_activity

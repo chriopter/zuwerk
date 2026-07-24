@@ -45,12 +45,6 @@
               <span class="agents-model">Model: <%= agent.connector_model.presence || "Not reported" %></span>
             </p>
             <% if agent.working? %><small><%= agent.working_label.presence || "Working" %></small><% end %>
-            <% if (prompt_event = @latest_prompt_events[agent.id]) %>
-              <details class="agents-prompt">
-                <summary>View last prompt <span><%= time_ago_in_words(prompt_event.prompted_at) %> ago</span></summary>
-                <pre><%= prompt_event.prompt_snapshot %></pre>
-              </details>
-            <% end %>
           </div>
         </article>
       <% end %>
@@ -58,5 +52,33 @@
         <div class="agents-empty"><h3>No agents yet</h3><p>Choose Claude, Codex, or Hermes above to create an invitation.</p></div>
       <% end %>
     </div>
+  </section>
+
+  <section class="agents-section" aria-labelledby="prompt-templates-heading">
+    <div class="agents-section-heading">
+      <div><h2 id="prompt-templates-heading">ACP master prompt</h2><p>One shared envelope with type-specific context, tools, actions, and response instructions.</p></div>
+      <span>1 template</span>
+    </div>
+    <article
+      class="agent-master-template"
+      data-controller="prompt-preview"
+      data-prompt-preview-prompts-value="<%= @prompt_previews.to_json %>"
+      data-prompt-preview-descriptions-value="<%= @prompt_types.to_h { |type| [ type.id, type.description ] }.to_json %>">
+      <header>
+        <div>
+          <label for="prompt-preview-type">Situation</label>
+          <select id="prompt-preview-type" data-prompt-preview-target="select" data-action="change->prompt-preview#update">
+            <%= options_for_select(@prompt_types.map { |type| [ type.name, type.id ] }) %>
+          </select>
+        </div>
+        <span data-prompt-preview-target="description"><%= @prompt_types.first.description %></span>
+        <small>Preview only — no agent event is created.</small>
+      </header>
+      <pre data-prompt-preview-target="output"><%= @prompt_previews.fetch(:chat) %></pre>
+      <details class="agent-master-source">
+        <summary>View master template with placeholders</summary>
+        <pre><%= @prompt_template.body %></pre>
+      </details>
+    </article>
   </section>
 </div>

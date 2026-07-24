@@ -105,10 +105,14 @@ module AgentConnectors
       end
 
       def comment_mention_event?
-        @event.event_type == "task_comment_mentioned"
+        @event.event_type.in?(%w[briefing_comment_mentioned task_comment_mentioned])
       end
 
       def briefing_event?
+        @event.event_type.in?(%w[briefing_comment_mentioned briefing_scheduled])
+      end
+
+      def scheduled_briefing_event?
         @event.event_type == "briefing_scheduled"
       end
 
@@ -122,7 +126,12 @@ module AgentConnectors
           if task_event?
             task.comments.create!(author: @event.recipient, body: body, agent_event: @event)
           elsif briefing_event?
-            briefing_comment.publish!(body, event: @event)
+            if scheduled_briefing_event?
+              briefing_comment.publish!(body, event: @event)
+            else
+              html = Commonmarker.to_html(body, options: { render: { unsafe: false } })
+              briefing.comments.create!(author: @event.recipient, body: html, published_at: Time.current, agent_event: @event)
+            end
           else
             body = body.truncate(ChatMessage::MAX_BODY_LENGTH, omission: "")
             @event.recipient.chat_messages.create!(chat: project.chat, body: body, agent_event: @event)
@@ -202,7 +211,8 @@ module AgentConnectors
           raise DeliveryError, "Recipient did not create an event-correlated task comment" unless valid
         elsif briefing_event?
           published = @event.publication_briefing_comment
-          valid = published == briefing_comment && published&.author == @event.recipient && published.published_at?
+          valid = published&.author == @event.recipient && published&.briefing == briefing && published.published_at?
+          valid &&= published == briefing_comment if scheduled_briefing_event?
           raise DeliveryError, "Recipient did not create an event-correlated briefing comment" unless valid
         else
           published = @event.publication_chat_message
@@ -257,29 +267,13 @@ module AgentConnectors
         return task_prompt_text if task_event?
         return briefing_prompt_text if briefing_event?
 
-        <<~PROMPT
-          You are #{@event.recipient.name}, an agent connected to Zuwerk through ACP.
-          ACP text output is automatically saved as the single correlated project response.
-          Do not publish the same final response through the Zuwerk CLI/API.
-
-          Event ID: #{@event.public_id}
-          Project ID: #{project.id}
-          Project name: #{project.name}
-          Triggering message: #{@event.subject.body}
-
-          Acknowledge this event before doing any other work:
-          zuwerk events acknowledge #{@event.public_id}
-
-          Read the conversation, including attachment metadata and authenticated download paths, with:
-          zuwerk chat list --project #{project.id}
-
-          Search semantically across this project's chat, tasks, comments, and text attachments when earlier context may matter:
-          zuwerk search --project #{project.id} --query "<what you need to know>"
-
-          Format the final response with Markdown when useful (bold, italics, lists, links, quotes, and fenced code render in chat). To publish additional file attachments, use the authenticated project chat messages API as multipart form data with `attachments[]`.
-
-          Use the Zuwerk CLI/API only for additional structured project actions. Return the final user-facing answer through ACP.
-        PROMPT
+        PromptTemplates.render(:chat, {
+          agent_name: @event.recipient.name,
+          event_id: @event.public_id,
+          project_id: project.id,
+          project_name: project.name,
+          triggering_message: @event.subject.body
+        })
       end
 
 
@@ -295,31 +289,35 @@ module AgentConnectors
       end
 
       def briefing_prompt_text
-        <<~PROMPT
-          You are #{@event.recipient.name}, the selected agent for a recurring Zuwerk briefing.
-          Complete the requested work now and return one polished, self-contained briefing update.
-          ACP text output is automatically published as the single correlated Action Text briefing comment.
-          Do not publish the same result through the Zuwerk CLI/API or chat.
+        return briefing_mention_prompt_text if comment_mention_event?
 
-          Event ID: #{@event.public_id}
-          Project ID: #{project.id}
-          Project name: #{project.name}
-          Briefing: #{briefing.title}
-          Scheduled for: #{briefing_comment.scheduled_for.iso8601}
+        PromptTemplates.render(:briefing_scheduled, {
+          agent_name: @event.recipient.name,
+          event_id: @event.public_id,
+          project_id: project.id,
+          project_name: project.name,
+          briefing_title: briefing.title,
+          scheduled_for: briefing_comment.scheduled_for.iso8601,
+          recurring_prompt: briefing_comment.prompt_snapshot
+        })
+      end
 
-          Acknowledge this event before doing any other work:
-          zuwerk events acknowledge #{@event.public_id}
+      def briefing_mention_prompt_text
+        comments = briefing.comments.published.includes(:author, :rich_text_body).chronologically.map do |comment|
+          "- #{comment.author.name} (#{comment.published_at.iso8601}): #{comment.body.to_plain_text}"
+        end.join("\n").presence || "(none)"
 
-          Recurring prompt:
-          #{briefing_comment.prompt_snapshot}
-
-          Refresh project context when needed with:
-          zuwerk chat list --project #{project.id}
-          zuwerk tasks list --project #{project.id}
-          zuwerk search --project #{project.id} --query "<what you need to know>"
-
-          Format the final update with Markdown when useful. Return only the reader-facing briefing comment through ACP.
-        PROMPT
+        PromptTemplates.render(:briefing_mention, {
+          agent_name: @event.recipient.name,
+          event_id: @event.public_id,
+          project_id: project.id,
+          project_name: project.name,
+          briefing_title: briefing.title,
+          recurring_prompt: briefing.prompt.to_plain_text,
+          comment_reference: "##{briefing_comment.id}",
+          comment_body: briefing_comment.body.to_plain_text,
+          existing_updates: comments
+        })
       end
 
       def task_prompt_text
@@ -334,43 +332,20 @@ module AgentConnectors
           "You were assigned to this task."
         end
 
-        <<~PROMPT
-          You are #{@event.recipient.name}, an ACP-connected agent working on a specific Zuwerk task.
-          ACP text output is automatically saved as the single correlated task comment.
-          Do not publish the same final comment through the Zuwerk CLI/API.
-
-          Event ID: #{@event.public_id}
-          Trigger: #{reason}
-          Project ID: #{project.id}
-          Project name: #{project.name}
-          Task ID: #{task.id}
-          Task title: #{task.title}
-          Task status: #{task.status}
-          Task ancestry: #{ancestry}
-          Task description: #{task.description.to_plain_text.presence || "(none)"}
-
-          Acknowledge this event before doing any other work:
-          zuwerk events acknowledge #{@event.public_id}
-
-          Child tasks:
-          #{children}
-
-          Existing comments:
-          #{comments}
-
-          Refresh the complete task context before acting:
-          zuwerk tasks show #{task.id} --project #{project.id}
-
-          Search semantically across this project's chat, tasks, comments, and text attachments when earlier context may matter:
-          zuwerk search --project #{project.id} --query "<what you need to know>"
-
-          You may update this task with:
-          zuwerk tasks update #{task.id} --project #{project.id} [--title ...] [--description ...] [--status open|completed]
-
-          When this task changes repository files, run the relevant tests and commit the finished changes before reporting the outcome. Never commit credentials or unrelated work. Include the commit hash in the final ACP response. Do not push unless the task explicitly requires it.
-
-          Return the final user-facing outcome through ACP; Zuwerk creates the correlated task comment automatically.
-        PROMPT
+        PromptTemplates.render(:task, {
+          agent_name: @event.recipient.name,
+          event_id: @event.public_id,
+          trigger: reason,
+          project_id: project.id,
+          project_name: project.name,
+          task_id: task.id,
+          task_title: task.title,
+          task_status: task.status,
+          task_ancestry: ancestry,
+          task_description: task.description.to_plain_text.presence || "(none)",
+          child_tasks: children,
+          existing_comments: comments
+        })
       end
   end
 end

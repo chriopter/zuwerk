@@ -4,11 +4,8 @@ class AgentsController < ApplicationController
   def index
     @agents = User.agent.order(:name)
     @agent_profiles = AgentConnectors::Profiles.all
-    @latest_prompt_events = AgentEvent
-      .where(recipient: @agents)
-      .where.not(prompt_snapshot: [ nil, "" ])
-      .where.not(prompted_at: nil)
-      .order(prompted_at: :desc, id: :desc)
-      .each_with_object({}) { |event, events| events[event.recipient_id] ||= event }
+    @prompt_template = AgentConnectors::PromptTemplates.master
+    @prompt_types = AgentConnectors::PromptTemplates.types
+    @prompt_previews = AgentConnectors::PromptTemplates.previews
   end
 end

@@ -299,10 +299,15 @@
   .agents-row-copy p { @apply mt-1 truncate text-xs text-stone-500; }
   .agents-model { @apply ml-2 inline-flex rounded-full bg-violet-50 px-2 py-0.5 font-semibold text-violet-700; }
   .agents-row-copy small { @apply mt-1.5 block truncate text-xs text-[#d9563b]; }
-  .agents-prompt { @apply mt-3 max-w-3xl; }
-  .agents-prompt summary { @apply w-fit cursor-pointer text-xs font-semibold text-stone-600 hover:text-stone-950; }
-  .agents-prompt summary span { @apply ml-1 font-normal text-stone-400; }
-  .agents-prompt pre { @apply mt-2 max-h-80 overflow-auto whitespace-pre-wrap rounded-xl border border-stone-200 bg-stone-50 p-4 font-mono text-[11px] leading-5 text-stone-700; }
+  .agent-master-template { @apply overflow-hidden rounded-2xl border border-stone-200 bg-white; }
+  .agent-master-template > header { @apply grid gap-2 px-5 py-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_auto] sm:items-end; }
+  .agent-master-template header label { @apply mb-1.5 block text-[10px] font-bold uppercase tracking-[.12em] text-stone-500; }
+  .agent-master-template header select { @apply w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-800 outline-none focus:border-[#e85f42] sm:max-w-64; }
+  .agent-master-template header > span { @apply text-xs leading-5 text-stone-500; }
+  .agent-master-template header > small { @apply text-[10px] text-stone-400 sm:text-right; }
+  .agent-master-template > pre, .agent-master-source pre { @apply max-h-[40rem] overflow-auto whitespace-pre-wrap border-t border-stone-100 bg-stone-50 p-5 font-mono text-[11px] leading-5 text-stone-700; }
+  .agent-master-source { @apply border-t border-stone-200; }
+  .agent-master-source summary { @apply cursor-pointer px-5 py-3 text-xs font-semibold text-stone-500 hover:text-stone-900; }
   .agents-status { @apply inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold; }
   .agents-status i { @apply h-1.5 w-1.5 rounded-full; }
   .agents-status-online { @apply bg-emerald-50 text-emerald-700; }
@@ -597,6 +602,13 @@
   .briefing-detail-header h1, .briefing-form-heading h1, .briefing-form-card h1 { @apply mt-4 font-serif text-4xl font-normal tracking-tight text-stone-950; }
   .briefing-schedule { @apply mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-stone-400; }
   .briefing-schedule strong { @apply font-semibold text-stone-700; }
+  .briefing-pinned-result { @apply mt-6 rounded-2xl border border-white/70 bg-white/65 p-5 shadow-[0_10px_32px_rgba(39,51,45,.08),inset_0_1px_0_rgba(255,255,255,.75)] backdrop-blur-md; }
+  .briefing-pinned-result > header { @apply mb-4 flex items-center justify-between gap-4; }
+  .briefing-pinned-label { @apply inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[.14em] text-[#e85f42]; }
+  .briefing-pinned-label::before { content: "●"; @apply text-[8px]; }
+  .briefing-pinned-result time { @apply shrink-0 text-[10px] font-medium text-stone-400; }
+  .briefing-pinned-body { @apply max-h-[40rem] overflow-y-auto pr-2 text-sm leading-6 text-stone-700; }
+  .briefing-pinned-link { @apply mt-4 inline-flex text-xs font-semibold text-stone-500 transition hover:text-stone-900; }
   .briefing-prompt { @apply mt-6 max-w-4xl text-sm leading-6 text-stone-600; }
   .briefing-run-error { @apply mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700; }
   .briefing-conversation { @apply px-1 py-6; }
