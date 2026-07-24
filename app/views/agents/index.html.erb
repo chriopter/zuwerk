@@ -35,18 +35,39 @@
     </div>
     <div class="agents-list">
       <% @agents.each do |agent| %>
-        <article class="agents-row" data-agent-id="<%= agent.id %>" data-agent-origin="external">
-          <div class="agents-avatar"><%= agent.name.first.upcase %></div>
-          <div class="agents-row-copy">
-            <% connected = agent.external_connector_present? %>
-            <div class="agents-name-line"><h3><%= agent.name %></h3><span class="agents-status <%= agent.working? ? 'agents-status-working' : connected ? 'agents-status-online' : 'agents-status-offline' %>"><i></i><%= agent.working? ? "Working" : connected ? "Online" : "Offline" %></span></div>
-            <p>
-              External environment · ACP via Zuwerk CLI
-              <span class="agents-model">Model: <%= agent.connector_model.presence || "Not reported" %></span>
-            </p>
-            <% if agent.working? %><small><%= agent.working_label.presence || "Working" %></small><% end %>
+        <% sessions = @sessions_by_agent.fetch(agent.id, []) %>
+        <details class="agents-row" data-agent-id="<%= agent.id %>" data-agent-origin="external">
+          <summary class="agents-row-summary">
+            <div class="agents-avatar"><%= agent.name.first.upcase %></div>
+            <div class="agents-row-copy">
+              <% connected = agent.external_connector_present? %>
+              <div class="agents-name-line"><h3><%= agent.name %></h3><span class="agents-status <%= agent.working? ? 'agents-status-working' : connected ? 'agents-status-online' : 'agents-status-offline' %>"><i></i><%= agent.working? ? "Working" : connected ? "Online" : "Offline" %></span></div>
+              <p>
+                External environment · ACP via Zuwerk CLI
+                <span class="agents-model">Model: <%= agent.connector_model.presence || "Not reported" %></span>
+              </p>
+              <% if agent.working? %><small><%= agent.working_label.presence || "Working" %></small><% end %>
+            </div>
+            <span class="agents-session-count"><%= pluralize(sessions.size, "session") %></span>
+            <span class="agents-row-chevron" aria-hidden="true">⌄</span>
+          </summary>
+          <div class="agents-sessions">
+            <% if sessions.any? %>
+              <% sessions.each do |session| %>
+                <%= link_to agent_session_path(session), class: "agents-session-row", data: { agent_session_id: session.id } do %>
+                  <span class="agents-session-kind"><%= agent_session_kind(session) %></span>
+                  <span class="agents-session-copy">
+                    <strong><%= agent_session_label(session) %></strong>
+                    <small><%= session.project.name %> · <%= pluralize(session.prompt_count, "prompt") %> · used <%= time_ago_in_words(session.last_used_at) %> ago</small>
+                  </span>
+                  <code title="<%= session.external_session_id %>"><%= session.external_session_id %></code>
+                <% end %>
+              <% end %>
+            <% else %>
+              <p class="agents-sessions-empty">No ACP sessions yet. A session appears after this agent receives its first prompt in a chat, task, or briefing.</p>
+            <% end %>
           </div>
-        </article>
+        </details>
       <% end %>
       <% if @agents.empty? %>
         <div class="agents-empty"><h3>No agents yet</h3><p>Choose Claude, Codex, or Hermes above to create an invitation.</p></div>

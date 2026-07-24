@@ -5,6 +5,7 @@ class User < ApplicationRecord
   has_many :reactions, foreign_key: :author_id, dependent: :destroy
   has_many :agent_invitations, foreign_key: :inviter_id, dependent: :restrict_with_error
   has_many :agent_events, foreign_key: :recipient_id, dependent: :restrict_with_error
+  has_many :agent_sessions, foreign_key: :agent_id, dependent: :destroy
   has_many :task_assignments, foreign_key: :agent_id, dependent: :destroy
   has_many :chat_subscriptions, foreign_key: :agent_id, dependent: :destroy
   has_many :activities, foreign_key: :actor_id, dependent: :restrict_with_error

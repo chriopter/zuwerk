@@ -13,6 +13,20 @@ class AgentConnectors::RemotePoolTest < ActiveSupport::TestCase
     def close = (@closed = true)
   end
 
+  class PromptClient < FakeClient
+    attr_reader :current_model_name
+
+    def new_session
+      @session_number = @session_number.to_i + 1
+      "remote-session-#{@session_number}"
+    end
+
+    def prompt(_session_id, _text, **)
+      yield "Done" if block_given?
+      { "stopReason" => "end_turn" }
+    end
+  end
+
   setup do
     AgentConnectors::RemotePool.send(:reset!)
   end
@@ -60,6 +74,30 @@ class AgentConnectors::RemotePoolTest < ActiveSupport::TestCase
     AgentConnectors::RemotePool.send(:sync_connector_model, agent, client)
 
     assert_equal "Fable", agent.reload.connector_model
+  end
+
+  test "records one reusable session for each agent context" do
+    human = User.create!(name: "Context Human", email: "context-human@example.com", password: "password1")
+    agent = User.create!(name: "Context Agent", kind: :agent)
+    project = Project.create!(name: "Context Project")
+    task = project.tasks.create!(creator: human, title: "Context task")
+    event = AgentEvent.create!(recipient: agent, subject: project.chat.messages.create!(author: human, body: "Work"), event_type: "chat_message_mentioned")
+    transport = AgentConnectors.registry.register(agent.id) { |_line| }
+    AgentConnectors::RemotePool.client_factory = ->(candidate) { PromptClient.new(candidate) }
+
+    2.times do
+      AgentConnectors::RemotePool.prompt(agent, project, "Chat", event: event, expected_connector_owner: nil) { |_chunk| }
+    end
+    AgentConnectors::RemotePool.prompt(agent, task, "Task", event: event, expected_connector_owner: nil) { |_chunk| }
+
+    chat_session = AgentSession.find_by!(agent: agent, context: project.chat)
+    task_session = AgentSession.find_by!(agent: agent, context: task)
+    assert_equal 2, chat_session.prompt_count
+    assert_equal 1, task_session.prompt_count
+    assert_equal "remote-session-1", chat_session.external_session_id
+    assert_equal "remote-session-2", task_session.external_session_id
+  ensure
+    AgentConnectors.registry.unregister(agent.id, transport) if agent && transport
   end
 
   test "disconnect cancels a pending approval and its event" do

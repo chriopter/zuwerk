@@ -8,6 +8,7 @@ class Task < ApplicationRecord
   belongs_to :creator, class_name: "User"
   has_many :comments, class_name: "TaskComment", dependent: :destroy
   has_many :assignments, class_name: "TaskAssignment", dependent: :destroy
+  has_many :agent_sessions, as: :context, dependent: :destroy
   has_many :assigned_agents, through: :assignments, source: :agent
   has_many :reactions, as: :reactable, dependent: :destroy
   has_rich_text :description

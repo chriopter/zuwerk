@@ -14,6 +14,25 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
     message = project.chat.messages.create!(author: @human, body: "Research this")
     event = AgentEvent.create!(recipient: @agent, subject: message, event_type: "chat_message_mentioned")
     event.update!(prompt_snapshot: "You are Hermes.\nInvestigate the request.", prompted_at: Time.current)
+    AgentSession.create!(
+      agent: @agent,
+      project: project,
+      context: project.chat,
+      external_session_id: "chat-session-123",
+      prompt_count: 2,
+      started_at: 1.hour.ago,
+      last_used_at: 2.minutes.ago
+    )
+    task = project.tasks.create!(creator: @human, title: "Prepare launch")
+    AgentSession.create!(
+      agent: @agent,
+      project: project,
+      context: task,
+      external_session_id: "task-session-456",
+      prompt_count: 1,
+      started_at: 1.minute.ago,
+      last_used_at: 1.minute.ago
+    )
 
     get agents_path
 
@@ -26,6 +45,15 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
     assert_select "[data-agent-id='#{@agent.id}']", text: /Working/
     assert_select "[data-agent-id='#{@agent.id}'] .agents-model", text: "Model: Fable"
     assert_select "[data-agent-id='#{offline.id}']", text: /Offline/
+    assert_select "details[data-agent-id='#{@agent.id}']" do
+      assert_select ".agents-session-count", text: "2 sessions"
+      assert_select "[data-agent-session-id]", count: 2
+      assert_select "a[href='#{project_chat_path(project)}']", text: /Shared project chat/
+      assert_select "a[href='#{project_task_path(project, task)}']", text: /Prepare launch/
+      assert_select "code", text: /chat-session-123/
+      assert_select "code", text: /task-session-456/
+    end
+    assert_select "details[data-agent-id='#{offline.id}'] .agents-sessions-empty", text: /No ACP sessions yet/
     assert_select ".agent-master-template", count: 1 do
       assert_select "select[data-prompt-preview-target='select'] option", count: 4
       assert_select "option[value='chat']", text: "Chat mention"

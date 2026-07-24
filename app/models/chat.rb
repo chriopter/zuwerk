@@ -4,6 +4,7 @@ class Chat < ApplicationRecord
   belongs_to :project
   has_many :messages, class_name: "ChatMessage", dependent: :destroy
   has_many :subscriptions, class_name: "ChatSubscription", dependent: :destroy
+  has_many :agent_sessions, as: :context, dependent: :destroy
   has_many :automatically_notified_agents, through: :subscriptions, source: :agent
   validates :project_id, uniqueness: true
 

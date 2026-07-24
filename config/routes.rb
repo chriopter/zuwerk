@@ -7,6 +7,7 @@ Rails.application.routes.draw do
   resource :session, only: %i[new create destroy]
   resources :projects, only: [ :index, :show, :create ] do
     patch :reorder, on: :member
+    resources :agent_turns, only: :destroy
     resource :chat, only: :show do
       resources :messages, controller: "chat_messages", only: :create do
         resources :reactions, only: :create

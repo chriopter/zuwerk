@@ -9,8 +9,10 @@ module AgentConnectors
 
         mutex_for(agent.id).synchronize do
           entry = entry_for(agent.id, transport)
-          key = [ origin.class.polymorphic_name, origin.id ]
+          context = session_context(origin)
+          key = [ context.class.polymorphic_name, context.id ]
           session_id = entry[:sessions][key] ||= entry[:client].new_session
+          AgentSession.record_usage!(agent:, context:, external_session_id: session_id)
           sync_connector_model(agent, entry[:client])
           result = entry[:client].prompt(
             session_id,
@@ -64,6 +66,10 @@ module AgentConnectors
           return if model.blank? || agent.connector_model == model
 
           agent.update!(connector_model: model)
+        end
+
+        def session_context(origin)
+          origin.is_a?(Project) ? origin.chat : origin
         end
 
         def reset!

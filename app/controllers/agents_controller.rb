@@ -7,5 +7,10 @@ class AgentsController < ApplicationController
     @prompt_template = AgentConnectors::PromptTemplates.master
     @prompt_types = AgentConnectors::PromptTemplates.types
     @prompt_previews = AgentConnectors::PromptTemplates.previews
+    @sessions_by_agent = AgentSession
+      .where(agent: @agents)
+      .includes(:project, :context)
+      .recent_first
+      .group_by(&:agent_id)
   end
 end

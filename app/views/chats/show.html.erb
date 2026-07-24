@@ -16,9 +16,11 @@
           <% end %>
           <% @agents.each do |agent| %>
             <% enabled = @auto_notify_agent_ids.include?(agent.id) %>
+            <span class="avatar-stack-form" data-controller="turn-cancel">
             <%= form_with url: project_chat_subscription_path(@project, agent), method: :patch, class: "avatar-stack-form" do %>
               <%= hidden_field_tag :enabled, enabled ? "0" : "1" %>
               <button type="submit" class="avatar-stack-item is-agent <%= 'is-working' if agent.working? %>" data-agent-id="<%= agent.id %>" aria-pressed="<%= enabled %>"
+                data-action="click->turn-cancel#click"
                 title="<%= agent.name %><%= enabled ? " — watching this chat" : " — mentions only" %>"
                 aria-label="<%= enabled ? "Stop #{agent.name} watching this chat" : "Let #{agent.name} watch this chat" %>">
                 <%= agent.name.first.upcase %>
@@ -26,6 +28,8 @@
                 <% if enabled %><i class="avatar-stack-eye" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/></svg></i><% end %>
               </button>
             <% end %>
+            <%= form_with url: project_agent_turn_path(@project, agent), method: :delete, class: "hidden", data: { turn_cancel_target: "cancelForm" } do %><% end %>
+            </span>
           <% end %>
           <% if @agents.empty? %>
             <%= link_to new_agent_invitation_path, class: "pill-primary", aria: { label: "Invite agent" }, title: "Invite agent" do %>

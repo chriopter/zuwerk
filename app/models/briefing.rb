@@ -12,6 +12,7 @@ class Briefing < ApplicationRecord
   belongs_to :creator, class_name: "User"
   belongs_to :agent, class_name: "User"
   has_many :comments, class_name: "BriefingComment", dependent: :destroy
+  has_many :agent_sessions, as: :context, dependent: :destroy
   has_rich_text :prompt
 
   before_validation :set_initial_next_run_at, on: :create

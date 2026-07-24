@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_24_191000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_24_210000) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
@@ -121,6 +121,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_24_191000) do
     t.datetime "updated_at", null: false
     t.index ["inviter_id"], name: "index_agent_invitations_on_inviter_id"
     t.index ["token_digest"], name: "index_agent_invitations_on_token_digest", unique: true
+  end
+
+  create_table "agent_sessions", force: :cascade do |t|
+    t.integer "agent_id", null: false
+    t.integer "context_id", null: false
+    t.string "context_type", null: false
+    t.datetime "created_at", null: false
+    t.string "external_session_id", null: false
+    t.datetime "last_used_at", null: false
+    t.integer "project_id", null: false
+    t.integer "prompt_count", default: 0, null: false
+    t.datetime "started_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["agent_id", "context_type", "context_id"], name: "idx_on_agent_id_context_type_context_id_be65605170", unique: true
+    t.index ["agent_id", "last_used_at"], name: "index_agent_sessions_on_agent_id_and_last_used_at"
+    t.index ["agent_id"], name: "index_agent_sessions_on_agent_id"
+    t.index ["context_type", "context_id"], name: "index_agent_sessions_on_context"
+    t.index ["project_id"], name: "index_agent_sessions_on_project_id"
   end
 
   create_table "briefing_comments", force: :cascade do |t|
@@ -353,6 +371,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_24_191000) do
   add_foreign_key "agent_approvals", "users", column: "resolved_by_id"
   add_foreign_key "agent_events", "users", column: "recipient_id"
   add_foreign_key "agent_invitations", "users", column: "inviter_id"
+  add_foreign_key "agent_sessions", "projects"
+  add_foreign_key "agent_sessions", "users", column: "agent_id"
   add_foreign_key "briefing_comments", "agent_events"
   add_foreign_key "briefing_comments", "briefings"
   add_foreign_key "briefing_comments", "users", column: "author_id"
