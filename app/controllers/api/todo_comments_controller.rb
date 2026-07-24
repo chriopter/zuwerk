@@ -23,7 +23,7 @@ module Api
 
     def create_for_event
       event = @current_agent.agent_events.find_by!(public_id: params[:event_id])
-      unless event.event_type == "todo_assigned" && event.subject.todo == todo
+      unless event.event_type.in?(%w[todo_assigned comment_mentioned]) && event.todo == todo
         raise ActiveRecord::RecordNotFound.new("AgentEvent not found", "AgentEvent")
       end
 

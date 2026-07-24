@@ -23,7 +23,7 @@ class AgentEvent < ApplicationRecord
   attr_readonly :public_id
 
   validates :public_id, presence: true, uniqueness: true
-  validates :event_type, inclusion: { in: %w[mentioned todo_assigned board_scheduled] }
+  validates :event_type, inclusion: { in: %w[mentioned comment_mentioned todo_assigned board_scheduled] }
   validates :state, inclusion: { in: STATES }
   validates :recipient_id, uniqueness: { scope: [ :event_type, :subject_type, :subject_id ] }
 
@@ -120,11 +120,11 @@ class AgentEvent < ApplicationRecord
   end
 
   def todo
-    subject.todo if event_type == "todo_assigned"
+    subject.todo if event_type.in?(%w[todo_assigned comment_mentioned])
   end
 
   def project
-    event_type == "todo_assigned" ? todo.project : subject.project
+    todo&.project || subject.project
   end
 
   def self.latest_for_project(project)
@@ -132,7 +132,9 @@ class AgentEvent < ApplicationRecord
   end
 
   def self.latest_for_todo(todo)
-    where(subject_type: "TodoAssignment", subject_id: todo.assignments.select(:id)).order(created_at: :desc, id: :desc).first
+    assignment_events = where(subject_type: "TodoAssignment", subject_id: todo.assignments.select(:id))
+    comment_events = where(subject_type: "TodoComment", subject_id: todo.comments.select(:id))
+    assignment_events.or(comment_events).order(created_at: :desc, id: :desc).first
   end
 
   def acknowledge!
@@ -167,13 +169,12 @@ class AgentEvent < ApplicationRecord
 
     def acknowledgement_target
       return todo if event_type == "todo_assigned"
-      subject if event_type == "mentioned"
+      subject if event_type.in?(%w[mentioned comment_mentioned])
     end
 
     def event_context
-      context = { project: { id: subject.project.id, name: subject.project.name } }
-      if event_type == "todo_assigned"
-        todo = subject.todo
+      context = { project: { id: project.id, name: project.name } }
+      if event_type.in?(%w[todo_assigned comment_mentioned])
         context.merge(todo: { id: todo.id, title: todo.title }, origin: "todo")
       elsif event_type == "board_scheduled"
         automation = subject.board_automation

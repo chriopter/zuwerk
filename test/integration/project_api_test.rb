@@ -401,4 +401,21 @@ class ProjectApiTest < ActionDispatch::IntegrationTest
       assert_equal "AgentEvent not found.", response.parsed_body.fetch("error")
     end
   end
+
+  test "an agent can publish a correlated response to its todo comment mention" do
+    human = User.create!(name: "Nora", email: "todo-mention@example.com", password: "password1")
+    todo = @project.todos.create!(creator: human, title: "Expected todo")
+    source = todo.comments.create!(author: human, body: "@Helper please create the checklist")
+    event = source.agent_events.sole
+
+    assert_difference "TodoComment.count", 1 do
+      post api_project_todo_comments_path(@project, todo),
+        params: { body: "Checklist created", event_id: event.public_id },
+        headers: @headers,
+        as: :json
+      assert_response :created
+    end
+
+    assert_equal event, TodoComment.last.agent_event
+  end
 end

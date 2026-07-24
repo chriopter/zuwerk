@@ -116,6 +116,27 @@ class AgentConnectors::ChatBridgeTest < ActiveSupport::TestCase
     assert_equal "running", event.state
   end
 
+  test "delivers a todo comment mention and saves ACP output on that todo" do
+    human = User.create!(name: "Todo Human", email: "todo-human@example.com", password: "password1")
+    agent = User.create!(name: "Fable Dev", kind: :agent)
+    project = Project.create!(name: "Kitchen")
+    todo = project.todos.create!(creator: human, title: "Bake a cake")
+    source = todo.comments.create!(author: human, body: "@fable-dev create the preparation tasks")
+    event = source.agent_events.sole
+    event.transition_to!("running")
+    event.update_columns(connector_connection_id: "connector")
+
+    bridge(event, pool: ChunkPool.new("Created the tasks.")).deliver
+
+    response = event.reload.publication_comment
+    assert_equal todo, response.todo
+    assert_equal agent, response.author
+    assert_equal "Created the tasks.", response.body.to_plain_text
+    assert_equal "completed", event.state
+    assert_includes event.prompt_snapshot, "Trigger: You were mentioned in comment ##{source.id}"
+    assert_includes event.prompt_snapshot, source.body.to_plain_text
+  end
+
   private
     def build_event
       human = User.create!(name: "ACP Human", email: "acp-#{SecureRandom.hex(4)}@example.com", password: "password1")

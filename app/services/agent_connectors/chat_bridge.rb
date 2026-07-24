@@ -78,7 +78,7 @@ module AgentConnectors
       end
 
       def project
-        @event.subject.project
+        @event.project
       end
 
       def todo
@@ -101,7 +101,11 @@ module AgentConnectors
       end
 
       def todo_event?
-        @event.event_type == "todo_assigned"
+        @event.event_type.in?(%w[todo_assigned comment_mentioned])
+      end
+
+      def comment_mention_event?
+        @event.event_type == "comment_mentioned"
       end
 
       def board_event?
@@ -324,13 +328,19 @@ module AgentConnectors
         comments = todo.comments.includes(:author, :rich_text_body).order(:created_at).map do |comment|
           "- #{comment.author.name} (#{comment.created_at.iso8601}): #{comment.body.to_plain_text}"
         end.join("\n").presence || "(none)"
+        reason = if comment_mention_event?
+          "You were mentioned in comment ##{@event.subject.id}: #{@event.subject.body.to_plain_text}"
+        else
+          "You were assigned to this todo."
+        end
 
         <<~PROMPT
-          You are #{@event.recipient.name}, an ACP-connected agent assigned to a specific Zuwerk todo.
+          You are #{@event.recipient.name}, an ACP-connected agent working on a specific Zuwerk todo.
           ACP text output is automatically saved as the single correlated todo comment.
           Do not publish the same final comment through the Zuwerk CLI/API.
 
           Event ID: #{@event.public_id}
+          Trigger: #{reason}
           Project ID: #{project.id}
           Project name: #{project.name}
           Todo ID: #{todo.id}

@@ -109,4 +109,39 @@ class TodoTest < ActiveSupport::TestCase
     assert_not other_todo.comments.new(author: agent, body: "Wrong todo", agent_event: event).valid?
     assert_not todo.comments.new(author: other_agent, body: "Wrong author", agent_event: event).valid?
   end
+
+  test "mentioning an agent in a human todo comment creates a todo-scoped wake event" do
+    agent = User.create!(name: "Fable Dev", kind: :agent)
+    todo = Todo.create!(project: @project, creator: @human, title: "Bake a cake")
+
+    assert_difference "AgentEvent.count", 1 do
+      todo.comments.create!(author: @human, body: "Please help @FABLE-DEV with this")
+    end
+
+    event = AgentEvent.last
+    assert_equal "comment_mentioned", event.event_type
+    assert_equal agent, event.recipient
+    assert_equal todo, event.todo
+    assert_equal "todo", event.payload.dig(:context, :origin)
+  end
+
+  test "agent-authored todo comments do not recursively mention agents" do
+    agent = User.create!(name: "Fable Dev", kind: :agent)
+    todo = Todo.create!(project: @project, creator: @human, title: "Bake a cake")
+
+    assert_no_difference "AgentEvent.count" do
+      todo.comments.create!(author: agent, body: "Passing this to @fable-dev")
+    end
+  end
+
+  test "acknowledging a todo comment mention reacts to the triggering comment" do
+    agent = User.create!(name: "Fable Dev", kind: :agent)
+    todo = Todo.create!(project: @project, creator: @human, title: "Bake a cake")
+    comment = todo.comments.create!(author: @human, body: "@fable-dev please help")
+    event = comment.agent_events.sole
+
+    event.acknowledge!
+
+    assert comment.reactions.exists?(author: agent, emoji: "👍")
+  end
 end
