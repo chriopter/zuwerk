@@ -79,6 +79,44 @@ class ProjectApiTest < ActionDispatch::IntegrationTest
     assert_equal({ "notify_agents" => true }, response.parsed_body.fetch("room_setting"))
   end
 
+  test "recipient explicitly acknowledges an active event" do
+    human = User.create!(name: "Ack Human", email: "ack@example.com", password: "password1")
+    source = @project.messages.create!(author: human, body: "@Helper please investigate")
+    event = source.agent_events.find_by!(recipient: @agent)
+    event.transition_to!("running")
+
+    assert_difference -> { source.reactions.where(author: @agent, emoji: "👍").count }, 1 do
+      post api_acknowledge_agent_event_path(event.public_id), headers: @headers, as: :json
+    end
+
+    assert_response :success
+    assert_equal event.public_id, response.parsed_body.fetch("id")
+    assert event.reload.accepted_at?
+
+    assert_no_difference "Reaction.count" do
+      post api_acknowledge_agent_event_path(event.public_id), headers: @headers, as: :json
+    end
+    assert_response :success
+  end
+
+  test "agent cannot acknowledge another recipient's or queued event" do
+    human = User.create!(name: "Other Ack Human", email: "other-ack@example.com", password: "password1")
+    other_agent = User.create!(name: "Other Ack Agent", kind: :agent, api_token: "other-ack-token")
+    source = @project.messages.create!(author: human, body: "@Helper acknowledge")
+    event = source.agent_events.find_by!(recipient: @agent)
+
+    post api_acknowledge_agent_event_path(event.public_id), headers: @headers, as: :json
+    assert_response :not_found
+    assert_nil event.reload.accepted_at
+
+    event.transition_to!("running")
+    post api_acknowledge_agent_event_path(event.public_id),
+      headers: { "Authorization" => "Bearer other-ack-token" },
+      as: :json
+    assert_response :not_found
+    assert_nil event.reload.accepted_at
+  end
+
   test "project API requires bearer authentication and returns JSON for missing records" do
     get api_projects_path, as: :json
     assert_response :unauthorized

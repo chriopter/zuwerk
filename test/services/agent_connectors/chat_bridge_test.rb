@@ -49,7 +49,8 @@ class AgentConnectors::ChatBridgeTest < ActiveSupport::TestCase
     assert_equal "Automatic answer", event.reload.publication_message.body
     assert_equal "completed", event.state
     assert event.delivered_at?
-    assert_equal [ "👍" ], event.subject.reactions.where(author: agent).pluck(:emoji)
+    assert_nil event.accepted_at
+    assert_empty event.subject.reactions.where(author: agent, emoji: "👍")
   end
 
   test "creates the project response while ACP output is streaming" do
@@ -70,6 +71,7 @@ class AgentConnectors::ChatBridgeTest < ActiveSupport::TestCase
 
     assert_includes event.reload.prompt_snapshot, "Project ID: #{project.id}"
     assert_includes event.prompt_snapshot, "Triggering message: Please answer"
+    assert_includes event.prompt_snapshot, "zuwerk events acknowledge #{event.public_id}"
     assert event.prompted_at?
   end
 

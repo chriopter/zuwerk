@@ -26,7 +26,6 @@ module AgentConnectors
 
     private
       def perform_delivery
-        return unless mutate_owned_event { @event.acknowledge! }
         set_working(true)
         if correlated_publication?
           validate_publication!
@@ -264,6 +263,9 @@ module AgentConnectors
           Project name: #{project.name}
           Triggering message: #{@event.subject.body}
 
+          Acknowledge this event before doing any other work:
+          zuwerk events acknowledge #{@event.public_id}
+
           Read the conversation, including attachment metadata and authenticated download paths, with:
           zuwerk messages list --project #{project.id}
 
@@ -301,6 +303,9 @@ module AgentConnectors
           Board automation: #{board_automation.title}
           Scheduled for: #{board_post.scheduled_for.iso8601}
 
+          Acknowledge this event before doing any other work:
+          zuwerk events acknowledge #{@event.public_id}
+
           Recurring prompt:
           #{board_post.prompt_snapshot}
 
@@ -333,6 +338,9 @@ module AgentConnectors
           Todo status: #{todo.status}
           Todo ancestry: #{ancestry}
           Todo description: #{todo.description.to_plain_text.presence || "(none)"}
+
+          Acknowledge this event before doing any other work:
+          zuwerk events acknowledge #{@event.public_id}
 
           Child todos:
           #{children}

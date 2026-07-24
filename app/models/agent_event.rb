@@ -136,10 +136,12 @@ class AgentEvent < ApplicationRecord
   end
 
   def acknowledge!
-    transaction do
-      update!(accepted_at: Time.current, last_error: nil)
-      acknowledgement_target&.reactions&.find_or_create_by!(author: recipient, emoji: "👍")
-      true
+    with_lock do
+      unless accepted_at?
+        update!(accepted_at: Time.current, last_error: nil)
+        acknowledgement_target&.reactions&.find_or_create_by!(author: recipient, emoji: "👍")
+      end
+      self
     end
   end
 

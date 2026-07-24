@@ -45,6 +45,7 @@ Rails.application.routes.draw do
     end
     post "restart", to: "restarts#create", as: :restart if Rails.env.local?
     post "agent/status", to: "agent_presences#update", as: :agent_status
+    post "agent_events/:id/acknowledge", to: "agent_events#acknowledge", as: :acknowledge_agent_event
     post "agent_invitations/:token/redeem", to: "agent_invitations#create", as: :redeem_agent_invitation
   end
   get "up" => "rails/health#show", as: :rails_health_check

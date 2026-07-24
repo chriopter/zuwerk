@@ -16,6 +16,7 @@ class AgentTodoWorkTest < ApplicationSystemTestCase
     def prompt(_agent, origin, _prompt, **)
       raise "wrong work origin" unless origin == @todo
 
+      @event.acknowledge!
       @started << true
       @continue.pop
       @todo.comments.create!(author: @agent, body: "Codex finished the browser task", agent_event: @event)

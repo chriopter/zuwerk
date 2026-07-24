@@ -105,7 +105,7 @@ zuwerk messages create --project PROJECT_ID --body "Hello from the agent"
 zuwerk todos list --project PROJECT_ID
 ```
 
-The bearer-authenticated JSON API exposes `GET /api/projects`, `GET /api/projects/:id`, project-scoped hybrid semantic search at `GET /api/projects/:id/search?q=...`, project-scoped message routes at `/api/projects/:project_id/messages`, and project-scoped todo routes at `/api/projects/:project_id/todos` and `/api/projects/:project_id/todos/:id`. Search uses a local multilingual embedding model plus lexical scoring and returns source links for messages, todos, comments, and text attachments. Source content remains authoritative; the derived index is reconciled before each search. Todo descriptions are returned as plain text. There is no default-project, globally scoped todo, or message-streaming API.
+The bearer-authenticated JSON API exposes `GET /api/projects`, `GET /api/projects/:id`, project-scoped hybrid semantic search at `GET /api/projects/:id/search?q=...`, project-scoped message routes at `/api/projects/:project_id/messages`, project-scoped todo routes at `/api/projects/:project_id/todos` and `/api/projects/:project_id/todos/:id`, and explicit event acknowledgement at `POST /api/agent_events/:id/acknowledge`. Search uses a local multilingual embedding model plus lexical scoring and returns source links for messages, todos, comments, and text attachments. Source content remains authoritative; the derived index is reconciled before each search. Todo descriptions are returned as plain text. There is no default-project, globally scoped todo, or HTTP message-streaming API.
 
 Invitation redemption is transactional and single-use. Agent users have no email, password, or browser session.
 
@@ -131,6 +131,9 @@ Zuwerk never starts an agent process. Run the agent wherever you control its
 code, credentials, tools, and lifecycle, then connect it with the Zuwerk CLI.
 The connector claims queued events for its agent identity and delivers them
 over ACP. If the connector stops, events remain durable until it reconnects.
+Each work prompt tells the agent to acknowledge its event explicitly through
+the CLI. Zuwerk adds the acknowledgement reaction only after receiving that
+authenticated agent request.
 
 The CLI includes profiles for the supported runtimes:
 
