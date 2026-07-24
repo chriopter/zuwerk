@@ -325,14 +325,14 @@
     background-image:
       radial-gradient(75% 68% at 50% 46%, rgba(245,247,246,.85), rgba(245,247,246,.35) 55%, transparent 78%),
       conic-gradient(from 200deg at 58% 38%,
-        rgba(110,160,250,.30),
-        rgba(178,125,250,.26) 12%,
-        rgba(248,140,190,.24) 26%,
-        rgba(250,190,130,.20) 38%,
-        rgba(250,225,140,.18) 50%,
-        rgba(120,225,170,.24) 64%,
-        rgba(70,200,225,.28) 80%,
-        rgba(110,160,250,.30));
+        rgba(110,160,250,.20),
+        rgba(178,125,250,.17) 12%,
+        rgba(248,140,190,.16) 26%,
+        rgba(250,190,130,.13) 38%,
+        rgba(250,225,140,.12) 50%,
+        rgba(120,225,170,.16) 64%,
+        rgba(70,200,225,.19) 80%,
+        rgba(110,160,250,.20));
   }
   .workspace-topbar { @apply relative z-40; }
   .workspace-topbar-inner { @apply mx-auto grid w-full max-w-[1000px] grid-cols-[1fr_auto_1fr] items-center gap-2.5 px-0.5; }
