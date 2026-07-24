@@ -9,7 +9,7 @@ class ApplicationController < ActionController::Base
     end
 
     def workspace_projects
-      @workspace_projects ||= ProjectAccess.new(current_user).projects.order(:name)
+      @workspace_projects ||= ProjectAccess.new(current_user).projects.order(:position, :name)
     end
 
     def require_human!

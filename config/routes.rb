@@ -4,6 +4,7 @@ Rails.application.routes.draw do
   resource :session, only: %i[new create destroy]
   resources :messages, only: :create
   resources :projects, only: [ :index, :show, :create ] do
+    patch :reorder, on: :member
     get :chat, on: :member, to: "messages#index"
     resources :messages, only: :create do
       resources :reactions, only: :create

@@ -1,5 +1,5 @@
 module ApplicationHelper
-  def online_agents_count
-    User.agent.count(&:external_connector_present?)
+  def online_agents
+    User.agent.order(:name).select(&:external_connector_present?)
   end
 end

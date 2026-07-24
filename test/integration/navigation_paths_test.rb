@@ -58,14 +58,14 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
     assert_select ".project-switcher" do
       assert_select "summary", text: /Alpha/
       assert_select "a[href='#{project_path(@second_project)}']", text: /Beta/
-      assert_select "a[href='#{root_path}']", text: /All projects/
     end
+    assert_select ".workspace-topbar a.topbar-home[href='#{root_path}']"
     assert_select ".topbar-global-nav, .topbar-account", count: 0
     assert_select ".project-home h1", text: "Alpha"
     assert_select ".project-tool-card", count: 4
     assert_select "a[href='#{project_todos_path(@first_project)}']", text: /Tasks/
     assert_select "a[href='#{chat_project_path(@first_project)}']", text: /Chat/
-    assert_select "a[href='#{project_board_posts_path(@first_project)}']", text: /Board/
+    assert_select "a[href='#{project_board_posts_path(@first_project)}']", text: /Briefing/
     assert_select "a[href='#{project_file_entries_path(@first_project)}']", text: /Files/
     assert_select ".project-tool-card", text: /Latest project note/
 

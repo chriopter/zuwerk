@@ -16,7 +16,7 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "h1", "Agents"
     assert_select ".workspace-sidebar", count: 0
-    assert_select ".workspace-topbar a[aria-current='page'][href='#{agents_path}']", text: "Agents"
+    assert_select ".workspace-topbar .topbar-status-menu a[aria-current='page'][href='#{agents_path}']", text: "Agents"
     assert_select "[data-agent-id='#{@agent.id}']", text: /Hermes/
     assert_select "[data-agent-origin='external']", count: 2
     assert_select "[data-agent-id='#{@agent.id}']", text: /Working/

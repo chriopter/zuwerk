@@ -3,7 +3,7 @@ class ProjectsController < ApplicationController
   before_action :require_human!
 
   def index
-    @projects = Project.includes(:todos).order(:name)
+    load_directory
   end
 
   def show
@@ -21,13 +21,37 @@ class ProjectsController < ApplicationController
     project = Project.new(project_params)
     if project.save
       project.room_setting
-      redirect_to projects_path, notice: "Project created."
+      redirect_to projects_path
     else
-      redirect_to root_path, alert: project.errors.full_messages.to_sentence
+      load_directory
+      @create_project = project
+      render :index, status: :unprocessable_entity
     end
   end
 
+  def reorder
+    project = Project.find(params[:id])
+    ids = Project.order(:position, :name).pluck(:id) - [ project.id ]
+    ids.insert(params[:position].to_i.clamp(0, ids.size), project.id)
+    Project.transaction do
+      ids.each_with_index { |id, index| Project.where(id: id).update_all(position: index) }
+    end
+    head :no_content
+  end
+
   private
+    def load_directory
+      @projects = Project.includes(:todos).order(:position, :name)
+      author_pairs = Message.distinct.pluck(:project_id, :author_id)
+      assignment_pairs = TodoAssignment.joins(:todo).distinct.pluck("todos.project_id", :agent_id)
+      subscription_pairs = AgentSubscription.pluck(:project_id, :agent_id)
+      pairs = (author_pairs + assignment_pairs + subscription_pairs).uniq
+      people = User.where(id: pairs.map(&:last)).index_by(&:id)
+      @project_participants = pairs.group_by(&:first).transform_values do |entries|
+        entries.filter_map { |_, user_id| people[user_id] }.uniq
+      end
+    end
+
     def route_first_run
       redirect_to new_onboarding_path unless User.human.exists?
     end

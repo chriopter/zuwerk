@@ -11,7 +11,7 @@ class BoardFlowTest < ActionDispatch::IntegrationTest
   test "project overview opens a blog-like board with recurring automations" do
     get project_path(@project)
     assert_response :success
-    assert_select "a[href='#{project_board_posts_path(@project)}']", text: /Board/
+    assert_select "a[href='#{project_board_posts_path(@project)}']", text: /Briefing/
 
     get project_board_posts_path(@project)
     assert_response :success

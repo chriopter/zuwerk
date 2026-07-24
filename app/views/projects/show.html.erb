@@ -2,37 +2,28 @@
 
 <section class="project-home" aria-labelledby="project-title">
   <header class="project-home-header">
-    <span class="project-home-mark" aria-hidden="true"><%= @project.name.first.upcase %></span>
-    <div>
-      <p class="projects-overview-eyebrow">Project</p>
-      <h1 id="project-title"><%= @project.name %></h1>
-      <p>Conversation and work, together in one place.</p>
-    </div>
+    <h1 id="project-title"><%= @project.name %></h1>
   </header>
 
   <div class="project-tool-grid">
-    <%= link_to project_todos_path(@project), class: "project-tool-card project-tool-tasks" do %>
+    <%= link_to project_board_posts_path(@project), class: "project-tool-card glass-card glass-card-hover" do %>
       <header>
-        <span class="project-tool-icon" aria-hidden="true">✓</span>
-        <span><strong>Tasks</strong><small><%= @task_counts.fetch("open", 0) %> open · <%= @task_counts.fetch("in_progress", 0) %> in progress</small></span>
-        <span class="project-tool-arrow" aria-hidden="true">→</span>
+        <span><strong>Briefing</strong></span>
       </header>
       <div class="project-tool-preview">
-        <% if @recent_todos.any? %>
-          <% @recent_todos.each do |todo| %>
-            <span class="project-tool-row"><i class="project-tool-status project-tool-status-<%= todo.status.dasherize %>"></i><span><%= todo.title %></span><small>#<%= todo.id %></small></span>
+        <% if @recent_board_posts.any? %>
+          <% @recent_board_posts.each do |post| %>
+            <span class="project-board-preview"><strong><%= post.title %></strong><small><%= truncate(post.body.to_plain_text.squish, length: 110) %></small><i><%= post.author.name %> · <%= time_ago_in_words(post.published_at) %> ago</i></span>
           <% end %>
         <% else %>
-          <span class="project-tool-empty">No open tasks.</span>
+          <span class="project-tool-empty">Recurring agent publications will appear here.</span>
         <% end %>
       </div>
     <% end %>
 
-    <%= link_to chat_project_path(@project), class: "project-tool-card project-tool-chat" do %>
+    <%= link_to chat_project_path(@project), class: "project-tool-card glass-card glass-card-hover" do %>
       <header>
-        <span class="project-tool-icon" aria-hidden="true">✦</span>
-        <span><strong>Chat</strong><small>Shared conversation with people and agents</small></span>
-        <span class="project-tool-arrow" aria-hidden="true">→</span>
+        <span><strong>Chat</strong></span>
       </header>
       <div class="project-tool-preview">
         <% if @recent_messages.any? %>
@@ -48,28 +39,24 @@
       </div>
     <% end %>
 
-    <%= link_to project_board_posts_path(@project), class: "project-tool-card project-tool-board" do %>
+    <%= link_to project_todos_path(@project), class: "project-tool-card glass-card glass-card-hover" do %>
       <header>
-        <span class="project-tool-icon" aria-hidden="true">◫</span>
-        <span><strong>Board</strong><small><%= @active_board_automations_count %> active automations</small></span>
-        <span class="project-tool-arrow" aria-hidden="true">→</span>
+        <span><strong>Tasks</strong></span>
       </header>
       <div class="project-tool-preview">
-        <% if @recent_board_posts.any? %>
-          <% @recent_board_posts.each do |post| %>
-            <span class="project-board-preview"><strong><%= post.title %></strong><small><%= truncate(post.body.to_plain_text.squish, length: 110) %></small><i><%= post.author.name %> · <%= time_ago_in_words(post.published_at) %> ago</i></span>
+        <% if @recent_todos.any? %>
+          <% @recent_todos.each do |todo| %>
+            <span class="project-tool-row"><i class="project-tool-status project-tool-status-<%= todo.status.dasherize %>"></i><span><%= todo.title %></span><small>#<%= todo.id %></small></span>
           <% end %>
         <% else %>
-          <span class="project-tool-empty">Recurring agent publications will appear here.</span>
+          <span class="project-tool-empty">No open tasks.</span>
         <% end %>
       </div>
     <% end %>
 
-    <%= link_to project_file_entries_path(@project), class: "project-tool-card project-tool-files" do %>
+    <%= link_to project_file_entries_path(@project), class: "project-tool-card glass-card glass-card-hover" do %>
       <header>
-        <span class="project-tool-icon" aria-hidden="true">▰</span>
-        <span><strong>Files</strong><small><%= pluralize(@file_entries_count, "item") %> in this project</small></span>
-        <span class="project-tool-arrow" aria-hidden="true">→</span>
+        <span><strong>Files</strong></span>
       </header>
       <div class="project-tool-preview">
         <% if @recent_file_entries.any? %>

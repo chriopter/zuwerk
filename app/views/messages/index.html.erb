@@ -3,20 +3,15 @@
 <%= turbo_stream_from "agent_presence" %>
 
 <section class="chat-panel" data-controller="chat-scroll">
-    <header class="chat-header-bar">
-      <div class="chat-title-block">
-        <div class="min-w-0">
-          <nav class="workspace-breadcrumb" aria-label="Breadcrumb">
-            <%= link_to @project.name, project_path(@project) %><span aria-hidden="true">/</span><span aria-current="page">Chat</span>
-          </nav>
-          <h1 class="sr-only">Chat</h1>
-          <p><%= pluralize(@agents.count, "agent") %> available</p>
-        </div>
-      </div>
+    <header class="chat-header">
+      <nav class="workspace-breadcrumb" aria-label="Breadcrumb">
+        <%= link_to @project.name, project_path(@project) %><span aria-hidden="true">/</span><span aria-current="page">Chat</span>
+      </nav>
+      <h1 class="sr-only">Chat</h1>
 
       <div class="chat-header-actions">
         <details class="notify-menu">
-          <summary class="header-action" aria-label="Configure automatic agent notifications"><span aria-hidden="true">✦</span><span>Notify</span></summary>
+          <summary class="tb-pill-hit" aria-label="Configure automatic agent notifications"><span class="tb-pill"><span aria-hidden="true">✦</span><span>Notify</span></span></summary>
           <div class="notify-menu-popover">
             <div><strong>Automatic replies</strong><small>Choose which agents receive every message.</small></div>
             <% @agents.each do |agent| %>
@@ -32,7 +27,7 @@
             <% end %>
           </div>
         </details>
-        <%= link_to new_agent_invitation_path, class: "header-action header-action-primary", aria: { label: "Invite agent" }, title: "Invite agent" do %>
+        <%= link_to new_agent_invitation_path, class: "pill-primary", aria: { label: "Invite agent" }, title: "Invite agent" do %>
           <span aria-hidden="true">＋</span><span class="hidden sm:inline">Invite agent</span>
         <% end %>
       </div>
@@ -46,7 +41,7 @@
 
     <div class="message-stage">
       <div id="message-viewport" class="message-scroll" data-chat-scroll-target="viewport" data-action="scroll->chat-scroll#track">
-        <div id="messages" class="message-feed">
+        <div id="messages" class="message-feed" data-controller="own-messages" data-own-messages-user-value="<%= current_user.id %>">
           <% if @messages.empty? %>
             <div class="empty-conversation">
               <div class="empty-icon">Z</div>

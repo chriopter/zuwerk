@@ -1,20 +1,18 @@
 <header class="workspace-topbar">
   <div class="workspace-topbar-inner">
     <div class="topbar-zone topbar-zone-start">
-      <%= link_to root_path, class: "topbar-home #{'is-active' if active == :projects && project.blank?}", aria: { label: "Home" } do %>
+      <%= link_to root_path, class: "tb-pill tb-pill-round topbar-home #{'is-active' if active == :projects && project.blank?}", aria: { label: "Home" } do %>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/></svg>
       <% end %>
     </div>
 
     <div class="topbar-zone topbar-zone-center">
       <details class="project-switcher">
-        <summary aria-label="Switch project">
+        <summary class="tb-pill" aria-label="Switch project">
           <span class="project-switcher-name"><%= project.present? ? project.name : "Zuwerk" %></span>
-          <span class="project-switcher-chevron" aria-hidden="true">⌄</span>
+          <span class="project-switcher-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span>
         </summary>
         <div class="project-switcher-menu">
-          <%= link_to root_path, class: "project-switcher-all" do %><span aria-hidden="true">←</span><span>All projects</span><% end %>
-          <span class="project-switcher-menu-label">Projects</span>
           <div class="project-switcher-list">
             <% workspace_projects.each do |option| %>
               <%= link_to project_path(option), class: "project-switcher-option #{'is-active' if option == project}" do %>
@@ -28,17 +26,19 @@
     </div>
 
     <div class="topbar-zone topbar-zone-end">
-      <% online_count = online_agents_count %>
-      <%= link_to agents_path, class: "topbar-agents #{'is-active' if active == :agents}", aria: { label: "Agents, #{online_count} online" } do %>
-        <span class="topbar-agents-dot <%= 'is-online' if online_count.positive? %>" aria-hidden="true"></span>
-        <span><%= online_count %> online</span>
-      <% end %>
-      <details class="topbar-account-menu">
-        <summary aria-label="Open account menu"><%= current_user.name.split.filter_map { |part| part.first }.first(2).join.upcase %></summary>
+      <% online = online_agents %>
+      <details class="topbar-status-menu">
+        <summary class="tb-pill-hit" aria-label="Agents and account, #{online.size} agents online">
+          <span class="tb-pill topbar-agents <%= 'is-active' if active == :agents %>">
+            <span class="topbar-agents-dot <%= 'is-online' if online.any? %>" aria-hidden="true"></span>
+            <span><%= online.size %> online</span>
+          </span>
+        </summary>
         <div>
-          <strong><%= current_user.name %></strong>
-          <%= link_to "All projects", root_path, aria: (active == :projects && project.blank? ? { current: "page" } : {}) %>
           <%= link_to "Agents", agents_path, aria: (active == :agents ? { current: "page" } : {}) %>
+          <% online.each do |agent| %>
+            <span class="topbar-status-agent"><span class="topbar-agents-dot is-online" aria-hidden="true"></span><span><%= agent.name %></span></span>
+          <% end %>
           <% if current_user.admin? %><%= link_to "Database", database_path, aria: (active == :database ? { current: "page" } : {}) %><% end %>
           <%= button_to "Log out", session_path, method: :delete %>
         </div>

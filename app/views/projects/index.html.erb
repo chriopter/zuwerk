@@ -2,47 +2,42 @@
 
 <section class="project-directory" aria-labelledby="projects-title">
   <header class="project-directory-header">
-    <div>
-      <p class="projects-overview-eyebrow">Workspace</p>
-      <h1 id="projects-title">Projects</h1>
-      <p>Choose a project to see its shared work.</p>
-    </div>
+    <h1 id="projects-title">Projects</h1>
+  </header>
 
-    <details class="projects-create">
-      <summary>New project</summary>
-      <div class="projects-create-popover">
-        <%= form_with model: Project.new, url: projects_path do |form| %>
-          <%= form.label :name, "Project name" %>
-          <div>
+  <div class="project-directory-grid" data-controller="project-sort">
+    <% @projects.each do |project| %>
+      <article class="project-directory-card glass-card glass-card-hover" data-project-id="<%= project.id %>" data-position="<%= project.position %>" draggable="true"
+        data-action="dragstart->project-sort#dragStart dragover->project-sort#dragOver drop->project-sort#drop dragend->project-sort#dragEnd">
+        <%= link_to project_path(project), class: "project-directory-link" do %>
+          <strong class="project-directory-name"><%= project.name %></strong>
+          <% participants = @project_participants[project.id] || [] %>
+          <span class="project-directory-people">
+            <% participants.first(8).each do |person| %>
+              <span class="project-directory-person <%= 'is-agent' if person.agent? %>" title="<%= person.name %>"><%= person.name.first.upcase %></span>
+            <% end %>
+          </span>
+        <% end %>
+      </article>
+    <% end %>
+
+    <% create_project = @create_project || Project.new %>
+    <details class="project-create-card" <%= "open" if create_project.errors.any? %>>
+      <summary aria-label="New project">
+        <span aria-hidden="true">+</span>
+        <span>New project</span>
+      </summary>
+      <div>
+        <%= form_with model: create_project, url: projects_path do |form| %>
+          <div class="project-create-row">
             <%= form.text_field :name, required: true, maxlength: 80, placeholder: "Project name" %>
             <%= form.submit "Create" %>
           </div>
+          <% if create_project.errors[:name].any? %>
+            <p class="project-create-error"><%= create_project.errors.full_messages_for(:name).first %></p>
+          <% end %>
         <% end %>
       </div>
     </details>
-  </header>
-
-  <% if @projects.any? %>
-    <div class="project-directory-grid">
-      <% @projects.each do |project| %>
-        <% open_count = project.todos.count(&:open?) %>
-        <% in_progress_count = project.todos.count(&:in_progress?) %>
-        <article class="project-directory-card" data-project-id="<%= project.id %>">
-          <%= link_to project_path(project), class: "project-directory-link" do %>
-            <span class="project-directory-mark" aria-hidden="true"><%= project.name.first.upcase %></span>
-            <span class="project-directory-copy">
-              <strong><%= project.name %></strong>
-              <span><%= pluralize(open_count, "open task") %> · <%= in_progress_count %> in progress</span>
-            </span>
-            <span class="project-directory-arrow" aria-hidden="true">→</span>
-          <% end %>
-        </article>
-      <% end %>
-    </div>
-  <% else %>
-    <div class="project-overview-empty">
-      <h2>Create your first project</h2>
-      <p>Give work a home, then add tasks and conversations.</p>
-    </div>
-  <% end %>
+  </div>
 </section>

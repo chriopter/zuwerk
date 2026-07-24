@@ -16,7 +16,7 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
       assert_select ".project-directory-card", text: /Client launch/
       assert_select "a[href='#{project_path(other)}']", text: /Client launch/
     end
-    assert_select ".projects-create form[action='#{projects_path}']"
+    assert_select ".project-create-card form[action='#{projects_path}']"
 
     assert_difference "Project.count", 1 do
       post projects_path, params: { project: { name: "Internal tools" } }
@@ -64,8 +64,8 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
     assert_select ".project-context-nav", count: 0
     assert_select ".project-switcher summary", text: /#{Regexp.escape(project.name)}/
     assert_select ".workspace-breadcrumb span[aria-current='page']", text: "Chat"
-    assert_select ".chat-header-bar .workspace-breadcrumb"
-    assert_select ".chat-header-bar h1.sr-only", text: "Chat", count: 1
+    assert_select ".chat-header .workspace-breadcrumb"
+    assert_select ".chat-header h1.sr-only", text: "Chat", count: 1
     assert_select "h1", count: 1
     assert_select ".notify-menu form[action='#{project_agent_subscription_path(project, @agent)}'] button[aria-pressed='false']", text: /Hermes/
     assert_select "a", text: /Invite agent/
