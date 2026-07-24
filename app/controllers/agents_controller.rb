@@ -3,5 +3,6 @@ class AgentsController < ApplicationController
 
   def index
     @agents = User.agent.order(:name)
+    @agent_profiles = AgentConnectors::Profiles.all
   end
 end

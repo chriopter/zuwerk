@@ -1,14 +1,16 @@
 <section class="invite-card" data-controller="clipboard">
-  <p class="eyebrow">ONE-TIME INVITATION</p>
-  <h1>Agent invitation ready</h1>
-  <p>Copy this prompt into your agent. The invitation expires after 15 minutes and can be used only once.</p>
-  <textarea readonly rows="8" data-clipboard-target="source">Install the Zuwerk CLI, then connect as an agent:
+  <p class="eyebrow"><%= @agent_profile.name %> · One-time invitation</p>
+  <h1>Connect <%= @agent_profile.name %></h1>
+  <p>Copy this prompt into <%= @agent_profile.name %>. It contains a one-time secret that expires after 15 minutes.</p>
+  <textarea readonly rows="14" data-clipboard-target="source">Connect this <%= @agent_profile.name %> agent to Zuwerk. Use the terminal to run the following commands. Choose a short, descriptive name and replace YOUR_AGENT_NAME with it.
 
 go install github.com/chriopter/zuwerk-cli/cmd/zuwerk@latest
-zuwerk auth accept <%= api_redeem_agent_invitation_url(token: @token) %> --name YOUR_AGENT_NAME
+<%= @agent_profile.install_command %>
+zuwerk auth accept <%= api_redeem_agent_invitation_url(token: @token) %> --name "YOUR_AGENT_NAME"
+<%= @agent_profile.connect_command %>
 
-Keep the returned credentials private.</textarea>
+Keep the returned credentials private. Leave the final command running so Zuwerk can reach this agent through ACP. Report when the connection is ready.</textarea>
   <button type="button" class="primary" data-action="clipboard#copy" data-clipboard-target="button">Copy prompt</button>
   <p class="muted">Expires <%= @invitation.expires_at.to_fs(:long) %>.</p>
-  <%= link_to "Return to projects", root_path %>
+  <%= link_to "Return to agents", agents_path %>
 </section>

@@ -132,6 +132,17 @@ code, credentials, tools, and lifecycle, then connect it with the Zuwerk CLI.
 The connector claims queued events for its agent identity and delivers them
 over ACP. If the connector stops, events remain durable until it reconnects.
 
+The CLI includes profiles for the supported runtimes:
+
+```bash
+zuwerk connect claude
+zuwerk connect codex
+zuwerk connect hermes
+```
+
+Use `zuwerk connect -- <adapter> [args...]` to connect any other stdio ACP
+adapter. The Agents page creates runtime-specific, one-time setup prompts.
+
 ## Front-end assets
 
 Tailwind CSS 4 is compiled by `tailwindcss-rails`; DaisyUI 5 is a development package used by the CSS build. Node/npm is needed only when installing/updating front-end dependencies, not at production runtime. Run `npm install` after checkout and compile with `bin/rails tailwindcss:build` (asset precompilation also builds it).

@@ -102,7 +102,8 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
 
     get agents_path
     assert_select ".agents-empty", text: /No agents yet/
-    assert_select ".agents-empty", text: /Create an invitation/
+    assert_select ".agents-empty", text: /Choose Claude, Codex, or Hermes/
+    assert_select "[data-agent-profile]", count: 3
   end
 
   test "nested records cannot be reached through another project" do

@@ -39,11 +39,24 @@ class AgentApiTest < ActionDispatch::IntegrationTest
     human = User.create!(name: "Admin", email: "admin@example.com", password: "password1")
     post session_path, params: { email: human.email, password: "password1" }
 
-    post agent_invitations_path
+    post agent_invitations_path, params: { profile: "codex" }
     follow_redirect!
 
     assert_response :success
-    assert_select "textarea", text: /zuwerk auth accept .* --name YOUR_AGENT_NAME/
+    assert_select "textarea", text: /zuwerk auth accept .* --name "YOUR_AGENT_NAME"/
+    assert_select "textarea", text: /npm install -g @agentclientprotocol\/codex-acp/
+    assert_select "textarea", text: /zuwerk connect codex/
+  end
+
+  test "invitation creation requires a supported agent profile" do
+    human = User.create!(name: "Admin", email: "profiles@example.com", password: "password1")
+    post session_path, params: { email: human.email, password: "password1" }
+
+    assert_no_difference "AgentInvitation.count" do
+      post agent_invitations_path, params: { profile: "unknown" }
+    end
+
+    assert_redirected_to new_agent_invitation_path
   end
 
   test "expired invitation is rejected safely" do

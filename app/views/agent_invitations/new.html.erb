@@ -1,1 +1,16 @@
-<section class="auth-card"><p class="eyebrow">AGENT ACCESS</p><h1>Invite an agent</h1><p>Create a one-time link. It expires after 15 minutes and becomes invalid as soon as it is redeemed.</p><%= button_to "Generate invitation", agent_invitations_path, class: "primary" %><%= link_to "Back to projects", root_path %></section>
+<section class="agent-invite-picker">
+  <p class="eyebrow">Agent access</p>
+  <h1>Choose an agent</h1>
+  <p>Select the runtime you want to connect. The generated invitation expires after 15 minutes and can be redeemed once.</p>
+  <div class="agent-profile-grid">
+    <% @agent_profiles.each do |profile| %>
+      <article class="agent-profile-card" data-agent-profile="<%= profile.id %>">
+        <div class="agent-profile-mark agent-profile-mark-<%= profile.id %>" aria-hidden="true"><%= profile.name.first %></div>
+        <div><h2><%= profile.name %></h2><p><%= profile.description %></p></div>
+        <code><%= profile.connect_command %></code>
+        <%= button_to "Create #{profile.name} invitation", agent_invitations_path, params: { profile: profile.id }, class: "agent-profile-action" %>
+      </article>
+    <% end %>
+  </div>
+  <%= link_to "Back to agents", agents_path, class: "agent-invite-back" %>
+</section>

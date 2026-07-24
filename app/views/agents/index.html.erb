@@ -7,12 +7,30 @@
       <h1>Agents</h1>
       <p>Connect agents that run in environments you control.</p>
     </div>
-    <%= link_to "Add agent", new_agent_invitation_path, class: "agents-primary-action" %>
   </header>
+
+  <section class="agents-section" aria-labelledby="add-agent-heading">
+    <div class="agents-section-heading">
+      <div><h2 id="add-agent-heading">Add an agent</h2><p>Choose a runtime. Zuwerk creates a tailored setup prompt for it.</p></div>
+    </div>
+    <div class="agent-profile-grid">
+      <% @agent_profiles.each do |profile| %>
+        <article class="agent-profile-card" data-agent-profile="<%= profile.id %>">
+          <div class="agent-profile-mark agent-profile-mark-<%= profile.id %>" aria-hidden="true"><%= profile.name.first %></div>
+          <div>
+            <h3><%= profile.name %></h3>
+            <p><%= profile.description %></p>
+          </div>
+          <code><%= profile.connect_command %></code>
+          <%= button_to "Add #{profile.name}", agent_invitations_path, params: { profile: profile.id }, class: "agent-profile-action" %>
+        </article>
+      <% end %>
+    </div>
+  </section>
 
   <section class="agents-section" aria-labelledby="connected-agents-heading">
     <div class="agents-section-heading">
-      <div><h2 id="connected-agents-heading">External agents</h2><p>Agent runtimes connect through the Zuwerk CLI and ACP.</p></div>
+      <div><h2 id="connected-agents-heading">Connected agents</h2><p>Agent runtimes connect through the Zuwerk CLI and ACP.</p></div>
       <span><%= pluralize(@agents.size, "agent") %></span>
     </div>
     <div class="agents-list">
@@ -28,7 +46,7 @@
         </article>
       <% end %>
       <% if @agents.empty? %>
-        <div class="agents-empty"><h3>No agents yet</h3><p>Create an invitation, redeem it with the Zuwerk CLI, then start an ACP connector.</p><%= link_to "Create invitation", new_agent_invitation_path %></div>
+        <div class="agents-empty"><h3>No agents yet</h3><p>Choose Claude, Codex, or Hermes above to create an invitation.</p></div>
       <% end %>
     </div>
   </section>

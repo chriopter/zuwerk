@@ -21,7 +21,10 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
     assert_select "[data-agent-origin='external']", count: 2
     assert_select "[data-agent-id='#{@agent.id}']", text: /Working/
     assert_select "[data-agent-id='#{offline.id}']", text: /Offline/
-    assert_select "a[href='#{new_agent_invitation_path}']", text: /Add agent/
+    assert_select "[data-agent-profile]", count: 3
+    assert_select "[data-agent-profile='claude']", text: /zuwerk connect claude/
+    assert_select "[data-agent-profile='codex']", text: /zuwerk connect codex/
+    assert_select "[data-agent-profile='hermes']", text: /zuwerk connect hermes/
   end
 
   test "global navigation does not present sidebar-only work indicators" do
