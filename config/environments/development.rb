@@ -7,8 +7,8 @@ Rails.application.configure do
   # Make code changes take effect immediately without server restart.
   config.enable_reloading = true
 
-  # Hosted agents call in through the container alias and humans through the LAN
-  # address, so accept both alongside the localhost defaults.
+  # Agents and humans can connect through the LAN, so accept private network
+  # addresses alongside the localhost defaults.
   config.hosts << "host.containers.internal"
   config.hosts << IPAddr.new("10.0.0.0/8")
   config.hosts << IPAddr.new("172.16.0.0/12")

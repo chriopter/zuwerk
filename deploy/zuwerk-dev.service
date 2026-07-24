@@ -1,15 +1,13 @@
 [Unit]
 Description=Zuwerk live server (port 3100, code + CSS reloading)
 After=network.target
-Wants=podman-restart.service
-After=podman-restart.service
 
 [Service]
 Type=simple
 WorkingDirectory=/root/git/zuwerk
 # Development mode keeps code and CSS reloading on, so every edit an agent makes
 # in the checkout is served live without a precompile or restart. The in-process
-# job and cable adapters carry the hosted-agent pipeline on a single process.
+# job and cable adapters carry agent events on a single process.
 # DATABASE_URL points at the production database so this serves the real
 # workspace rather than the empty development one.
 Environment=RAILS_ENV=development

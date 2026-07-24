@@ -1,6 +1,6 @@
 require "json"
 
-module HostedAgents
+module AgentConnectors
   class AcpClient
     class Error < StandardError; end
     class PermissionCancelled < Error; end
@@ -18,13 +18,13 @@ module HostedAgents
     CLIENT_CAPABILITIES = { fs: { readTextFile: true, writeTextFile: true }, terminal: true }.freeze
     attr_reader :agent_capabilities, :session_capabilities
 
-    def initialize(hosted_agent, executor: InteractiveCommandExecutor.new, transport: nil, session_mode: nil)
-      @hosted_agent = hosted_agent
-      @requested_session_mode = session_mode
+    def initialize(transport:, session_mode: "auto", working_directory: "/workspace")
+      @session_mode = session_mode
+      @working_directory = working_directory
       @mutex = Mutex.new
       @next_id = 0
       @mode_sessions = {}
-      @transport = transport || open_local_transport(hosted_agent, executor)
+      @transport = transport
       initialize_result = request("initialize", { protocolVersion: 2, clientCapabilities: CLIENT_CAPABILITIES, clientInfo: CLIENT_INFO })
       @agent_capabilities = initialize_result.fetch("agentCapabilities", {})
     rescue => error
@@ -68,8 +68,7 @@ module HostedAgents
     def close = @transport&.disconnect
 
     private
-      def session_mode = (@requested_session_mode || @hosted_agent&.session_mode || "auto")
-      def working_directory = (@hosted_agent&.working_directory || HostedAgent::WORKSPACE_PATH)
+      attr_reader :session_mode, :working_directory
 
       # Adapters advertise session modes in two dialects: newer builds list them
       # under `modes.availableModes` and switch with `session/set_mode`, older
@@ -194,38 +193,6 @@ module HostedAgents
         @transport.write_line(JSON.generate(message) + "\n")
       rescue IOError, Errno::EPIPE, AgentConnectors::Transport::Error => error
         raise Error, "ACP adapter write failed: #{error.message}"
-      end
-
-      def open_local_transport(hosted_agent, executor)
-        command = hosted_agent.claude? ? "claude-agent-acp" : "codex-acp"
-        streams = executor.open_separate("podman", "exec", "-i", hosted_agent.container_name, command)
-        LocalTransport.new(*streams, hosted_agent.id)
-      end
-
-      class LocalTransport
-        def initialize(stdin, stdout, stderr, wait_thread, agent_id)
-          @stdin, @stdout, @stderr, @wait_thread = stdin, stdout, stderr, wait_thread
-          @stderr_thread = Thread.new do
-            @stderr.each_line { |line| Rails.logger.warn("ACP #{agent_id}: #{line.strip}") }
-          rescue IOError
-            nil
-          end
-        end
-        def alive? = @wait_thread.alive? && !@stdin.closed?
-        def read_line(timeout:)
-          raise Error, "ACP request timed out" unless IO.select([ @stdout ], nil, nil, timeout)
-          @stdout.gets || raise(Error, "ACP adapter exited")
-        end
-        def write_line(line) = (@stdin.write(line); @stdin.flush)
-        def disconnect
-          @stdin.close unless @stdin.closed?
-          @stdout.close unless @stdout.closed?
-          @stderr.close unless @stderr.closed?
-          Process.kill("TERM", @wait_thread.pid) if @wait_thread.alive?
-          @stderr_thread.kill
-        rescue IOError, Errno::ESRCH
-          nil
-        end
       end
   end
 end

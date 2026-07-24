@@ -18,7 +18,7 @@ class AgentConnectors::RemotePoolTest < ActiveSupport::TestCase
   end
 
   teardown do
-    AgentConnectors::RemotePool.client_factory = ->(transport) { HostedAgents::AcpClient.new(nil, transport: transport) }
+    AgentConnectors::RemotePool.client_factory = ->(transport) { AgentConnectors::AcpClient.new(transport:) }
     AgentConnectors::RemotePool.send(:reset!)
   end
 
@@ -67,7 +67,7 @@ class AgentConnectors::RemotePoolTest < ActiveSupport::TestCase
       client: dead_client
     )
 
-    assert_same HostedAgents::AcpClient::PERMISSION_CANCELLED, result
+    assert_same AgentConnectors::AcpClient::PERMISSION_CANCELLED, result
     assert_equal "cancelled", event.agent_approvals.sole.reload.state
     assert_equal "cancelled", event.reload.state
   end
@@ -103,7 +103,7 @@ class AgentConnectors::RemotePoolTest < ActiveSupport::TestCase
     event.update_columns(connector_connection_id: "new-owner", updated_at: Time.current)
     approval.resolve!("allow", resolver: human)
 
-    assert_same HostedAgents::AcpClient::PERMISSION_CANCELLED, result.pop
+    assert_same AgentConnectors::AcpClient::PERMISSION_CANCELLED, result.pop
     assert_equal "resolved", approval.reload.state
   ensure
     waiter&.join(2)
@@ -140,7 +140,7 @@ class AgentConnectors::RemotePoolTest < ActiveSupport::TestCase
     event.update_columns(connector_connection_id: "new-owner", updated_at: Time.current)
     client.alive = false
 
-    assert_same HostedAgents::AcpClient::PERMISSION_CANCELLED, result.pop
+    assert_same AgentConnectors::AcpClient::PERMISSION_CANCELLED, result.pop
     assert_equal "cancelled", approval.reload.state
     assert_equal "running", event.reload.state
     assert_equal "new-owner", event.connector_connection_id

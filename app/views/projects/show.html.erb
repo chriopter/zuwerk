@@ -80,16 +80,5 @@
       </div>
     <% end %>
 
-    <%= link_to agents_project_path(@project), class: "project-tool-card project-tool-agents" do %>
-      <header>
-        <span class="project-tool-icon" aria-hidden="true">◉</span>
-        <span><strong>Agents</strong><small><%= pluralize(@hosted_agents_count, "hosted agent") %> · <%= pluralize(@terminal_panes_count, "open pane") %></small></span>
-        <span class="project-tool-arrow" aria-hidden="true">→</span>
-      </header>
-      <div class="project-tool-preview">
-        <% @hosted_agents_preview.each do |hosted| %><span class="project-message-preview"><i aria-hidden="true"><%= hosted.user.name.first.upcase %></i><span><strong><%= hosted.user.name %></strong><small><%= hosted.runtime.humanize %> · <%= hosted.state.humanize %></small></span></span><% end %>
-        <% if @hosted_agents_count.zero? %><span class="project-tool-empty">No hosted agents available.</span><% end %>
-      </div>
-    <% end %>
   </div>
 </section>

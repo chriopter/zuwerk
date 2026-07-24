@@ -5,8 +5,6 @@ Rails.application.routes.draw do
   resources :messages, only: :create
   resources :projects, only: [ :index, :show, :create ] do
     get :chat, on: :member, to: "messages#index"
-    get :agents, on: :member, to: "project_agents#index"
-    resources :agent_terminal_panes, path: "agents/panes", only: %i[create destroy]
     resources :messages, only: :create do
       resources :reactions, only: :create
     end
@@ -29,11 +27,7 @@ Rails.application.routes.draw do
     end
   end
   resources :agent_invitations, only: %i[new create show]
-  resources :agents, only: %i[index new create show update] do
-    post :start, on: :member
-    post :stop, on: :member
-    post :restart, on: :member
-  end
+  resources :agents, only: :index
   resources :agent_approvals, only: :update
   get "database", to: "database#index", as: :database
   get "database/:table", to: "database#show", as: :database_table

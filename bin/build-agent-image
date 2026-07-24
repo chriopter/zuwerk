@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
-image="${ZUWERK_AGENT_IMAGE:-zuwerk-agent:latest}"
-exec podman build --network=host --tag "$image" --file docker/agent/Dockerfile .

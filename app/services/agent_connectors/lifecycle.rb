@@ -49,7 +49,7 @@ module AgentConnectors
           break if stopped?
           drain_once
           wait
-        rescue HostedAgents::ChatBridge::DeliveryError => error
+        rescue ChatBridge::DeliveryError => error
           terminal = handle_delivery_error(error, @current_event_id)
           wait(terminal ? @poll_interval : retry_delay)
         rescue => error

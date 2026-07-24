@@ -1,107 +1,72 @@
 require "test_helper"
 
 class DeliverAgentEventJobTest < ActiveJob::TestCase
-  test "duplicate and late jobs never redispatch terminal events" do
-    human = User.create!(name: "Terminal Human", email: "terminal@example.com", password: "password1")
-    agent = User.create!(name: "Terminal Agent", kind: :agent)
-    event = AgentEvent.create!(recipient: agent, subject: Message.create!(author: human, body: "Terminal"), event_type: "mentioned")
-    delivered = []
-    DeliverAgentEventJob.connector_dispatcher_factory = ->(*) { Struct.new(:delivered) { def deliver = delivered << :connector }.new(delivered) }
-    transport = AgentConnectors.registry.register(agent.id) { |_line| }
+  setup do
+    @human = User.create!(name: "Job Human", email: "job-#{SecureRandom.hex(4)}@example.com", password: "password1")
+    @agent = User.create!(name: "Job Agent #{SecureRandom.hex(2)}", kind: :agent)
+    @project = Project.create!(name: "Job Project")
+  end
 
-    %w[completed failed cancelled].each do |state|
-      event.update_columns(state: state, finished_at: Time.current)
-      DeliverAgentEventJob.perform_now(event)
+  teardown do
+    DeliverAgentEventJob.fallback_delivery_factory = ->(event, url:, secret:) { AgentEventDelivery.new(event, url:, secret:) }
+  end
+
+  test "delivers an unclaimed mention through the webhook fallback" do
+    event = mention_event
+    delivered = []
+    DeliverAgentEventJob.fallback_delivery_factory = lambda do |candidate, **|
+      Struct.new(:candidate, :delivered) { def deliver = delivered << candidate }.new(candidate, delivered)
     end
 
-    assert_empty delivered
-  ensure
-    DeliverAgentEventJob.connector_dispatcher_factory = ->(candidate) { AgentConnectors::Dispatcher.new(candidate) }
-    AgentConnectors.registry.unregister(agent&.id, transport) if agent
-  end
-
-  test "a retry may continue only its exact already-running event" do
-    human = User.create!(name: "Retry Human", email: "retry@example.com", password: "password1")
-    agent = User.create!(name: "Retry Agent", kind: :agent)
-    first = AgentEvent.create!(recipient: agent, subject: Message.create!(author: human, body: "First"), event_type: "mentioned")
-    second = AgentEvent.create!(recipient: agent, subject: Message.create!(author: human, body: "Second"), event_type: "mentioned")
-    first.transition_to!("running")
-    delivered = []
-    fallback = ->(candidate, **) { Struct.new(:id, :delivered) { def deliver = delivered << id }.new(candidate.id, delivered) }
-    transport = AgentConnectors.registry.register(agent.id) { |_line| }
-    DeliverAgentEventJob.fallback_delivery_factory = fallback
-    DeliverAgentEventJob.perform_now(second)
-    DeliverAgentEventJob.perform_now(first)
-
-    assert_equal [ first.id ], delivered
-    assert_equal "queued", second.reload.state
-  ensure
-    DeliverAgentEventJob.connector_dispatcher_factory = ->(candidate) { AgentConnectors::Dispatcher.new(candidate) }
-    DeliverAgentEventJob.fallback_delivery_factory = ->(candidate, url:, secret:) { AgentEventDelivery.new(candidate, url: url, secret: secret) }
-    AgentConnectors.registry.unregister(agent&.id, transport) if agent
-  end
-
-  test "a process-local registry alone cannot route connector delivery" do
-    human = User.create!(name: "Dispatch Human", email: "dispatch@example.com", password: "password1")
-    agent = User.create!(name: "Dispatch Agent", kind: :agent)
-    project = Project.create!(name: "Dispatch Project")
-    event = AgentEvent.create!(recipient: agent, subject: Message.create!(author: human, project: project, body: "Dispatch"), event_type: "mentioned")
-    transport = AgentConnectors.registry.register(agent.id) { |_line| }
-    delivered = []
-
-    fallback = ->(*) { Struct.new(:delivered) { def deliver = delivered << :fallback }.new(delivered) }
-    DeliverAgentEventJob.fallback_delivery_factory = fallback
     DeliverAgentEventJob.perform_now(event)
 
-    assert_equal [ :fallback ], delivered
-  ensure
-    DeliverAgentEventJob.connector_dispatcher_factory = ->(event) { AgentConnectors::Dispatcher.new(event) }
-    DeliverAgentEventJob.fallback_delivery_factory = ->(candidate, url:, secret:) { AgentEventDelivery.new(candidate, url: url, secret: secret) }
-    AgentConnectors.registry.unregister(agent&.id, transport) if agent
+    assert_equal [ event ], delivered
+    assert_equal "running", event.reload.state
+    assert_nil event.connector_connection_id
   end
-  test "a worker process does not claim or webhook an event owned by a fresh cable connector" do
-    human = User.create!(name: "Cross Process Human", email: "cross-process@example.com", password: "password1")
-    agent = User.create!(name: "Cross Process Agent", kind: :agent)
-    project = Project.create!(name: "Cross Process Project")
-    event = AgentEvent.create!(recipient: agent, subject: Message.create!(author: human, project: project, body: "Dispatch externally"), event_type: "mentioned")
-    agent.update_columns(connector_connection_id: "cable-process-1", connector_heartbeat_at: Time.current)
-    previous_registry = AgentConnectors.registry
-    AgentConnectors.registry = AgentConnectors::Registry.new
+
+  test "does not steal work from a connected ACP agent" do
+    event = mention_event
+    @agent.update_columns(connector_connection_id: "connector", connector_heartbeat_at: Time.current)
+    DeliverAgentEventJob.fallback_delivery_factory = ->(*) { raise "must not deliver" }
+
+    DeliverAgentEventJob.perform_now(event)
+
+    assert_equal "queued", event.reload.state
+  end
+
+  test "does not redispatch terminal events" do
+    event = mention_event
+    DeliverAgentEventJob.fallback_delivery_factory = ->(*) { raise "must not deliver" }
+
+    %w[completed failed cancelled].each do |state|
+      event.update_columns(state:, finished_at: Time.current)
+      DeliverAgentEventJob.perform_now(event)
+      assert_equal state, event.reload.state
+    end
+  end
+
+  test "board work waits for an ACP connector" do
+    automation = BoardAutomation.create!(
+      project: @project,
+      creator: @human,
+      agent: @agent,
+      title: "Report",
+      cadence: "daily",
+      prompt: "Publish"
+    )
+    event = automation.run_now!.agent_event
+    DeliverAgentEventJob.fallback_delivery_factory = ->(*) { raise "must not deliver" }
 
     DeliverAgentEventJob.perform_now(event)
 
     assert_equal "queued", event.reload.state
     assert_nil event.accepted_at
-  ensure
-    AgentConnectors.registry = previous_registry if previous_registry
   end
 
-  test "does not complete a Board event through trigger-only webhook delivery" do
-    human = User.create!(name: "Board Human", email: "board-job-human@example.com", password: "password1")
-    agent = User.create!(name: "Board External", kind: :agent)
-    project = Project.create!(name: "Board Job Project")
-    automation = BoardAutomation.create!(project: project, creator: human, agent: agent, title: "Report", cadence: "daily", prompt: "Publish")
-    event = automation.run_now!.agent_event
-
-    error = assert_raises(HostedAgents::ChatBridge::DeliveryError) { DeliverAgentEventJob.new.perform(event) }
-
-    assert_match(/hosted or connected agent/, error.message)
-    assert_nil event.reload.delivered_at
-    assert_equal "running", event.state
-  end
-
-  test "routes hosted deliveries to their dedicated serialized queue" do
-    human = User.create!(name: "Queue Human", email: "queue-human@example.com", password: "password1")
-    hosted_user = User.create!(name: "Hosted Queue Agent", kind: :agent)
-    HostedAgent.create!(user: hosted_user, runtime: "claude", state: "running")
-    external_user = User.create!(name: "External Queue Agent", kind: :agent)
-    project = Project.create!(name: "Queue Project")
-    message = Message.create!(author: human, project: project, body: "Queue this")
-
-    hosted_event = AgentEvent.create!(recipient: hosted_user, subject: message, event_type: "mentioned")
-    external_event = AgentEvent.create!(recipient: external_user, subject: message, event_type: "mentioned")
-
-    assert_equal "hosted_agents", DeliverAgentEventJob.new(hosted_event).queue_name
-    assert_equal "default", DeliverAgentEventJob.new(external_event).queue_name
-  end
+  private
+    def mention_event
+      message = Message.create!(author: @human, project: @project, body: "Please work")
+      AgentEvent.create!(recipient: @agent, subject: message, event_type: "mentioned")
+    end
 end

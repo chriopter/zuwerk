@@ -22,7 +22,7 @@ class DatabaseBrowserTest < ActionDispatch::IntegrationTest
     end
     assert_select "[data-table-group='users'] a[href='#{database_table_path("users")}']"
     assert_select "[data-table-group='user-data'] a[href='#{database_table_path("messages")}']"
-    assert_select "[data-table-group='agents'] a[href='#{database_table_path("hosted_agents")}']"
+    assert_select "[data-table-group='agents'] a[href='#{database_table_path("agent_events")}']"
     assert_select "[data-table-group='active-storage-action-text'] a[href='#{database_table_path("active_storage_blobs")}']"
     assert_select "[data-table-group='rails-internal'] a[href='#{database_table_path("schema_migrations")}']"
     assert_select "[data-database-section='data']"
@@ -61,18 +61,6 @@ class DatabaseBrowserTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "[data-database-empty]", text: "No rows"
     assert_select "[data-database-section='data'] tbody tr", count: 0
-  end
-
-  test "runtime session identifiers are redacted" do
-    hosted_agent = HostedAgent.create!(user: @agent, runtime: "claude")
-    project = Project.create!(name: "Sensitive session origin")
-    hosted_agent.sessions.create!(origin: project, external_session_id: "sensitive-cloud-session")
-
-    get database_table_path("hosted_agent_sessions")
-
-    assert_response :success
-    assert_select "[data-database-section='data']", text: /\[REDACTED\]/
-    assert_select "[data-database-section='data']", text: /sensitive-cloud-session/, count: 0
   end
 
   test "unknown tables are rejected and signed-out visitors cannot browse" do

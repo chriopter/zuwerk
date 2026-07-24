@@ -1,25 +1,20 @@
 require "fileutils"
 
-module HostedAgents
+module AgentConnectors
   class ChatBridge
     class DeliveryError < StandardError; end
 
     MAX_AUTOMATIC_RESPONSE_BYTES = 1.megabyte
 
-    def initialize(agent_event, pool: AcpPool, connector: false, expected_connector_owner: nil)
+    def initialize(agent_event, connection_id:, pool: RemotePool)
       @event = agent_event
       @pool = pool
-      @hosted_agent = agent_event.recipient.hosted_agent
-      @connector = connector
-      @expected_connector_owner = expected_connector_owner
+      @connection_id = connection_id
     end
 
     def deliver
       @event.reload
-      return unless @event.state.in?(%w[queued running])
-
-      claimed = @event.state == "queued" ? AgentEvent.claim_next_for!(@event.recipient) : @event
-      return unless claimed == @event
+      return unless @event.state == "running" && owned_event?
 
       with_event_lock do
         return if @event.reload.delivered_at?
@@ -30,8 +25,6 @@ module HostedAgents
 
     private
       def perform_delivery
-        raise DeliveryError, "Agent runtime is not running" unless @connector || @hosted_agent&.running?
-
         return unless mutate_owned_event { @event.acknowledge! }
         set_working(true)
         if correlated_publication?
@@ -45,15 +38,8 @@ module HostedAgents
           remaining = MAX_AUTOMATIC_RESPONSE_BYTES - chunks.bytesize
           chunks << chunk.to_s.byteslice(0, remaining).to_s.scrub if remaining.positive?
         end
-        prompt_target = @connector ? @event.recipient : @hosted_agent
-        prompt_origin = origin
-        prompt = prompt_text
         ActiveRecord::Base.connection_handler.clear_active_connections!
-        if @connector
-          @pool.prompt(prompt_target, prompt_origin, prompt, event: @event, expected_connector_owner: @expected_connector_owner, &capture)
-        else
-          @pool.prompt(prompt_target, prompt_origin, prompt, event: @event, &capture)
-        end
+        @pool.prompt(@event.recipient, origin, prompt_text, event: @event, expected_connector_owner: @connection_id, &capture)
         ActiveRecord::Base.connection_handler.clear_active_connections!
         return unless owned_event?
 
@@ -64,10 +50,10 @@ module HostedAgents
         record_failure(error)
         raise error if error.is_a?(DeliveryError)
 
-        raise DeliveryError, "Hosted bridge failed: #{error.message}"
+        raise DeliveryError, "ACP delivery failed: #{error.message}"
       ensure
         set_working(false) if @working
-        AgentEvent.schedule_next_for!(@event.recipient) if owned_event? && @event.reload.state.in?(AgentEvent::TERMINAL_STATES)
+        AgentEvent.schedule_next_for!(@event.recipient) if connector_owns_event? && @event.reload.state.in?(AgentEvent::TERMINAL_STATES)
         ActiveRecord::Base.connection_handler.clear_active_connections!
       end
 
@@ -166,7 +152,7 @@ module HostedAgents
       end
 
       def set_working(value)
-        return unless owned_event?
+        return unless value ? owned_event? : connector_owns_event?
         @event.recipient.update!(
           working_status: value,
           working_label: value ? working_label : nil,
@@ -176,35 +162,30 @@ module HostedAgents
       end
 
       def record_failure(error)
-        @hosted_agent&.update_columns(
-          bridge_connected_at: nil,
-          bridge_last_error: error.message.to_s.truncate(500),
-          updated_at: Time.current
-        )
         mutate_owned_event do
           attributes = {
             attempts: @event.attempts + 1,
-            last_error: "Hosted bridge failed: #{error.class}: #{error.message}".truncate(255)
+            last_error: "ACP delivery failed: #{error.class}: #{error.message}".truncate(255)
           }
           @event.update!(attributes)
         end
       rescue => bookkeeping_error
-        Rails.logger.error("Hosted event #{@event.id} failure bookkeeping failed: #{bookkeeping_error.message}")
+        Rails.logger.error("ACP event #{@event.id} failure bookkeeping failed: #{bookkeeping_error.message}")
       end
 
       def owned_event?
-        return true unless @expected_connector_owner
+        AgentEvent.where(id: @event.id, state: %w[running waiting_for_approval], connector_connection_id: @connection_id).exists?
+      end
 
-        AgentEvent.where(id: @event.id, state: %w[running waiting_for_approval], connector_connection_id: @expected_connector_owner).exists?
+      def connector_owns_event?
+        AgentEvent.where(id: @event.id, connector_connection_id: @connection_id).exists?
       end
 
       def mutate_owned_event
-        return yield unless @expected_connector_owner
-
         changed = false
         @event.with_lock do
           @event.reload
-          if @event.state.in?(%w[running waiting_for_approval]) && @event.connector_connection_id == @expected_connector_owner
+          if @event.state.in?(%w[running waiting_for_approval]) && @event.connector_connection_id == @connection_id
             yield
             changed = true
           end
@@ -217,7 +198,7 @@ module HostedAgents
         return board_prompt_text if board_event?
 
         <<~PROMPT
-          You are #{@event.recipient.name}, a hosted agent participating in Zuwerk.
+          You are #{@event.recipient.name}, an agent connected to Zuwerk through ACP.
           ACP text output is automatically saved as the single correlated project response.
           Do not publish the same final response through the Zuwerk CLI/API.
 
@@ -283,7 +264,7 @@ module HostedAgents
         end.join("\n").presence || "(none)"
 
         <<~PROMPT
-          You are #{@event.recipient.name}, a hosted agent assigned to a specific Zuwerk todo.
+          You are #{@event.recipient.name}, an ACP-connected agent assigned to a specific Zuwerk todo.
           ACP text output is automatically saved as the single correlated todo comment.
           Do not publish the same final comment through the Zuwerk CLI/API.
 

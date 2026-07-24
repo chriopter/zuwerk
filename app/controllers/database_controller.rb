@@ -8,7 +8,7 @@ class DatabaseController < ApplicationController
     [ "active-storage-action-text", "Active Storage / Action Text" ],
     [ "rails-internal", "Rails internal" ]
   ].freeze
-  AGENT_TABLES = %w[agent_events agent_invitations hosted_agent_sessions hosted_agents].freeze
+  AGENT_TABLES = %w[agent_approvals agent_events agent_invitations agent_subscriptions todo_assignments].freeze
 
   before_action :require_human!
   before_action :require_admin!

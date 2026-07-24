@@ -1,7 +1,7 @@
 require "fileutils"
 
 module Api
-  # Lets a hosted agent restart the server it is working on. Puma's tmp_restart
+  # Lets a connected development agent restart the server. Puma's tmp_restart
   # plugin picks the touched file up, so the running process reboots itself and
   # no shell access is needed. Only routed outside production.
   class RestartsController < BaseController

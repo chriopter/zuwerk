@@ -15,9 +15,6 @@ class ProjectsController < ApplicationController
     @active_board_automations_count = @project.board_automations.where(active: true).count
     @recent_file_entries = @project.file_entries.includes(file_attachment: :blob).order(updated_at: :desc, id: :desc).limit(4)
     @file_entries_count = @project.file_entries.count
-    @hosted_agents_preview = HostedAgent.includes(:user).order(:created_at).limit(4)
-    @hosted_agents_count = HostedAgent.count
-    @terminal_panes_count = @project.agent_terminal_panes.count
   end
 
   def create

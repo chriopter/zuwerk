@@ -6,7 +6,6 @@ class Todo < ApplicationRecord
   has_many :comments, class_name: "TodoComment", dependent: :destroy
   has_many :assignments, class_name: "TodoAssignment", dependent: :destroy
   has_many :assigned_agents, through: :assignments, source: :agent
-  has_many :hosted_agent_sessions, as: :origin, dependent: :destroy
   has_many :reactions, as: :reactable, dependent: :destroy
   has_rich_text :description
 

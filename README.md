@@ -1,13 +1,12 @@
 # Zuwerk
 
-Zuwerk is a small, independently implemented Rails workspace for humans and API-connected agents. It provides project-scoped chat, live Turbo updates, rich text, emoji reactions, tasks, first-run administration, short-lived one-time agent invitations, and optional server-hosted Claude Code or Codex environments.
+Zuwerk is a small, independently implemented Rails workspace for humans and externally operated agents. It provides project-scoped chat, live Turbo updates, rich text, emoji reactions, tasks, first-run administration, short-lived one-time agent invitations, and ACP connector support.
 
 ## Requirements
 
 - Ruby 3.3+
 - SQLite 3
 - Node.js/npm for front-end assets
-- Podman for server-hosted agents (optional)
 
 ## Setup
 
@@ -31,15 +30,15 @@ No Redis service is required. Action Cable, jobs, and caching use the Rails data
 `bin/dev` runs the application with code and CSS reloading, so any edit an agent
 makes in the checkout is served live without a precompile or a restart — the
 feedback loop that lets the app improve itself. It frees the port first, fixes
-storage ownership under root, builds and watches Tailwind, reconciles hosted
-agents, then serves on port 3100 bound to every interface.
+storage ownership under root, builds and watches Tailwind, then serves on port
+3100 bound to every interface.
 
 ```sh
 bin/dev
 ```
 
-Development uses the in-process job and cable adapters, so the hosted-agent
-pipeline keeps working on a single process. Point `DATABASE_URL` at the
+Development uses the in-process job and cable adapters, so agent events keep
+working on a single process. Point `DATABASE_URL` at the
 production database to serve the real workspace; `PORT` and `--loopback`
 override the defaults.
 
@@ -126,41 +125,12 @@ Authenticated agents use the same `Authorization: Bearer …` header as the proj
 
 Webhook events remain trigger-only: agents load conversation context through the project-scoped messages API; Zuwerk does not embed an LLM.
 
-## Server-hosted agents
+## ACP agent connectors
 
-A signed-in human can create a persistent Claude Code or Codex environment from **Agents → Create agent**. Each agent gets one managed Podman container, a persistent home volume for runtime authentication and configuration, and a persistent workspace volume. The browser cockpit uses an authenticated WebSocket-to-PTY bridge to the container's fixed `tmux` session, so keystrokes and output stream immediately while setup and work survive browser reconnects and container restarts.
-
-Hosted chat delivery uses the same Zuwerk CLI/API publication path as every external agent. Rails wakes the hosted runtime through a long-lived ACP adapter, gives it the exact event and project context, and ignores ACP output. The agent reads with `zuwerk messages list --project PROJECT_ID` and must publish a completed response with `zuwerk messages create --project PROJECT_ID --body ...`; Rails creates no response placeholder or compatibility message. Each polymorphic origin maps to one persisted, resumable ACP session ID, and the agent detail page shows every cloud session with its provenance and latest activity. Hosted deliveries run on a dedicated single-process, single-thread Solid Queue worker and also use a host file lock per agent, so one ACP session cannot receive overlapping turns.
-
-Build the managed image before creating the first hosted agent:
-
-```sh
-bin/build-agent-image
-```
-
-The Rails web process and Solid Queue worker must be allowed to invoke the same Podman installation. Enable Podman's restart service if environments should return after a host reboot:
-
-```sh
-sudo systemctl enable --now podman-restart.service
-```
-
-Run Zuwerk after Podman's restart service and reconcile database state with the real containers before Puma accepts terminal connections. For the systemd deployment, add this drop-in:
-
-```ini
-# /etc/systemd/system/zuwerk.service.d/hosted-agents.conf
-[Unit]
-Wants=podman-restart.service
-After=podman-restart.service
-
-[Service]
-ExecStartPre=/usr/local/bin/bundle exec rails runner HostedAgents::StartupReconciler.call
-```
-
-Then apply it with `sudo systemctl daemon-reload && sudo systemctl restart zuwerk`.
-
-The runtime adapter uses fixed argv commands and server-generated container and volume names. Hosted containers have CPU, memory, and PID limits, run with `no-new-privileges`, and receive no host paths, Podman socket, Zuwerk database, or server credentials. Root access remains available inside the container so agents can install development tools; it does not grant host root access.
-
-Runtime package versions and the base-image digest are pinned in `docker/agent/Dockerfile`. Update them deliberately, rebuild the image, and verify both runtime startup screens before deploying an update.
+Zuwerk never starts an agent process. Run the agent wherever you control its
+code, credentials, tools, and lifecycle, then connect it with the Zuwerk CLI.
+The connector claims queued events for its agent identity and delivers them
+over ACP. If the connector stops, events remain durable until it reconnects.
 
 ## Front-end assets
 

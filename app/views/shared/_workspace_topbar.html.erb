@@ -1,19 +1,23 @@
 <header class="workspace-topbar">
   <div class="workspace-topbar-inner">
-    <% if project.present? %>
+    <div class="topbar-zone topbar-zone-start">
+      <%= link_to root_path, class: "topbar-home #{'is-active' if active == :projects && project.blank?}", aria: { label: "Home" } do %>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/></svg>
+      <% end %>
+    </div>
+
+    <div class="topbar-zone topbar-zone-center">
       <details class="project-switcher">
         <summary aria-label="Switch project">
-          <span class="project-switcher-mark" aria-hidden="true"><%= project.name.first.upcase %></span>
-          <span class="project-switcher-name"><%= project.name %></span>
+          <span class="project-switcher-name"><%= project.present? ? project.name : "Zuwerk" %></span>
           <span class="project-switcher-chevron" aria-hidden="true">⌄</span>
         </summary>
         <div class="project-switcher-menu">
           <%= link_to root_path, class: "project-switcher-all" do %><span aria-hidden="true">←</span><span>All projects</span><% end %>
-          <span class="project-switcher-menu-label">Switch project</span>
+          <span class="project-switcher-menu-label">Projects</span>
           <div class="project-switcher-list">
             <% workspace_projects.each do |option| %>
               <%= link_to project_path(option), class: "project-switcher-option #{'is-active' if option == project}" do %>
-                <span class="project-switcher-option-mark" aria-hidden="true"><%= option.name.first.upcase %></span>
                 <span><%= option.name %></span>
                 <% if option == project %><i aria-hidden="true">✓</i><% end %>
               <% end %>
@@ -21,22 +25,24 @@
           </div>
         </div>
       </details>
-    <% else %>
-      <%= link_to root_path, class: "topbar-brand", aria: { label: "Zuwerk projects" } do %>
-        <span class="topbar-brand-mark" aria-hidden="true">Z</span>
-        <span>Zuwerk</span>
-      <% end %>
-    <% end %>
+    </div>
 
-    <details class="topbar-mobile-menu topbar-account-menu">
-      <summary aria-label="Open account menu"><%= current_user.name.split.filter_map { |part| part.first }.first(2).join.upcase %></summary>
-      <div>
-        <strong><%= current_user.name %></strong>
-        <%= link_to "All projects", root_path, aria: (active == :projects && project.blank? ? { current: "page" } : {}) %>
-        <%= link_to "Agents", agents_path, aria: (active == :agents ? { current: "page" } : {}) %>
-        <% if current_user.admin? %><%= link_to "Database", database_path, aria: (active == :database ? { current: "page" } : {}) %><% end %>
-        <%= button_to "Log out", session_path, method: :delete %>
-      </div>
-    </details>
+    <div class="topbar-zone topbar-zone-end">
+      <% online_count = online_agents_count %>
+      <%= link_to agents_path, class: "topbar-agents #{'is-active' if active == :agents}", aria: { label: "Agents, #{online_count} online" } do %>
+        <span class="topbar-agents-dot <%= 'is-online' if online_count.positive? %>" aria-hidden="true"></span>
+        <span><%= online_count %> online</span>
+      <% end %>
+      <details class="topbar-account-menu">
+        <summary aria-label="Open account menu"><%= current_user.name.split.filter_map { |part| part.first }.first(2).join.upcase %></summary>
+        <div>
+          <strong><%= current_user.name %></strong>
+          <%= link_to "All projects", root_path, aria: (active == :projects && project.blank? ? { current: "page" } : {}) %>
+          <%= link_to "Agents", agents_path, aria: (active == :agents ? { current: "page" } : {}) %>
+          <% if current_user.admin? %><%= link_to "Database", database_path, aria: (active == :database ? { current: "page" } : {}) %><% end %>
+          <%= button_to "Log out", session_path, method: :delete %>
+        </div>
+      </details>
+    </div>
   </div>
 </header>

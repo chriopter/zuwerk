@@ -7,7 +7,7 @@ module AgentConnectors
     end
 
     def deliver
-      HostedAgents::ChatBridge.new(@event, pool: @pool, connector: true, expected_connector_owner: @connection_id).deliver
+      ChatBridge.new(@event, connection_id: @connection_id, pool: @pool).deliver
     end
   end
 end

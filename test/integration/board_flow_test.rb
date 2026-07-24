@@ -4,7 +4,6 @@ class BoardFlowTest < ActionDispatch::IntegrationTest
   setup do
     @human = User.create!(name: "Board Editor", email: "board-editor@example.com", password: "password1")
     @agent = User.create!(name: "Board Reporter", kind: :agent)
-    HostedAgent.create!(user: @agent, runtime: "claude", state: "running")
     @project = Project.create!(name: "Board Workspace")
     post session_path, params: { email: @human.email, password: "password1" }
   end
@@ -93,14 +92,14 @@ class BoardFlowTest < ActionDispatch::IntegrationTest
     assert_select "lexxy-editor[aria-invalid='true'][aria-describedby*='board-prompt-error']"
   end
 
-  test "rejects an agent that cannot execute recurring hosted work" do
-    unavailable = User.create!(name: "Unavailable Board Agent", kind: :agent)
+  test "allows any registered agent to own recurring work" do
+    disconnected = User.create!(name: "Disconnected Board Agent", kind: :agent)
 
-    assert_no_difference -> { @project.board_automations.count } do
-      post project_board_automations_path(@project), params: { board_automation: { title: "Invalid", cadence: "daily", agent_id: unavailable.id, prompt: "Publish" } }
+    assert_difference -> { @project.board_automations.count }, 1 do
+      post project_board_automations_path(@project), params: { board_automation: { title: "Queued", cadence: "daily", agent_id: disconnected.id, prompt: "Publish" } }
     end
 
-    assert_response :not_found
+    assert_equal disconnected, @project.board_automations.last.agent
   end
 
   test "signed-out visitors cannot read or create board content" do

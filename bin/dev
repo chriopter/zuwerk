@@ -2,8 +2,8 @@
 # Zuwerk's live server. It runs the app with code reloading and a Tailwind
 # watcher, so an edit an agent makes in the checkout — Ruby or CSS — is served
 # live without a precompile or a restart. Development uses the in-process job
-# and cable adapters, so the hosted-agent pipeline keeps working on a single
-# process. Point DATABASE_URL at the production database to serve the real
+# and cable adapters, so agent events keep working on a single process. Point
+# DATABASE_URL at the production database to serve the real
 # workspace; without it the development database is used.
 # frozen_string_literal: true
 
@@ -99,10 +99,6 @@ begin
   # The `always` variant polls instead of watching stdin, so it keeps running when
   # started detached (e.g. under systemd) instead of exiting at stdin EOF.
   pids << spawn("bin/rails", "tailwindcss:watch[always]")
-
-  # Heal any hosted-agent container whose spec drifted, the same reconciliation
-  # the production unit runs before boot.
-  system("bin/rails", "runner", "HostedAgents::StartupReconciler.call", exception: true)
 
   puts "Zuwerk is live on port #{port} (#{bind}) with CSS and code reloading."
 

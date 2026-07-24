@@ -1,12 +1,11 @@
 <div id="sidebar_agent_list" class="sidebar-agent-list" aria-live="polite">
   <% agents.each do |agent| %>
-    <% hosted = agent.hosted_agent %>
-    <% connected = hosted ? hosted.bridge_connected? : agent.working? %>
+    <% connected = agent.external_connector_present? %>
     <% event = agent.agent_events.accepted.where(event_type: "todo_assigned").order(accepted_at: :desc).find(&:active?) %>
     <% avatar = { "hermes" => "/avatars/hermes.svg", "klaus" => "/avatars/klaus.svg", "codex" => "/avatars/codex.svg" }[agent.handle] %>
     <div class="sidebar-agent-group">
       <div class="agent-row-shell <%= 'agent-row-active' if active_agent_id == agent.id %>" data-sidebar-agent-id="<%= agent.id %>" data-agent-connected="<%= connected %>">
-        <%= link_to hosted ? agent_path(agent) : agents_path, class: "agent-row", aria: { label: "#{agent.name}#{connected ? ', online' : ', offline'}" } do %>
+        <%= link_to agents_path, class: "agent-row", aria: { label: "#{agent.name}#{connected ? ', online' : ', offline'}" } do %>
           <div class="sidebar-avatar"><% if avatar %><%= image_tag avatar, alt: "", aria: { hidden: true } %><% else %><%= agent.name.first.upcase %><% end %><% if connected %><span class="agent-avatar-online" aria-hidden="true"></span><% end %></div>
           <span class="agent-name"><%= agent.name %></span>
         <% end %>

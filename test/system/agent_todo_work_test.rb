@@ -13,7 +13,7 @@ class AgentTodoWorkTest < ApplicationSystemTestCase
       @continue = Queue.new
     end
 
-    def prompt(_hosted_agent, origin, _prompt, **)
+    def prompt(_agent, origin, _prompt, **)
       raise "wrong work origin" unless origin == @todo
 
       @started << true
@@ -24,20 +24,9 @@ class AgentTodoWorkTest < ApplicationSystemTestCase
     def finish = @continue << true
   end
 
-  class RecoveredRuntime
-    attr_reader :provisioned
-
-    def running? = false
-
-    def provision
-      @provisioned = true
-    end
-  end
-
   setup do
     @human = User.create!(name: "Browser Human", email: "browser-human@example.com", password: "password1")
     @agent = User.create!(name: "Codex Browser", kind: :agent)
-    @hosted_agent = HostedAgent.create!(user: @agent, runtime: "codex", state: "running")
     @project = Project.create!(name: "Browser acceptance")
     @todo = @project.todos.create!(creator: @human, title: "Verify agent feedback")
 
@@ -62,8 +51,10 @@ class AgentTodoWorkTest < ApplicationSystemTestCase
 
     assignment = @todo.assignments.create!(agent: @agent, assigner: @human)
     event = assignment.agent_events.find_by!(recipient: @agent)
+    event.transition_to!("running")
+    event.update_columns(connector_connection_id: "browser-connector")
     pool = ControlledCodexPool.new(agent: @agent, todo: @todo, event: event)
-    worker = Thread.new { HostedAgents::ChatBridge.new(event, pool: pool).deliver }
+    worker = Thread.new { AgentConnectors::ChatBridge.new(event, connection_id: "browser-connector", pool:).deliver }
     Timeout.timeout(5) { pool.started.pop }
 
     visit project_todo_path(@project, @todo)
@@ -125,48 +116,5 @@ class AgentTodoWorkTest < ApplicationSystemTestCase
     event.transition_to!("completed")
     visit chat_project_path(@project)
     assert_no_selector "[data-agent-event-id='#{event.public_id}']"
-  end
-
-  test "watchdog recovers stale work and the awakened agent completes it" do
-    assignment = @todo.assignments.create!(agent: @agent, assigner: @human)
-    event = assignment.agent_events.find_by!(recipient: @agent)
-    event.acknowledge!
-    stale_time = 10.minutes.ago
-    @agent.update!(working_status: true, working_label: "Working on #{@todo.title}", heartbeat_at: stale_time)
-    event.update_columns(accepted_at: stale_time, created_at: stale_time, updated_at: stale_time)
-    @hosted_agent.update!(state: "stopped")
-    runtime = RecoveredRuntime.new
-    retried = []
-
-    result = HostedAgents::EventWatchdog.new(
-      event,
-      runtime_factory: ->(_hosted) { runtime },
-      enqueue: ->(retried_event) { retried << retried_event }
-    ).call
-
-    assert_equal :retried, result
-    assert runtime.provisioned
-    assert_equal [ event ], retried
-    assert_equal 1, event.reload.watchdog_attempts
-    assert_not @agent.reload.working?
-
-    @hosted_agent.update!(state: "running")
-    pool = ControlledCodexPool.new(agent: @agent, todo: @todo, event: event)
-    worker = Thread.new { HostedAgents::ChatBridge.new(event, pool: pool).deliver }
-    Timeout.timeout(5) { pool.started.pop }
-    visit project_todo_path(@project, @todo)
-    assert_no_selector ".agent-inline-work"
-
-    pool.finish
-    worker.value
-    visit project_todo_path(@project, @todo)
-
-    assert_text "Codex finished the browser task"
-    assert_no_selector "[data-agent-event-id='#{event.public_id}']"
-    assert event.reload.delivered_at?
-    assert_nil event.last_error
-  ensure
-    pool&.finish if worker&.alive?
-    worker&.join
   end
 end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_23_170000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_24_110000) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
@@ -78,16 +78,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_23_170000) do
     t.string "last_error"
     t.string "public_id", null: false
     t.integer "recipient_id", null: false
-    t.datetime "runtime_recovered_at"
     t.datetime "started_at"
     t.string "state", default: "queued", null: false
     t.integer "subject_id", null: false
     t.string "subject_type", null: false
     t.datetime "updated_at", null: false
     t.datetime "waiting_at"
-    t.integer "watchdog_attempts", default: 0, null: false
-    t.datetime "watchdog_retry_at"
-    t.index ["delivered_at", "watchdog_retry_at"], name: "index_agent_events_for_watchdog"
     t.index ["event_type", "recipient_id", "subject_type", "subject_id"], name: "index_agent_events_on_unique_delivery", unique: true
     t.index ["public_id"], name: "index_agent_events_on_public_id", unique: true
     t.index ["recipient_id", "accepted_at"], name: "index_agent_events_on_recipient_id_and_accepted_at"
@@ -115,20 +111,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_23_170000) do
     t.index ["agent_id"], name: "index_agent_subscriptions_on_agent_id"
     t.index ["project_id", "agent_id"], name: "index_agent_subscriptions_on_project_id_and_agent_id", unique: true
     t.index ["project_id"], name: "index_agent_subscriptions_on_project_id"
-  end
-
-  create_table "agent_terminal_panes", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.integer "creator_id", null: false
-    t.integer "hosted_agent_id", null: false
-    t.string "name", null: false
-    t.integer "project_id", null: false
-    t.string "tmux_window", null: false
-    t.datetime "updated_at", null: false
-    t.index ["creator_id"], name: "index_agent_terminal_panes_on_creator_id"
-    t.index ["hosted_agent_id"], name: "index_agent_terminal_panes_on_hosted_agent_id"
-    t.index ["project_id"], name: "index_agent_terminal_panes_on_project_id"
-    t.index ["tmux_window"], name: "index_agent_terminal_panes_on_tmux_window", unique: true
   end
 
   create_table "board_automations", force: :cascade do |t|
@@ -162,36 +144,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_23_170000) do
     t.index ["board_automation_id", "scheduled_for"], name: "index_board_posts_on_board_automation_id_and_scheduled_for", unique: true
     t.index ["board_automation_id"], name: "index_board_posts_on_board_automation_id"
     t.index ["published_at"], name: "index_board_posts_on_published_at"
-  end
-
-  create_table "hosted_agent_sessions", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.string "external_session_id", null: false
-    t.integer "hosted_agent_id", null: false
-    t.datetime "last_used_at", null: false
-    t.integer "origin_id", null: false
-    t.string "origin_type", null: false
-    t.datetime "updated_at", null: false
-    t.index ["hosted_agent_id", "origin_type", "origin_id"], name: "index_hosted_agent_sessions_on_agent_and_origin", unique: true
-    t.index ["hosted_agent_id"], name: "index_hosted_agent_sessions_on_hosted_agent_id"
-    t.index ["origin_type", "origin_id"], name: "index_hosted_agent_sessions_on_origin_type_and_origin_id"
-  end
-
-  create_table "hosted_agents", force: :cascade do |t|
-    t.boolean "autonomous", default: false, null: false
-    t.datetime "bridge_connected_at"
-    t.text "bridge_last_error"
-    t.string "container_id"
-    t.datetime "created_at", null: false
-    t.text "last_error"
-    t.datetime "last_started_at"
-    t.datetime "last_stopped_at"
-    t.string "runtime", null: false
-    t.boolean "shared_folder", default: false, null: false
-    t.string "state", default: "stopped", null: false
-    t.datetime "updated_at", null: false
-    t.integer "user_id", null: false
-    t.index ["user_id"], name: "index_hosted_agents_on_user_id", unique: true
   end
 
   create_table "messages", force: :cascade do |t|
@@ -330,17 +282,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_23_170000) do
   add_foreign_key "agent_invitations", "users", column: "inviter_id"
   add_foreign_key "agent_subscriptions", "projects"
   add_foreign_key "agent_subscriptions", "users", column: "agent_id"
-  add_foreign_key "agent_terminal_panes", "hosted_agents"
-  add_foreign_key "agent_terminal_panes", "projects"
-  add_foreign_key "agent_terminal_panes", "users", column: "creator_id"
   add_foreign_key "board_automations", "projects"
   add_foreign_key "board_automations", "users", column: "agent_id"
   add_foreign_key "board_automations", "users", column: "creator_id"
   add_foreign_key "board_posts", "agent_events"
   add_foreign_key "board_posts", "board_automations"
   add_foreign_key "board_posts", "users", column: "author_id"
-  add_foreign_key "hosted_agent_sessions", "hosted_agents"
-  add_foreign_key "hosted_agents", "users"
   add_foreign_key "messages", "agent_events"
   add_foreign_key "messages", "projects"
   add_foreign_key "messages", "users", column: "author_id"

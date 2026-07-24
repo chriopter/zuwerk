@@ -53,7 +53,7 @@ class BoardAutomationsController < ApplicationController
   end
 
   def load_agents
-    @agents = User.agent.joins(:hosted_agent).order(:name)
+    @agents = User.agent.order(:name)
   end
 
   def selected_agent

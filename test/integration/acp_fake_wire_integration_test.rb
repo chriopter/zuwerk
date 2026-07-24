@@ -43,7 +43,7 @@ class AcpFakeWireIntegrationTest < ActiveSupport::TestCase
           end
         end
       end
-      client = HostedAgents::AcpClient.new(nil, transport: transport, session_mode: config[:mode])
+      client = AgentConnectors::AcpClient.new(transport:, session_mode: config[:mode])
       updates = []
       session_id = client.new_session
       result = client.prompt(
@@ -86,8 +86,8 @@ class AcpFakeWireIntegrationTest < ActiveSupport::TestCase
       outbound.pop
       disconnected.disconnect
     end
-    client = HostedAgents::AcpClient.new(nil, transport: disconnected)
-    error = assert_raises(HostedAgents::AcpClient::Error) { client.new_session }
+    client = AgentConnectors::AcpClient.new(transport: disconnected)
+    error = assert_raises(AgentConnectors::AcpClient::Error) { client.new_session }
     assert_match(/disconnected/, error.message)
   ensure
     client&.close

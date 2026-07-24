@@ -1,7 +1,7 @@
 module AgentApprovals
   # Turns an ACP permission request into a human decision. The agent's prompt
   # blocks here until somebody resolves the approval, the request expires, or
-  # the event changes hands. Shared by hosted agents and remote connectors.
+  # the event changes hands.
   class Gate
     TIMEOUT = 300
 
@@ -13,7 +13,7 @@ module AgentApprovals
         next unless event.state == "running" && event.connector_connection_id == expected_connector_owner
         event.agent_approvals.create!(request_id: request_id, options: options, details: details)
       end
-      return HostedAgents::AcpClient::PERMISSION_CANCELLED unless approval
+      return AgentConnectors::AcpClient::PERMISSION_CANCELLED unless approval
 
       ActiveRecord::Base.connection_handler.clear_active_connections!
       deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + TIMEOUT
@@ -52,7 +52,7 @@ module AgentApprovals
       Waiters.signal(approval.id)
       return outcome.last if outcome.first == :selected
 
-      HostedAgents::AcpClient::PERMISSION_CANCELLED
+      AgentConnectors::AcpClient::PERMISSION_CANCELLED
     end
   end
 end

@@ -5,7 +5,7 @@ module AgentConnectors
 
       def prompt(agent, origin, text, event:, expected_connector_owner:, &on_chunk)
         transport = AgentConnectors.registry.fetch(agent.id)
-        raise HostedAgents::ChatBridge::DeliveryError, "ACP connector is not connected" unless transport
+        raise ChatBridge::DeliveryError, "ACP connector is not connected" unless transport
 
         mutex_for(agent.id).synchronize do
           entry = entry_for(agent.id, transport)
@@ -26,7 +26,7 @@ module AgentConnectors
       private
         def maps_mutex = (@maps_mutex ||= Mutex.new)
         def entries = (@entries ||= {})
-        def client_factory = (@client_factory ||= ->(transport) { HostedAgents::AcpClient.new(nil, transport: transport) })
+        def client_factory = (@client_factory ||= ->(transport) { AcpClient.new(transport:) })
 
         def mutex_for(id)
           maps_mutex.synchronize { (@mutexes ||= {})[id] ||= Mutex.new }

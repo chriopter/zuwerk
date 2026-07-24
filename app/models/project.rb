@@ -7,8 +7,6 @@ class Project < ApplicationRecord
   has_many :board_automations, dependent: :destroy
   has_many :board_posts, through: :board_automations
   has_many :file_entries, class_name: "ProjectFileEntry", dependent: :destroy
-  has_many :agent_terminal_panes, dependent: :destroy
-  has_many :hosted_agent_sessions, as: :origin, dependent: :destroy
   has_one :room_setting, dependent: :destroy
   after_create :create_room_setting!
 

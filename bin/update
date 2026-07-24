@@ -27,7 +27,7 @@ STEPS = [
   Step.new(label: "Updating Bundler lock", command: %w[bundle update --bundler]),
   Step.new(label: "Updating Ruby lock", command: %w[bundle update --ruby]),
   Step.new(label: "Updating npm packages", command: %w[npm update]),
-  Step.new(label: "Updating DaisyUI", command: %w[npm install --save-dev daisyui@latest]),
+  Step.new(label: "Updating DaisyUI", command: %w[npm install --save-dev --save-exact daisyui@latest]),
   Step.new(label: "Updating importmap packages", command: %w[bin/importmap update]),
   Step.new(label: "Preparing database", command: %w[bin/rails db:prepare]),
   Step.new(label: "Clearing logs and temporary files", command: %w[bin/rails log:clear tmp:clear])

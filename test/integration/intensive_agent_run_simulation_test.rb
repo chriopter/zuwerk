@@ -26,7 +26,7 @@ class IntensiveAgentRunSimulationTest < ActionDispatch::IntegrationTest
 
       # Deterministic transport failures exercise retry without creating a second event.
       if transient_failure_numbers.include?(number) && @attempts[event.id] == 1
-        raise HostedAgents::ChatBridge::DeliveryError, "deterministic ACP transport interruption"
+        raise AgentConnectors::ChatBridge::DeliveryError, "deterministic ACP transport interruption"
       end
 
       publish(event, origin, number)
@@ -135,10 +135,11 @@ class IntensiveAgentRunSimulationTest < ActionDispatch::IntegrationTest
 
       assert_equal 77, events.length
       event_numbers = events.each_with_index.to_h { |event, number| [ event.id, number ] }
-      first_per_agent = agents.to_h { |agent| [ agent.id, AgentEvent.claim_next_for!(agent) ] }
       agents.each do |agent|
-        assert_equal events.select { |event| event.recipient_id == agent.id }.first, first_per_agent.fetch(agent.id)
-        assert_nil AgentEvent.claim_next_for!(agent), "active turn must keep later work queued"
+        agent.update_columns(
+          connector_connection_id: "simulation-#{agent.id}",
+          connector_heartbeat_at: Time.current
+        )
       end
 
       pool = DeterministicAcpPool.new(human:, event_numbers:, seed:)
@@ -146,10 +147,12 @@ class IntensiveAgentRunSimulationTest < ActionDispatch::IntegrationTest
         agent_events = events.select { |event| event.recipient_id == agent.id }
         agent_events.each do |event|
           assert_equal event, AgentEvent.where(recipient: agent, state: %w[running queued]).order(:created_at, :id).first
-          bridge = HostedAgents::ChatBridge.new(event, pool:, connector: true)
+          connection_id = "simulation-#{agent.id}"
+          assert_equal event, AgentEvent.claim_for_connector!(agent.id, connection_id)
+          bridge = AgentConnectors::ChatBridge.new(event, connection_id:, pool:)
           begin
             bridge.deliver
-          rescue HostedAgents::ChatBridge::DeliveryError => error
+          rescue AgentConnectors::ChatBridge::DeliveryError => error
             assert_equal "deterministic ACP transport interruption", error.message
             assert_equal "running", event.reload.state
             bridge.deliver
