@@ -60,6 +60,35 @@ class AgentConnectors::TransportTest < ActiveSupport::TestCase
     assert_raises(AgentConnectors::Transport::ProtocolError) { transport.receive(line) }
   end
 
+  test "restores sequenced ACP frames before exposing the final response" do
+    transport = AgentConnectors::Transport.new { |_line| }
+    first = JSON.generate(method: "session/update", chunk: "first") + "\n"
+    second = JSON.generate(method: "session/update", chunk: "second") + "\n"
+    final = JSON.generate(id: 1, result: { stopReason: "end_turn" }) + "\n"
+
+    transport.receive(final, sequence: 3)
+    transport.receive(second, sequence: 2)
+    assert_equal 2, transport.queued_messages
+    transport.receive(first, sequence: 1)
+
+    assert_equal first, transport.read_line(timeout: 0.1)
+    assert_equal second, transport.read_line(timeout: 0.1)
+    assert_equal final, transport.read_line(timeout: 0.1)
+  end
+
+  test "rejects duplicate sequence numbers and mixed sequence modes" do
+    line = "{}\n"
+    duplicate = AgentConnectors::Transport.new { |_line| }
+    duplicate.receive(line, sequence: 2)
+    assert_raises(AgentConnectors::Transport::ProtocolError) { duplicate.receive(line, sequence: 2) }
+    assert duplicate.closed?
+
+    mixed = AgentConnectors::Transport.new { |_line| }
+    mixed.receive(line)
+    assert_raises(AgentConnectors::Transport::ProtocolError) { mixed.receive(line, sequence: 1) }
+    assert mixed.closed?
+  end
+
   test "concurrent producers and consumers do not race queue accounting" do
     transport = AgentConnectors::Transport.new(max_messages: 500, max_queue_bytes: 1.megabyte) { |_line| }
     received = Queue.new

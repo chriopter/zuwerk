@@ -26,6 +26,19 @@ class AgentConnectorChannelTest < ActionCable::Channel::TestCase
     assert_nil @agent.reload.connector_connection_id
   end
 
+  test "passes CLI sequence numbers to the transport" do
+    subscribe
+    transport = AgentConnectors.registry.fetch(@agent.id)
+
+    perform :receive, type: "acp", sequence: 2, line: "{\"id\":2}\n"
+    perform :receive, type: "acp", sequence: 1, line: "{\"id\":1}\n"
+
+    assert_equal "{\"id\":1}\n", transport.read_line(timeout: 0.1)
+    assert_equal "{\"id\":2}\n", transport.read_line(timeout: 0.1)
+  ensure
+    unsubscribe
+  end
+
   test "rejects humans" do
     human = User.create!(name: "No Connector", email: "no-connector@example.com", password: "password1")
     stub_connection current_user: human

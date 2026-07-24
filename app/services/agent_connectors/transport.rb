@@ -16,23 +16,30 @@ module AgentConnectors
       @max_messages = max_messages
       @max_queue_bytes = max_queue_bytes
       @queue = []
+      @pending = {}
       @queued_bytes = 0
+      @next_sequence = 1
+      @sequence_mode = nil
       @mutex = Mutex.new
       @available = ConditionVariable.new
       @closed = false
     end
 
-    def receive(line)
+    def receive(line, sequence: nil)
       validate_line!(line)
       @mutex.synchronize do
         raise Disconnected, "ACP connector disconnected" if @closed
-        if @queue.length >= @max_messages || @queued_bytes + line.bytesize > @max_queue_bytes
-          close_locked!
-          raise ProtocolError, "ACP inbound queue limit exceeded"
-        end
-        @queue << line
+
+        validate_sequence!(sequence)
+        enforce_inbound_limits!(line)
         @queued_bytes += line.bytesize
-        @available.signal
+        if @sequence_mode == :sequenced
+          @pending[sequence] = line
+          flush_ordered_lines!
+        else
+          @queue << line
+        end
+        @available.signal unless @queue.empty?
       end
     rescue ProtocolError
       disconnect
@@ -56,7 +63,7 @@ module AgentConnectors
       end
     end
 
-    def queued_messages = @mutex.synchronize { @queue.length }
+    def queued_messages = @mutex.synchronize { @queue.length + @pending.length }
     def queued_bytes = @mutex.synchronize { @queued_bytes }
 
     def write_line(line)
@@ -85,8 +92,34 @@ module AgentConnectors
         return if @closed
         @closed = true
         @queue.clear
+        @pending.clear
         @queued_bytes = 0
         @available.broadcast
+      end
+
+      def validate_sequence!(sequence)
+        mode = sequence.nil? ? :legacy : :sequenced
+        @sequence_mode ||= mode
+        raise ProtocolError, "ACP sequence mode changed during connection" unless @sequence_mode == mode
+        return if mode == :legacy
+
+        unless sequence.is_a?(Integer) && sequence.positive? && sequence >= @next_sequence && !@pending.key?(sequence)
+          raise ProtocolError, "ACP sequence is invalid or duplicated"
+        end
+      end
+
+      def enforce_inbound_limits!(line)
+        if @queue.length + @pending.length >= @max_messages || @queued_bytes + line.bytesize > @max_queue_bytes
+          close_locked!
+          raise ProtocolError, "ACP inbound queue limit exceeded"
+        end
+      end
+
+      def flush_ordered_lines!
+        while (line = @pending.delete(@next_sequence))
+          @queue << line
+          @next_sequence += 1
+        end
       end
 
       def validate_line!(line)

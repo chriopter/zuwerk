@@ -13,7 +13,7 @@ class AgentConnectorChannel < ApplicationCable::Channel
   def receive(data)
     case data["type"] || data[:type]
     when "acp"
-      @transport.receive(data["line"] || data[:line])
+      @transport.receive(data["line"] || data[:line], sequence: data["sequence"] || data[:sequence])
     when "heartbeat"
       return unless AgentConnectors.registry.fetch(current_user.id)&.equal?(@transport)
       current_user.heartbeat_connector!(@connection_id)
