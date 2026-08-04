@@ -46,8 +46,8 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
     get root_path
     assert_response :success
     assert_select ".workspace-sidebar", count: 0
-    assert_select ".project-directory-card", count: 2
-    assert_select ".project-directory-card[data-project-id='#{@first_project.id}']" do
+    assert_select ".project-directory-item", count: 2
+    assert_select ".project-directory-item[data-project-id='#{@first_project.id}']" do
       assert_select "a[href='#{project_path(@first_project)}']", text: /Alpha/
       assert_select "a[href='#{project_tasks_path(@first_project)}']", count: 0
       assert_select "a[href='#{project_chat_path(@first_project)}']", count: 0
@@ -60,14 +60,36 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
       assert_select "a[href='#{project_path(@second_project)}']", text: /Beta/
     end
     assert_select ".workspace-topbar a.topbar-home[href='#{root_path}']"
+    assert_select ".topbar-zone-start .topbar-project-cluster", count: 0
+    assert_select ".topbar-zone-start > a.topbar-home", count: 1
+    assert_select ".topbar-zone-start .project-switcher", count: 1
+    assert_select ".topbar-zone-center .topbar-project-tools", count: 1
     assert_select ".topbar-global-nav, .topbar-account", count: 0
     assert_select ".project-home h1", text: "Alpha"
-    assert_select ".project-tool-card", count: 6
-    assert_select "a[href='#{project_tasks_path(@first_project)}']", text: /Tasks/
-    assert_select "a[href='#{project_chat_path(@first_project)}']", text: /Chat/
-    assert_select "a[href='#{project_briefings_path(@first_project)}']", text: /Briefing/
-    assert_select "a[href='#{project_file_entries_path(@first_project)}']", text: /Files/
-    assert_select ".project-tool-card", text: /Latest project note/
+    assert_select ".project-live-chat", text: /Latest project note/
+    assert_select ".topbar-project-tools" do
+      assert_select "a[href='#{project_chat_path(@first_project)}']", text: "Chat", count: 1
+      assert_select "a[href='#{inbox_path(project_id: @first_project.id)}']", text: /Inbox/
+      assert_select "a[href='#{project_tasks_path(@first_project)}']", text: /Tasks/
+      assert_select "a[href='#{project_briefings_path(@first_project)}']", count: 0
+      assert_select "a[href='#{project_file_entries_path(@first_project)}']", text: /Files/
+      assert_select "a[href='#{agents_path}']", count: 0
+      assert_select "i", count: 0
+      assert_select "a[title] > svg", count: 4
+    end
+    assert_equal %w[Inbox Chat Tasks Files], css_select(".topbar-project-tools a").map { |link| link["title"] }
+    assert_select ".topbar-project-tools a.is-active[title='Chat'] .topbar-project-tool-label", text: "Chat", count: 1
+    assert_select ".topbar-status-menu a[href='#{agents_path}']", text: "Agents", count: 1
+    assert_select ".topbar-status-menu > summary .topbar-agents" do
+      assert_select "svg", count: 1
+      assert_select ".topbar-agents-dot", count: 1
+      assert_select "span", text: /online/, count: 0
+    end
+    assert_select ".project-live-chat form.project-chat-entry[action='#{project_chat_messages_path(@first_project)}']" do
+      assert_select "input[name='return_to'][value='project']"
+      assert_select "textarea[name='chat_message[body]']"
+    end
+    assert_select ".project-work-rail, .project-tool-bar", count: 0
 
     get project_chat_path(@first_project)
     assert_response :success

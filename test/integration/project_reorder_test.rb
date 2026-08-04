@@ -29,7 +29,7 @@ class ProjectReorderTest < ActionDispatch::IntegrationTest
     get root_path
 
     assert_response :success
-    names = css_select(".project-directory-card .project-directory-name").map(&:text)
+    names = css_select(".project-directory-item .project-directory-name").map(&:text)
     assert_equal [ "Beta", "Alpha", "Gamma" ], names
   end
 

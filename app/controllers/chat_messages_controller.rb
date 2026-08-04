@@ -6,7 +6,7 @@ class ChatMessagesController < ApplicationController
   def create
     @message = current_user.chat_messages.new(chat_message_params.merge(chat: @project.chat))
     if @message.save
-      redirect_to project_chat_path(@project), status: :see_other
+      redirect_to(params[:return_to] == "project" ? project_path(@project) : project_chat_path(@project), status: :see_other)
     else
       load_chat
       render "chats/show", status: :unprocessable_entity

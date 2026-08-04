@@ -483,7 +483,7 @@
   .workspace-topbar-inner { @apply mx-auto grid w-full max-w-[1000px] grid-cols-[1fr_auto_1fr] items-center gap-2.5 px-0.5; }
   .topbar-zone { @apply flex min-w-0 items-center; }
   .topbar-zone-start { @apply justify-start gap-2.5; }
-  .topbar-zone-center { @apply justify-center; }
+  .topbar-zone-center { @apply justify-center gap-2; }
   .topbar-zone-end { @apply justify-end gap-2.5; }
   /* One shared glass pill for every floating topbar control. */
   .tb-pill, a.tb-pill, summary.tb-pill { @apply inline-flex h-10 shrink-0 cursor-pointer list-none items-center justify-center gap-2 rounded-full border border-white/60 bg-white/55 px-3.5 text-xs font-semibold text-stone-600 shadow-[0_10px_30px_-12px_rgba(28,25,23,.3),inset_0_1px_0_rgba(255,255,255,.6)] backdrop-blur-xl transition hover:-translate-y-px hover:border-white/80 hover:bg-white/70 hover:text-stone-900; }
@@ -499,9 +499,12 @@
   .glass-pop { @apply rounded-2xl border border-white/60 bg-white/80 shadow-[0_20px_60px_rgba(28,25,23,.16),inset_0_1px_0_rgba(255,255,255,.6)] backdrop-blur-xl; }
   .topbar-agents-dot { @apply h-1.5 w-1.5 shrink-0 rounded-full bg-stone-300; }
   .topbar-agents-dot.is-online { @apply bg-emerald-500; }
+  .topbar-agents { @apply relative; }
+  .topbar-agents > svg { @apply h-4 w-4; }
+  .topbar-agents > .topbar-agents-dot { @apply absolute bottom-1.5 right-1.5 ring-2 ring-white/80; }
   .tb-pill-hit { @apply block cursor-pointer list-none; }
   .tb-pill-hit::-webkit-details-marker { display: none; }
-  .topbar-home svg, .topbar-back svg { @apply h-4 w-4 shrink-0; }
+  .topbar-home svg { @apply h-4 w-4 shrink-0; }
   .workspace-topbar .project-switcher { @apply relative min-w-0; }
   .workspace-topbar .project-switcher > summary { @apply h-11 min-w-0 max-w-[min(60vw,22rem)] justify-start px-4; }
   .project-switcher-name { @apply min-w-0 truncate text-sm font-semibold text-stone-900; }
@@ -511,6 +514,13 @@
   .workspace-topbar .project-switcher-option { @apply gap-2; }
   .workspace-topbar .project-switcher-option > span:first-child { @apply min-w-0 flex-1 truncate; }
   .workspace-topbar .project-switcher-option i { @apply text-xs not-italic text-[#27332d]; }
+  .topbar-project-tools { @apply flex h-11 min-w-0 items-center gap-1 overflow-x-auto rounded-full border border-white/60 bg-white/55 p-1 shadow-[0_10px_30px_-12px_rgba(28,25,23,.3),inset_0_1px_0_rgba(255,255,255,.6)] backdrop-blur-xl; scrollbar-width: none; }
+  .topbar-project-tools::-webkit-scrollbar { display: none; }
+  .topbar-project-tools a { @apply grid h-9 w-9 shrink-0 place-items-center rounded-full text-stone-500 transition hover:-translate-y-px hover:bg-white/70 hover:text-stone-900; }
+  .topbar-project-tools a svg { @apply h-4 w-4; }
+  .topbar-project-tool-label { @apply hidden whitespace-nowrap; }
+  .topbar-project-tools a.is-active { @apply flex w-auto gap-2 bg-[#27332d] px-3 text-white shadow-sm hover:bg-[#27332d] hover:text-white; }
+  .topbar-project-tools a.is-active .topbar-project-tool-label { @apply block text-[11px] font-semibold; }
   .topbar-status-menu { @apply relative block; }
     .topbar-status-menu > summary::-webkit-details-marker { display: none; }
   .topbar-status-menu > div { @apply absolute right-0 top-12 z-50 flex w-56 flex-col rounded-2xl border border-white/60 bg-white/80 p-2 shadow-[0_20px_60px_rgba(28,25,23,.16),inset_0_1px_0_rgba(255,255,255,.6)] backdrop-blur-xl; }
@@ -521,63 +531,69 @@
   .workspace-top-main { @apply mx-auto w-full min-w-0 max-w-[1000px] rounded-[26px] border border-white/60 bg-white/45 p-4 shadow-[0_28px_80px_-28px_rgba(28,25,23,.32),inset_0_1px_0_rgba(255,255,255,.6)] backdrop-blur-xl sm:p-8; }
   .workspace-top-main.is-chat { @apply h-full min-h-0 overflow-hidden p-0; }
 
-  .project-directory { @apply mx-auto w-full max-w-[880px] pb-16; }
-  .project-directory-header { @apply mb-8 flex min-h-14 items-center justify-center; }
+  .project-directory { @apply mx-auto w-full max-w-[720px] pb-16; }
+  .project-directory-header { @apply mb-6 flex min-h-12 items-center justify-center; }
   .project-directory-header h1 { @apply font-serif text-4xl font-normal tracking-tight text-stone-950; }
-  .project-directory-grid { @apply grid gap-4 md:grid-cols-2 xl:grid-cols-3; }
-  .project-create-card { @apply min-h-36 rounded-2xl border border-dashed border-stone-300/80 bg-white/35 backdrop-blur-md transition hover:border-stone-400 hover:bg-white/55; }
-  .project-create-card > summary { @apply flex min-h-36 cursor-pointer list-none items-center justify-center gap-2 text-sm font-semibold text-stone-400 transition hover:text-stone-900; }
-  .project-create-card > summary::-webkit-details-marker { display: none; }
-  .project-create-card > summary > span:first-child { @apply text-lg font-normal; }
-  .project-create-card[open] { @apply border-solid border-white/80 bg-white/70 shadow-[0_12px_32px_-8px_rgba(28,25,23,.14),inset_0_1px_0_rgba(255,255,255,.6)]; }
-  .project-create-card[open] > summary { @apply hidden; }
-  .project-create-card > div { @apply flex min-h-36 items-center p-5; }
-  .project-create-card form { @apply w-full; }
+  .project-directory-list { @apply overflow-hidden rounded-2xl border border-white/70 bg-white/55 shadow-[0_16px_45px_-28px_rgba(28,25,23,.28),inset_0_1px_0_rgba(255,255,255,.75)] backdrop-blur-md; }
+  .project-directory-item { @apply flex cursor-grab items-center border-b border-stone-200/70 bg-white/30 px-3.5 transition last:border-0 hover:bg-white/75 active:cursor-grabbing; }
+  .project-directory-item-dragging { @apply opacity-35; }
+  .project-directory-item-drop-target { @apply bg-orange-50/70 shadow-[inset_3px_0_0_#e85f42]; }
+  .project-directory-drag { @apply grid w-5 shrink-0 place-items-center text-stone-400 opacity-0 transition; }
+  .project-directory-drag svg { @apply h-4 w-4; }
+  .project-directory-item:hover .project-directory-drag { @apply text-stone-500 opacity-100; }
+  .project-directory-link { @apply flex min-w-0 flex-1 items-center gap-3 py-3 pl-2.5; }
+  .project-directory-name { @apply min-w-0 flex-1 truncate font-serif text-lg font-normal tracking-tight text-stone-950; }
+  .project-directory-unread { @apply inline-flex shrink-0 items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[#d9563b]; }
+  .project-directory-unread i { @apply h-1.5 w-1.5 rounded-full bg-[#e85f42]; }
+  .project-directory-people { @apply flex min-h-6 shrink-0 items-center gap-1; }
+  .project-directory-person { @apply grid h-6 w-6 place-items-center rounded-full bg-[#27332d] text-[10px] font-semibold text-white; }
+  .project-directory-person.is-agent { @apply bg-[#e85f42]; }
+  .project-create-item { @apply bg-white/20; }
+  .project-create-item > summary { @apply flex cursor-pointer list-none items-center gap-2 px-11 py-3 text-sm font-semibold text-stone-400 transition hover:bg-white/60 hover:text-stone-900; }
+  .project-create-item > summary::-webkit-details-marker { display: none; }
+  .project-create-item > summary > span:first-child { @apply text-lg font-normal; }
+  .project-create-item[open] { @apply bg-white/70; }
+  .project-create-item[open] > summary { @apply hidden; }
+  .project-create-item > div { @apply p-3.5 pl-11; }
+  .project-create-item form { @apply w-full; }
   .project-create-row { @apply flex w-full items-center gap-2; }
   .project-create-row .field_with_errors { @apply flex min-w-0 flex-1; }
   .project-create-error { @apply mt-2 text-xs font-medium text-red-700; }
-  .project-create-card input[type="text"] { @apply min-w-0 flex-1 border-0 bg-transparent font-serif text-2xl tracking-tight text-stone-950 outline-none placeholder:text-stone-300; }
-  .project-create-card input[type="submit"] { @apply h-10 cursor-pointer rounded-full border border-white/15 bg-[#27332d]/90 px-4 text-sm font-semibold text-white shadow-[0_10px_26px_-10px_rgba(39,51,45,.6),inset_0_1px_0_rgba(255,255,255,.18)] transition hover:-translate-y-px hover:bg-[#27332d]; }
-  .project-directory-card { @apply overflow-hidden; }
-  .project-directory-card { @apply cursor-grab; }
-  .project-directory-card-dragging { @apply scale-[.98] opacity-40; }
-  .project-directory-link { @apply flex min-h-36 flex-col justify-between gap-4 p-5; }
-  .project-directory-name { @apply block truncate font-serif text-2xl font-normal tracking-tight text-stone-950; }
-  .project-directory-people { @apply flex min-h-6 flex-wrap items-center gap-1; }
-  .project-directory-person { @apply grid h-6 w-6 place-items-center rounded-full bg-[#27332d] text-[10px] font-semibold text-white; }
-  .project-directory-person.is-agent { @apply bg-[#e85f42]; }
+  .project-create-item input[type="text"] { @apply min-w-0 flex-1 border-0 bg-transparent font-serif text-xl tracking-tight text-stone-950 outline-none placeholder:text-stone-300; }
+  .project-create-item input[type="submit"] { @apply h-10 cursor-pointer rounded-full border border-white/15 bg-[#27332d]/90 px-4 text-sm font-semibold text-white shadow-[0_10px_26px_-10px_rgba(39,51,45,.6),inset_0_1px_0_rgba(255,255,255,.18)] transition hover:-translate-y-px hover:bg-[#27332d]; }
 
-  .project-home { @apply mx-auto w-full max-w-[880px] pb-16; }
-  .project-home-header { @apply mb-8 flex min-h-14 items-center justify-center; }
-  .project-home-header h1 { @apply font-serif text-4xl font-normal tracking-tight text-stone-950; }
-  .project-tool-grid { @apply grid gap-4 lg:grid-cols-3; }
-  .project-tool-card { @apply flex min-h-80 flex-col p-5; }
-  .project-tool-card > header { @apply border-b border-stone-100 pb-4; }
-  .project-tool-card > header > span { @apply block min-w-0; }
-  .project-tool-card > header strong, .project-tool-card > header small { @apply block; }
-  .project-tool-card > header strong { @apply truncate font-serif text-2xl font-normal tracking-tight text-stone-950; }
-  .project-tool-card > header small { @apply mt-1 truncate text-xs text-stone-400; }
-  .project-tool-preview { @apply flex flex-1 flex-col justify-center gap-1 pt-4; }
-  .project-tool-row { @apply flex min-w-0 items-center gap-3 rounded-xl px-2 py-2.5 text-sm text-stone-700; }
-  .project-tool-row > span { @apply min-w-0 flex-1 truncate; }
-  .project-tool-row small { @apply text-[10px] text-stone-400; }
-  .project-tool-status { @apply h-2 w-2 shrink-0 rounded-full bg-stone-300; }
-  .project-message-preview { @apply flex min-w-0 items-center gap-3 rounded-xl px-2 py-2.5; }
-  .project-message-preview > i { @apply grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#edf0eb] text-[10px] font-bold not-italic text-[#27332d]; }
-  .project-message-preview > span { @apply min-w-0; }
-  .project-message-preview strong, .project-message-preview small { @apply block truncate; }
-  .project-message-preview strong { @apply text-xs font-semibold text-stone-800; }
-  .project-message-preview small { @apply mt-0.5 text-xs text-stone-500; }
-  .project-agent-entry { @apply block border-b border-stone-100 px-2 py-2.5 last:border-0; }
-  .project-agent-name { @apply flex items-center gap-2 text-sm font-semibold text-stone-800; }
-  .project-agent-name i { @apply grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#e85f42] text-[9px] font-semibold not-italic text-white; }
-  .project-agent-act { @apply mt-1 block truncate pl-8 text-xs text-stone-500; }
-  .project-tool-empty { @apply text-center text-sm text-stone-400; }
+  .project-home { @apply mx-auto flex min-h-[calc(100dvh-12rem)] w-full max-w-[1000px] flex-col pb-4; }
+  .project-live-chat { @apply flex min-h-[32rem] min-w-0 flex-1 flex-col; }
+  .project-live-messages { @apply mx-auto flex min-h-0 w-full max-w-[760px] flex-1 flex-col justify-end overflow-y-auto px-4 py-7; }
+  .project-live-message { @apply flex min-w-0 max-w-[78%] gap-3 py-2.5; }
+  .project-live-message.is-own { @apply ml-auto flex-row-reverse; }
+  .project-live-message > i { @apply grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#27332d] text-[10px] font-bold not-italic text-white; }
+  .project-live-message.is-agent > i { @apply bg-[#e85f42]; }
+  .project-live-message > div { @apply min-w-0 flex-1 rounded-2xl rounded-bl-md border border-white/70 bg-white/65 px-4 py-3 shadow-[0_10px_28px_-24px_rgba(28,25,23,.45)]; }
+  .project-live-message.is-own > div { @apply rounded-bl-2xl rounded-br-md border-white/10 bg-[#27332d] text-white; }
+  .project-live-message header { @apply flex items-baseline gap-2; }
+  .project-live-message strong { @apply truncate text-xs font-semibold text-stone-800; }
+  .project-live-message time { @apply shrink-0 text-[9px] text-stone-400; }
+  .project-live-message p { @apply mt-1 line-clamp-5 font-serif text-[15px] leading-6 text-stone-700; }
+  .project-live-message.is-own strong { @apply text-white/90; }
+  .project-live-message.is-own time { @apply text-white/50; }
+  .project-live-message.is-own p { @apply text-white; }
+  .project-live-empty { @apply m-auto flex flex-col items-center px-8 text-center; }
+  .project-live-empty strong { @apply font-serif text-xl font-normal text-stone-700; }
+  .project-live-empty span { @apply mt-2 max-w-xs text-xs leading-5 text-stone-400; }
+  .project-chat-entry { @apply relative mx-auto mb-1 mt-2 flex w-full max-w-[760px] items-center gap-2 rounded-2xl border border-white/80 bg-white/75 p-2 pl-5 shadow-[0_18px_45px_-28px_rgba(28,25,23,.5)] transition focus-within:border-stone-400; }
+  .project-chat-entry textarea { @apply min-h-9 min-w-0 flex-1 resize-none border-0 bg-transparent py-2 text-sm text-stone-700 outline-none placeholder:text-stone-400; }
+  .project-chat-entry input[type="submit"] { @apply h-9 cursor-pointer rounded-xl bg-[#27332d] px-4 text-xs font-semibold text-white transition hover:bg-stone-700; }
   .workspace-breadcrumb { @apply flex min-w-0 items-center gap-2 text-sm font-semibold text-stone-400; }
   .workspace-breadcrumb a { @apply min-w-0 truncate text-stone-600 transition hover:text-stone-950; }
   .workspace-breadcrumb span[aria-current="page"] { @apply truncate text-stone-950; }
 
   .inbox-page { @apply mx-auto w-full max-w-[880px] pb-16; }
+  .updates-section { @apply mt-8 scroll-mt-24; }
+  .updates-section + .updates-section { @apply mt-12 border-t border-stone-200/70 pt-10; }
+  .updates-section-header { @apply flex items-end justify-between gap-4; }
+  .updates-section-header h2 { @apply font-serif text-2xl font-normal tracking-tight text-stone-950; }
+  .updates-section-header p { @apply mt-1 text-xs text-stone-500; }
   .inbox-list { @apply mt-6 divide-y divide-stone-100 overflow-hidden; }
   .inbox-row { @apply flex items-start gap-3 px-4 py-4 transition hover:bg-white/70; }
   .inbox-row.is-unread { @apply bg-white/45; }
@@ -593,11 +609,6 @@
   .inbox-empty strong { @apply text-base font-semibold text-stone-800; }
   .inbox-empty p { @apply mt-2 text-sm text-stone-500; }
 
-  .project-briefing-preview { @apply rounded-xl px-2 py-2.5; }
-  .project-briefing-preview strong, .project-briefing-preview small, .project-briefing-preview i { @apply block; }
-  .project-briefing-preview strong { @apply truncate text-xs font-semibold text-stone-800; }
-  .project-briefing-preview small { @apply mt-1 line-clamp-2 text-xs leading-5 text-stone-500; }
-  .project-briefing-preview i { @apply mt-1 text-[10px] not-italic text-stone-400; }
 
   .briefings-page, .briefing-detail-page, .briefing-form-page { @apply mx-auto w-full max-w-[880px] pb-16; }
   .briefing-list { @apply mt-6 divide-y divide-stone-100 overflow-hidden; }
@@ -663,15 +674,19 @@
     .topbar-brand > span:last-child, .topbar-account { @apply hidden; }
     .topbar-mobile-menu { @apply block; }
     .workspace-topbar .project-switcher { @apply relative; }
-    .workspace-topbar .project-switcher > summary { @apply max-w-[62vw] px-3; }
+    .workspace-topbar .project-switcher > summary { @apply max-w-[48vw] px-3; }
     .workspace-topbar .project-switcher-menu { @apply left-0 top-[52px] w-[calc(100vw-24px)]; }
     .project-switcher-name { @apply max-w-[170px]; }
     .topbar-logout { @apply text-[11px]; }
     .project-directory-header { @apply mb-7 items-start; }
-    .project-directory-header h1, .project-home-header h1 { @apply text-3xl; }
-    .project-directory-link { @apply min-h-28; }
-      .project-tool-card { @apply min-h-52 p-4; }
-    .project-tool-preview { @apply min-h-32; }
+    .project-directory-header h1 { @apply text-3xl; }
+    .project-directory-item { @apply px-3; }
+    .project-directory-link { @apply gap-3 py-3; }
+    .project-create-item > summary { @apply px-10; }
+    .project-create-item > div { @apply pl-10; }
+    .project-home { @apply min-h-[calc(100dvh-10rem)]; }
+    .project-live-chat { @apply min-h-[28rem]; }
+    .project-live-message { @apply max-w-[92%]; }
     .briefing-top-line { @apply flex-col; }
     .briefing-actions { @apply w-full justify-start; }
     .briefing-detail-header h1, .briefing-form-heading h1, .briefing-form-card h1 { @apply text-3xl; }

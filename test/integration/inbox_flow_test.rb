@@ -42,6 +42,18 @@ class InboxFlowTest < ActionDispatch::IntegrationTest
     assert_not @owner.inbox_items.find_by!(project: other_project).read?
   end
 
+  test "shows project briefings as a second section" do
+    agent = User.create!(name: "Inbox Reporter", kind: :agent)
+    briefing = @project.briefings.create!(creator: @owner, agent: agent, title: "Weekly pulse", frequency: "weekly", prompt: "Report progress")
+
+    get inbox_path(project_id: @project.id)
+
+    assert_response :success
+    assert_select ".updates-section", count: 2
+    assert_select "#briefings a[href='#{project_briefing_path(@project, briefing)}']", text: /Weekly pulse/
+    assert_select "a[href='#{new_project_briefing_path(@project)}']", minimum: 1
+  end
+
   test "requires a signed-in human" do
     delete session_path
 

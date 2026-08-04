@@ -5,15 +5,23 @@
     <h1 id="projects-title">Projects</h1>
   </header>
 
-  <div class="project-directory-grid" data-controller="project-sort">
+  <div class="project-directory-list" data-controller="project-sort">
     <% @projects.each do |project| %>
-      <article class="project-directory-card glass-card glass-card-hover" data-project-id="<%= project.id %>" data-position="<%= project.position %>" draggable="true"
+      <article class="project-directory-item" data-project-id="<%= project.id %>" data-position="<%= project.position %>" draggable="true"
         data-action="dragstart->project-sort#dragStart dragover->project-sort#dragOver drop->project-sort#drop dragend->project-sort#dragEnd">
+        <span class="project-directory-drag" aria-hidden="true" title="Drag to reorder">
+          <svg viewBox="0 0 18 18" fill="none">
+            <path d="M3 5h12M3 9h12M3 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </span>
         <%= link_to project_path(project), class: "project-directory-link" do %>
           <strong class="project-directory-name"><%= project.name %></strong>
+          <% if @projects_with_new_messages.include?(project.id) %>
+            <span class="project-directory-unread"><i aria-hidden="true"></i>New messages</span>
+          <% end %>
           <% participants = @project_participants[project.id] || [] %>
           <span class="project-directory-people">
-            <% participants.first(8).each do |person| %>
+            <% participants.first(5).each do |person| %>
               <span class="project-directory-person <%= 'is-agent' if person.agent? %>" title="<%= person.name %>"><%= person.name.first.upcase %></span>
             <% end %>
           </span>
@@ -22,7 +30,7 @@
     <% end %>
 
     <% create_project = @create_project || Project.new %>
-    <details class="project-create-card" <%= "open" if create_project.errors.any? %>>
+    <details class="project-create-item" <%= "open" if create_project.errors.any? %>>
       <summary aria-label="New project">
         <span aria-hidden="true">+</span>
         <span>New project</span>

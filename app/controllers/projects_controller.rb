@@ -8,24 +8,9 @@ class ProjectsController < ApplicationController
 
   def show
     @project = Project.find(params[:id])
-    @task_counts = @project.tasks.group(:status).count
-    @recent_tasks = @project.tasks.where.not(status: :completed).order(updated_at: :desc, id: :desc).limit(4)
-    @recent_chat_messages = @project.chat.messages.includes(:author).order(created_at: :desc, id: :desc).limit(3)
-    @recent_briefings = @project.briefings.recently_active.includes(:agent, comments: :rich_text_body).limit(2)
-    @recent_file_entries = @project.file_entries.includes(file_attachment: :blob).order(updated_at: :desc, id: :desc).limit(4)
-    @file_entries_count = @project.file_entries.count
-    @inbox_items = current_user.inbox_items.where(project: @project)
-      .includes(:latest_activity, :trackable)
-      .recent_first
-      .limit(3)
-    project_events = AgentEvent
-      .where(subject_type: "ChatMessage", subject_id: @project.chat.messages.select(:id))
-      .or(AgentEvent.where(subject_type: "TaskAssignment", subject_id: TaskAssignment.joins(:task).where(tasks: { project_id: @project.id }).select(:id)))
-      .or(AgentEvent.where(subject_type: "BriefingComment", subject_id: BriefingComment.joins(:briefing).where(briefings: { project_id: @project.id }).select(:id)))
-      .order(created_at: :desc, id: :desc).includes(:recipient, :subject).limit(60).to_a
-    subscribed = User.agent.where(id: @project.chat.subscriptions.select(:agent_id))
-    @project_agents = (project_events.map(&:recipient) + subscribed).uniq
-    @agent_recent_events = project_events.group_by(&:recipient_id).transform_values { |events| events.first(3) }
+    @message = @project.chat.messages.new
+    @recent_chat_messages = @project.chat.messages.includes(:author).order(created_at: :desc, id: :desc).limit(8).reverse
+    @agents = User.agent.order(:name)
   end
 
   def create
@@ -57,6 +42,9 @@ class ProjectsController < ApplicationController
       @project_participants = pairs.group_by(&:first).transform_values do |entries|
         entries.filter_map { |_, user_id| people[user_id] }.uniq
       end
+      @projects_with_new_messages = current_user.inbox_items.unread
+        .where(project: @projects, trackable_type: "Chat")
+        .pluck(:project_id)
     end
 
     def route_first_run

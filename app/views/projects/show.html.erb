@@ -1,120 +1,35 @@
 <% content_for :title, "#{@project.name} · Zuwerk" %>
 
 <section class="project-home" aria-labelledby="project-title">
-  <header class="project-home-header">
+  <header class="sr-only">
     <h1 id="project-title"><%= @project.name %></h1>
   </header>
 
-  <div class="project-tool-grid">
-    <%= link_to inbox_path(project_id: @project.id), class: "project-tool-card glass-card glass-card-hover" do %>
-      <header>
-        <span><strong>Inbox</strong></span>
-      </header>
-      <div class="project-tool-preview">
-        <% if @inbox_items.any? %>
-          <% @inbox_items.each do |item| %>
-            <span class="project-message-preview">
-              <i aria-hidden="true"><%= item.latest_activity.actor.name.first.upcase %></i>
-              <span><strong><%= inbox_item_title(item) %></strong><small><%= inbox_item_excerpt(item) %></small></span>
-            </span>
-          <% end %>
-        <% else %>
-          <span class="project-tool-empty">Updates on work you joined will appear here.</span>
-        <% end %>
-      </div>
-    <% end %>
+  <section class="project-live-chat" aria-labelledby="project-chat-title">
+    <h2 id="project-chat-title" class="sr-only">Chat</h2>
 
-    <%= link_to project_chat_path(@project), class: "project-tool-card glass-card glass-card-hover" do %>
-      <header>
-        <span><strong>Chat</strong></span>
-      </header>
-      <div class="project-tool-preview">
-        <% if @recent_chat_messages.any? %>
-          <% @recent_chat_messages.each do |message| %>
-            <span class="project-message-preview">
-              <i aria-hidden="true"><%= message.author.name.first.upcase %></i>
-              <span><strong><%= message.author.name %></strong><small><%= truncate(strip_tags(render_message_markdown(message.body)).squish, length: 90) %></small></span>
-            </span>
-          <% end %>
-        <% else %>
-          <span class="project-tool-empty">No messages yet.</span>
+    <div class="project-live-messages">
+      <% if @recent_chat_messages.any? %>
+        <% @recent_chat_messages.each do |message| %>
+          <article class="project-live-message <%= 'is-own' if message.author == current_user %> <%= 'is-agent' if message.author.agent? %>">
+            <i aria-hidden="true"><%= message.author.name.first.upcase %></i>
+            <div>
+              <header><strong><%= message.author.name %></strong><time><%= time_ago_in_words(message.created_at) %> ago</time></header>
+              <p><%= truncate(strip_tags(render_message_markdown(message.body)).squish, length: 320) %></p>
+            </div>
+          </article>
         <% end %>
-      </div>
-    <% end %>
+      <% else %>
+        <div class="project-live-empty"><strong>Start the conversation</strong><span>Write a message or mention an agent to begin working together.</span></div>
+      <% end %>
+    </div>
 
-    <%= link_to project_tasks_path(@project), class: "project-tool-card glass-card glass-card-hover" do %>
-      <header>
-        <span><strong>Tasks</strong></span>
-      </header>
-      <div class="project-tool-preview">
-        <% if @recent_tasks.any? %>
-          <% @recent_tasks.each do |task| %>
-            <span class="project-tool-row"><i class="project-tool-status project-tool-status-<%= task.status.dasherize %>"></i><span><%= task.title %></span><small>#<%= task.id %></small></span>
-          <% end %>
-        <% else %>
-          <span class="project-tool-empty">No open tasks.</span>
-        <% end %>
-      </div>
+    <%= form_with model: [ @project, @message ], class: "project-chat-entry", data: { controller: "mention", mention_users_value: @agents.map { |agent| { handle: agent.handle, name: agent.name } }.to_json } do |form| %>
+      <%= hidden_field_tag :return_to, "project" %>
+      <div class="mention-menu" data-mention-target="menu" hidden></div>
+      <%= form.text_area :body, placeholder: "Write to the project or mention an agent…", required: true, rows: 1, maxlength: 4000,
+            data: { controller: "composer", mention_target: "input", action: "input->composer#grow input->mention#update keydown->mention#keydown keydown->composer#keydown click->mention#update" }, aria: { label: "Message" } %>
+      <%= form.submit "Send" %>
     <% end %>
-
-    <%= link_to project_briefings_path(@project), class: "project-tool-card glass-card glass-card-hover" do %>
-      <header>
-        <span><strong>Briefing</strong></span>
-      </header>
-      <div class="project-tool-preview">
-        <% if @recent_briefings.any? %>
-          <% @recent_briefings.each do |briefing| %>
-            <% latest_comment = briefing.comments.select(&:published_at?).max_by(&:published_at) %>
-            <span class="project-briefing-preview"><strong><%= briefing.title %></strong><small><%= latest_comment ? truncate(latest_comment.body.to_plain_text.squish, length: 110) : "No comments yet." %></small><i><%= briefing.agent.name %> · <%= briefing.frequency_label %></i></span>
-          <% end %>
-        <% else %>
-          <span class="project-tool-empty">Recurring agent updates will appear here.</span>
-        <% end %>
-      </div>
-    <% end %>
-
-    <%= link_to project_file_entries_path(@project), class: "project-tool-card glass-card glass-card-hover" do %>
-      <header>
-        <span><strong>Files</strong></span>
-      </header>
-      <div class="project-tool-preview">
-        <% if @recent_file_entries.any? %>
-          <% @recent_file_entries.each do |entry| %><span class="project-tool-row"><i aria-hidden="true"><%= entry.folder? ? "▰" : "□" %></i><span><%= entry.name %></span><small><%= entry.folder? ? "Folder" : number_to_human_size(entry.file.byte_size) %></small></span><% end %>
-        <% else %>
-          <span class="project-tool-empty">Upload files or create folders.</span>
-        <% end %>
-      </div>
-    <% end %>
-
-    <%= link_to agents_path, class: "project-tool-card glass-card glass-card-hover" do %>
-      <header>
-        <span><strong>Agents</strong></span>
-      </header>
-      <div class="project-tool-preview">
-        <% if @project_agents.any? %>
-          <% @project_agents.first(3).each do |agent| %>
-            <span class="project-agent-entry">
-              <span class="project-agent-name"><i aria-hidden="true"><%= agent.name.first.upcase %></i><%= agent.name %></span>
-              <% (@agent_recent_events[agent.id] || []).each do |event| %>
-                <span class="project-agent-act">
-                  <%= case event.event_type
-                    when "chat_message_mentioned" then "Answered in chat"
-                    when "task_assigned" then "Task: #{event.task&.title}".truncate(46)
-                    when "briefing_scheduled" then "Updated a briefing"
-                  end %>
-                  · <%= time_ago_in_words(event.created_at) %> ago
-                </span>
-              <% end %>
-              <% if (@agent_recent_events[agent.id] || []).empty? %>
-                <span class="project-agent-act">No activity yet</span>
-              <% end %>
-            </span>
-          <% end %>
-        <% else %>
-          <span class="project-tool-empty">No agents in this project yet.</span>
-        <% end %>
-      </div>
-    <% end %>
-
-  </div>
+  </section>
 </section>

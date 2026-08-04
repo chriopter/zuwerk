@@ -7,6 +7,7 @@ class InboxesController < ApplicationController
       .then { |scope| @project ? scope.where(project: @project) : scope }
       .includes(:project, :trackable, latest_activity: :actor)
       .recent_first
+    @briefings = @project&.briefings&.recently_active&.includes(:agent, comments: [ :author, :rich_text_body ]) || []
   end
 
   def mark_all_read

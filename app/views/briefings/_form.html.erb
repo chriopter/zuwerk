@@ -29,7 +29,7 @@
   </div>
 
   <div class="briefing-form-actions">
-    <%= link_to "Cancel", briefing.persisted? ? project_briefing_path(@project, briefing) : project_briefings_path(@project), class: "workspace-secondary-action" %>
+    <%= link_to "Cancel", briefing.persisted? ? project_briefing_path(@project, briefing) : inbox_path(project_id: @project.id, anchor: "briefings"), class: "workspace-secondary-action" %>
     <%= form.submit briefing.persisted? ? "Save briefing" : "Create briefing", class: "workspace-primary-action" %>
   </div>
 <% end %>

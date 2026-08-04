@@ -5,9 +5,7 @@ class BriefingsController < ApplicationController
   before_action :load_agents, only: %i[show new create edit update]
 
   def index
-    @briefings = @project.briefings
-      .recently_active
-      .includes(:agent, comments: [ :author, :rich_text_body ])
+    redirect_to inbox_path(project_id: @project.id, anchor: "briefings")
   end
 
   def show

@@ -9,14 +9,19 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
 
   test "project overview lists projects and creates a new project" do
     other = Project.create!(name: "Client launch")
+    other.chat.messages.create!(author: @human, body: "Starting this project")
+    other.chat.messages.create!(author: @agent, body: "New project update")
 
     get root_path
     assert_response :success
-    assert_select ".project-directory-grid" do
-      assert_select ".project-directory-card", text: /Client launch/
+    assert_select ".project-directory-list" do
+      assert_select ".project-directory-item[draggable='true']", text: /Client launch/
+      assert_select ".project-directory-drag", count: 1
+      assert_select ".project-directory-unread", text: "New messages"
+      assert_select ".project-directory-copy, .project-directory-arrow", count: 0
       assert_select "a[href='#{project_path(other)}']", text: /Client launch/
     end
-    assert_select ".project-create-card form[action='#{projects_path}']"
+    assert_select ".project-create-item form[action='#{projects_path}']"
 
     assert_difference "Project.count", 1 do
       post projects_path, params: { project: { name: "Internal tools" } }

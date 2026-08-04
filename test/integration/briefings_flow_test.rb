@@ -8,19 +8,27 @@ class BriefingsFlowTest < ActionDispatch::IntegrationTest
     post session_path, params: { email: @human.email, password: "password1" }
   end
 
-  test "lists briefings by their latest comment" do
+  test "lists briefings inside the project inbox by their latest comment" do
     older = create_briefing("Older")
     newer = create_briefing("Newer")
     older.comments.create!(author: @human, body: "Newest comment", published_at: 1.minute.from_now)
 
-    get project_briefings_path(@project)
+    get inbox_path(project_id: @project.id)
 
     assert_response :success
-    assert_select "h1", text: "Briefings"
-    assert_select ".briefing-row" do |rows|
-      assert_includes rows.first.text, older.title
-      assert_includes rows.last.text, newer.title
+    assert_select "h1", text: "Inbox"
+    assert_select "#briefings" do
+      assert_select ".briefing-row" do |rows|
+        assert_includes rows.first.text, older.title
+        assert_includes rows.last.text, newer.title
+      end
     end
+  end
+
+  test "redirects the former briefing index to the combined view" do
+    get project_briefings_path(@project)
+
+    assert_redirected_to inbox_path(project_id: @project.id, anchor: "briefings")
   end
 
   test "creates a recurring briefing and queues an immediate run" do

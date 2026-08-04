@@ -44,4 +44,15 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     assert_redirected_to project_chat_path(selected)
     assert_equal selected, ChatMessage.last.project
   end
+
+  test "project overview composer returns to the project workspace" do
+    user = User.create!(name: "Human", email: "overview@example.com", password: "password1", kind: :human)
+    project = Project.create!(name: "Overview")
+    post session_path, params: { email: user.email, password: "password1" }
+
+    post project_chat_messages_path(project), params: { return_to: "project", chat_message: { body: "Sent from overview" } }
+
+    assert_redirected_to project_path(project)
+    assert_equal "Sent from overview", project.chat.messages.last.body
+  end
 end

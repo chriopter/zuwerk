@@ -6,7 +6,7 @@
   <div hidden><%= render "chat_messages/agent_presence", agents: @agents %></div>
   <header class="briefing-detail-header">
     <div class="briefing-top-line">
-      <nav class="workspace-breadcrumb" aria-label="Breadcrumb"><%= link_to @project.name, project_path(@project) %><span aria-hidden="true">/</span><%= link_to "Briefings", project_briefings_path(@project) %><span aria-hidden="true">/</span><span aria-current="page"><%= @briefing.title %></span></nav>
+      <nav class="workspace-breadcrumb" aria-label="Breadcrumb"><%= link_to @project.name, project_path(@project) %><span aria-hidden="true">/</span><%= link_to "Briefings", inbox_path(project_id: @project.id, anchor: "briefings") %><span aria-hidden="true">/</span><span aria-current="page"><%= @briefing.title %></span></nav>
       <div class="briefing-actions">
         <div class="avatar-stack" aria-label="Assigned agent">
           <span class="avatar-stack-item is-agent <%= 'is-working' if @briefing.agent.working? %>" data-agent-id="<%= @briefing.agent.id %>" title="<%= @briefing.agent.name %> — assigned agent">
