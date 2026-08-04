@@ -5,6 +5,6 @@
     "css:build": "bin/rails tailwindcss:build"
   },
   "devDependencies": {
-    "daisyui": "5.7.0"
+    "daisyui": "5.7.9"
   }
 }
