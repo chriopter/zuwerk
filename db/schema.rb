@@ -10,7 +10,15 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_24_210000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_04_130000) do
+  create_table "accounts", force: :cascade do |t|
+    t.string "account_number", null: false
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_number"], name: "index_accounts_on_account_number", unique: true
+  end
+
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.text "body"
     t.datetime "created_at", null: false
@@ -113,12 +121,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_24_210000) do
   end
 
   create_table "agent_invitations", force: :cascade do |t|
+    t.integer "account_id", null: false
     t.datetime "created_at", null: false
     t.datetime "expires_at", null: false
     t.integer "inviter_id", null: false
     t.datetime "redeemed_at"
     t.string "token_digest", null: false
     t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_agent_invitations_on_account_id"
     t.index ["inviter_id"], name: "index_agent_invitations_on_inviter_id"
     t.index ["token_digest"], name: "index_agent_invitations_on_token_digest", unique: true
   end
@@ -223,6 +233,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_24_210000) do
     t.index ["user_id"], name: "index_inbox_items_on_user_id"
   end
 
+  create_table "memberships", force: :cascade do |t|
+    t.integer "account_id", null: false
+    t.datetime "created_at", null: false
+    t.integer "role", default: 1, null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["account_id", "user_id"], name: "index_memberships_on_account_id_and_user_id", unique: true
+    t.index ["account_id"], name: "index_memberships_on_account_id"
+    t.index ["user_id"], name: "index_memberships_on_user_id"
+  end
+
   create_table "participations", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "project_id", null: false
@@ -254,11 +275,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_24_210000) do
   end
 
   create_table "projects", force: :cascade do |t|
+    t.integer "account_id", null: false
     t.datetime "created_at", null: false
     t.string "name", null: false
     t.integer "position", default: 0, null: false
     t.datetime "updated_at", null: false
     t.index "lower(name)", name: "index_projects_on_lower_name", unique: true
+    t.index ["account_id", "name"], name: "index_projects_on_account_id_and_name", unique: true
+    t.index ["account_id"], name: "index_projects_on_account_id"
   end
 
   create_table "reactions", force: :cascade do |t|
@@ -370,6 +394,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_24_210000) do
   add_foreign_key "agent_approvals", "agent_events"
   add_foreign_key "agent_approvals", "users", column: "resolved_by_id"
   add_foreign_key "agent_events", "users", column: "recipient_id"
+  add_foreign_key "agent_invitations", "accounts"
   add_foreign_key "agent_invitations", "users", column: "inviter_id"
   add_foreign_key "agent_sessions", "projects"
   add_foreign_key "agent_sessions", "users", column: "agent_id"
@@ -388,11 +413,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_24_210000) do
   add_foreign_key "inbox_items", "activities", column: "latest_activity_id"
   add_foreign_key "inbox_items", "projects"
   add_foreign_key "inbox_items", "users"
+  add_foreign_key "memberships", "accounts"
+  add_foreign_key "memberships", "users"
   add_foreign_key "participations", "projects"
   add_foreign_key "participations", "users"
   add_foreign_key "project_file_entries", "project_file_entries", column: "parent_id"
   add_foreign_key "project_file_entries", "projects"
   add_foreign_key "project_file_entries", "users", column: "creator_id"
+  add_foreign_key "projects", "accounts"
   add_foreign_key "reactions", "users", column: "author_id"
   add_foreign_key "search_documents", "projects"
   add_foreign_key "task_assignments", "tasks"

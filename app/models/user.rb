@@ -1,4 +1,5 @@
 class User < ApplicationRecord
+  attr_accessor :skip_automatic_test_membership
   has_secure_password validations: false
   enum :kind, { human: 0, agent: 1 }
   has_many :chat_messages, foreign_key: :author_id, dependent: :restrict_with_error
@@ -16,6 +17,8 @@ class User < ApplicationRecord
   has_many :created_file_entries, class_name: "ProjectFileEntry", foreign_key: :creator_id, dependent: :restrict_with_error
   has_many :briefing_comments, foreign_key: :author_id, dependent: :restrict_with_error
   has_many :assigned_task_assignments, class_name: "TaskAssignment", foreign_key: :assigned_by_id, dependent: :destroy
+  has_many :memberships, dependent: :destroy
+  has_many :accounts, through: :memberships
 
   before_validation :normalize_email
   validates :name, presence: true, length: { maximum: 80 }
@@ -74,13 +77,23 @@ class User < ApplicationRecord
     name.to_s.parameterize
   end
 
+  def member_of?(account)
+    account && memberships.exists?(account: account)
+  end
+
+  def primary_account
+    accounts.order("memberships.created_at", "memberships.id").first
+  end
+
   private
     def saved_change_to_presence?
       saved_change_to_working_status? || saved_change_to_working_label? || saved_change_to_heartbeat_at?
     end
 
     def broadcast_presence
-      broadcast_replace_to "agent_presence", target: "agent_presence", partial: "chat_messages/agent_presence", locals: { agents: User.agent.order(:name) }
+      accounts.find_each do |account|
+        broadcast_replace_to account.agent_presence_stream, target: "agent_presence", partial: "chat_messages/agent_presence", locals: { agents: account.agents.order(:name) }
+      end
     end
 
     def normalize_email

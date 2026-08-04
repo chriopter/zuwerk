@@ -6,6 +6,13 @@ class DeliverAgentEventJob < ApplicationJob
     job.arguments.first.terminalize_failure!(error)
   end
   def perform(agent_event)
+    Current.set(account: agent_event.project.account, user: agent_event.recipient) do
+      deliver(agent_event)
+    end
+  end
+
+  private
+  def deliver(agent_event)
     return if agent_event.event_type == "briefing_scheduled"
 
     claimed = AgentEvent.claim_for_fallback!(agent_event)

@@ -2,8 +2,8 @@ class ChatSubscriptionsController < ApplicationController
   before_action :require_human!
 
   def update
-    project = Project.find(params[:project_id])
-    agent = User.agent.find(params[:id])
+    project = find_project(params[:project_id])
+    agent = current_account_agents.find(params[:id])
 
     if ActiveModel::Type::Boolean.new.cast(params[:enabled])
       project.chat.subscriptions.find_or_create_by!(agent: agent)

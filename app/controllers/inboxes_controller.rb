@@ -2,6 +2,7 @@ class InboxesController < ApplicationController
   before_action :require_human!
 
   def show
+    authorize Current.account, :show?
     @project = workspace_projects.find(params[:project_id]) if params[:project_id].present?
     @items = current_user.inbox_items
       .then { |scope| @project ? scope.where(project: @project) : scope }
@@ -12,6 +13,7 @@ class InboxesController < ApplicationController
   end
 
   def mark_all_read
+    authorize Current.account, :show?
     scope = current_user.inbox_items.unread
     scope = scope.where(project_id: params[:project_id]) if params[:project_id].present?
     scope.update_all(read_at: Time.current, updated_at: Time.current)

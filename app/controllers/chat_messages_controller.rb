@@ -16,7 +16,7 @@ class ChatMessagesController < ApplicationController
   private
 
   def load_project
-    @project = Project.find(params[:project_id])
+    @project = find_project(params[:project_id])
   end
 
   def load_chat
@@ -24,8 +24,8 @@ class ChatMessagesController < ApplicationController
     @messages = @chat.messages
       .includes(:author, { attachments_attachments: :blob }, reactions: :author)
       .order(:created_at).last(200)
-    @agents = User.agent.order(:name)
-    @humans = User.human.order(:name)
+    @agents = current_account_agents.order(:name)
+    @humans = Current.account.humans.order(:name)
     @auto_notify_agent_ids = @project.chat.subscriptions.pluck(:agent_id)
   end
 

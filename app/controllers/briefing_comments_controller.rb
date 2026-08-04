@@ -33,7 +33,7 @@ class BriefingCommentsController < ApplicationController
   private
 
   def load_records
-    @project = Project.find(params[:project_id])
+    @project = find_project(params[:project_id])
     @briefing = @project.briefings.find(params[:briefing_id])
   end
 
@@ -50,7 +50,7 @@ class BriefingCommentsController < ApplicationController
   end
 
   def load_workspace
-    @agents = User.agent.order(:name)
+    @agents = current_account_agents.order(:name)
     @comments = @briefing.comments.published.chronologically.includes(:author, :rich_text_body, reactions: :author)
     @latest_run = @briefing.comments.where.not(scheduled_for: nil).includes(:agent_event).order(scheduled_for: :desc, id: :desc).first
     @latest_result = @briefing.comments.published.where.not(scheduled_for: nil).includes(:author, :rich_text_body).order(scheduled_for: :desc, id: :desc).first

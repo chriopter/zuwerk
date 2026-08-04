@@ -15,7 +15,7 @@ class ReactionsController < ApplicationController
   private
 
   def load_reactable
-    @project = Project.find(params[:project_id])
+    @project = find_project(params[:project_id])
     if params[:message_id]
       @reactable = @project.chat.messages.find(params[:message_id])
     elsif params[:briefing_id]

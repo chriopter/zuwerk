@@ -1,7 +1,7 @@
 <% content_for :title, "#{@task.title} · Tasks · Zuwerk" %>
 <%= turbo_stream_from "task_#{@task.id}_status" %>
 <%= turbo_stream_from @project.agent_turn_stream %>
-<%= turbo_stream_from "agent_presence" %>
+<%= turbo_stream_from Current.account.agent_presence_stream %>
 <section class="task-detail-page" data-controller="working-ring">
   <div hidden><%= render "chat_messages/agent_presence", agents: @agents %></div>
   <div class="task-detail-shell">

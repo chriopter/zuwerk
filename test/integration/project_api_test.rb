@@ -59,7 +59,7 @@ class ProjectApiTest < ActionDispatch::IntegrationTest
     assert_equal "Verbindungsproblem", payload.fetch("query")
     assert_equal @project.id, payload.fetch("project_id")
     assert_equal [ "chat_message", "task" ], payload.fetch("results").first(2).map { |result| result.fetch("type") }.sort
-    assert payload.fetch("results").all? { |result| result.fetch("url").start_with?("/projects/#{@project.id}/") }
+    assert payload.fetch("results").all? { |result| result.fetch("url").start_with?("/#{@project.account.account_number}/projects/#{@project.id}/") }
     assert payload.fetch("results").none? { |result| result.fetch("snippet").include?("nicht sichtbar") }
   end
 

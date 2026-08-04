@@ -27,6 +27,7 @@ class ProjectReorderTest < ActionDispatch::IntegrationTest
   test "directory and switcher follow the manual order" do
     patch reorder_project_path(@beta), params: { position: 0 }, as: :json
     get root_path
+    follow_redirect!
 
     assert_response :success
     names = css_select(".project-directory-item .project-directory-name").map(&:text)

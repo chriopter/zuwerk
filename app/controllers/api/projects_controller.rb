@@ -1,15 +1,15 @@
 module Api
   class ProjectsController < BaseController
     def index
-      render json: Project.order(:name).map { |project| serialize(project) }
+      render json: agent_projects.order(:name).map { |project| serialize(project) }
     end
 
     def show
-      render json: serialize(Project.find(params[:id]))
+      render json: serialize(agent_projects.find(params[:id]))
     end
 
     def search
-      project = Project.find(params[:id])
+      project = agent_projects.find(params[:id])
       query = params[:q].to_s.strip
       limit = Integer(params.fetch(:limit, 10), exception: false)
       return render json: { error: "Query must contain between 2 and 500 characters." }, status: :unprocessable_entity unless query.length.between?(2, 500)

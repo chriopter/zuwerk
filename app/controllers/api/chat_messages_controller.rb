@@ -45,7 +45,7 @@ module Api
       end
 
       def project
-        @project ||= Project.find(params[:project_id])
+        @project ||= agent_projects.find(params[:project_id])
       end
 
       def create_for_event

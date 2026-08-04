@@ -1,44 +1,46 @@
 Rails.application.routes.draw do
-  root "projects#index"
-  resource :inbox, only: :show do
-    patch :mark_all_read
-  end
+  root "accounts#entry"
   resource :onboarding, only: %i[new create]
   resource :session, only: %i[new create destroy]
-  resources :projects, only: [ :index, :show, :create ] do
-    patch :reorder, on: :member
-    resources :agent_turns, only: :destroy
-    resource :chat, only: :show do
-      resources :messages, controller: "chat_messages", only: :create do
-        resources :reactions, only: :create
-      end
-      resources :subscriptions, controller: "chat_subscriptions", only: :update
+  scope ":account_number", constraints: { account_number: /\d{8}/ } do
+    resource :inbox, only: :show do
+      patch :mark_all_read
     end
-    resources :briefings, except: :destroy do
-      post :run_now, on: :member
-      patch :toggle, on: :member
-      resources :comments, controller: "briefing_comments", only: %i[create edit update destroy] do
-        resources :reactions, only: :create
-      end
-    end
-    resources :file_entries, path: "files", only: %i[index create destroy] do
-      get :download, on: :member
-    end
-    resources :task_lists, path: "task-lists", only: :create do
+    resources :projects, only: [ :index, :show, :create ] do
       patch :reorder, on: :member
-    end
-    resources :tasks, except: :destroy do
-      patch :reorder, on: :member
-      resources :assignments, controller: "task_assignments", only: %i[create destroy]
-      resources :reactions, only: :create
-      resources :comments, controller: "task_comments", only: %i[create edit update destroy] do
+      resources :agent_turns, only: :destroy
+      resource :chat, only: :show do
+        resources :messages, controller: "chat_messages", only: :create do
+          resources :reactions, only: :create
+        end
+        resources :subscriptions, controller: "chat_subscriptions", only: :update
+      end
+      resources :briefings, except: :destroy do
+        post :run_now, on: :member
+        patch :toggle, on: :member
+        resources :comments, controller: "briefing_comments", only: %i[create edit update destroy] do
+          resources :reactions, only: :create
+        end
+      end
+      resources :file_entries, path: "files", only: %i[index create destroy] do
+        get :download, on: :member
+      end
+      resources :task_lists, path: "task-lists", only: :create do
+        patch :reorder, on: :member
+      end
+      resources :tasks, except: :destroy do
+        patch :reorder, on: :member
+        resources :assignments, controller: "task_assignments", only: %i[create destroy]
         resources :reactions, only: :create
+        resources :comments, controller: "task_comments", only: %i[create edit update destroy] do
+          resources :reactions, only: :create
+        end
       end
     end
+    resources :agent_invitations, only: %i[new create show]
+    resources :agents, only: :index
+    resources :agent_approvals, only: :update
   end
-  resources :agent_invitations, only: %i[new create show]
-  resources :agents, only: :index
-  resources :agent_approvals, only: :update
   get "database", to: "database#index", as: :database
   get "database/:table", to: "database#show", as: :database_table
   get "database/:table/records/:id", to: "database#record", as: :database_record

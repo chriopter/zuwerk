@@ -10,8 +10,9 @@ class ChatFlowTest < ActionDispatch::IntegrationTest
     assert_equal "ada@example.com", User.last.email
     assert User.last.admin?
 
-    post project_chat_messages_path(Project.default), params: { chat_message: { body: "Hello team" } }
-    assert_redirected_to project_chat_path(Project.default)
+    project = User.last.primary_account.projects.find_by!(name: "Zuwerk")
+    post project_chat_messages_path(project), params: { chat_message: { body: "Hello team" } }
+    assert_redirected_to project_chat_path(project)
     assert_equal "Hello team", ChatMessage.last.body
 
     delete session_path

@@ -53,7 +53,7 @@ class BriefingsController < ApplicationController
   private
 
   def load_project
-    @project = Project.find(params[:project_id])
+    @project = find_project(params[:project_id])
   end
 
   def load_briefing
@@ -61,7 +61,7 @@ class BriefingsController < ApplicationController
   end
 
   def load_agents
-    @agents = User.agent.order(:name)
+    @agents = current_account_agents.order(:name)
   end
 
   def selected_agent

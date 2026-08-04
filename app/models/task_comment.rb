@@ -34,7 +34,7 @@ class TaskComment < ApplicationRecord
     return unless author.human?
 
     text = body.to_plain_text
-    User.agent.find_each do |agent|
+    task.project.account.agents.find_each do |agent|
       escaped_handle = Regexp.escape(agent.handle)
       next unless text.match?(/(?<![[:alnum:]_-])@#{escaped_handle}(?![[:alnum:]_-])/i)
 

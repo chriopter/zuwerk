@@ -39,7 +39,7 @@ class FileEntriesController < ApplicationController
 
   private
     def load_project
-      @project = workspace_projects.find(params[:project_id])
+      @project = find_project(params[:project_id])
     end
 
     def load_folder

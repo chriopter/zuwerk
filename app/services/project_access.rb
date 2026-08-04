@@ -4,6 +4,6 @@ class ProjectAccess
   end
 
   def projects
-    @user&.human? ? Project.all : Project.none
+    @user&.human? && Current.account ? Current.account.projects : Project.none
   end
 end

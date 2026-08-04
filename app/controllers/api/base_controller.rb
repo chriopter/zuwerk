@@ -7,7 +7,12 @@ module Api
       def authenticate_agent!
         token = request.authorization.to_s.delete_prefix("Bearer ").presence
         @current_agent = User.agent.find_by(api_token_digest: User.digest(token)) if token
+        @current_account = @current_agent&.primary_account
         render json: { error: "A valid bearer token is required." }, status: :unauthorized unless @current_agent
+      end
+
+      def agent_projects
+        @current_account.projects
       end
 
       def render_not_found(error)

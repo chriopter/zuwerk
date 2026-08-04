@@ -10,7 +10,10 @@ module Api
           render json: { error: "Invitation is expired, invalid, or already used." }, status: :gone
           raise ActiveRecord::Rollback
         end
-        agent = User.create!(name: params[:name], kind: :agent, api_token_digest: User.digest(api_token))
+        agent = User.new(name: params[:name], kind: :agent, api_token_digest: User.digest(api_token))
+        agent.skip_automatic_test_membership = true
+        agent.save!
+        invitation.account.memberships.create!(user: agent, role: :member)
         invitation.update!(redeemed_at: Time.current)
       end
       return unless agent

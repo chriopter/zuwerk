@@ -1,4 +1,5 @@
 class Project < ApplicationRecord
+  belongs_to :account
   has_many :search_documents, dependent: :destroy
   has_one :chat, dependent: :destroy
   has_many :tasks, dependent: :destroy
@@ -9,10 +10,11 @@ class Project < ApplicationRecord
   after_create :create_default_chat!
   after_create :create_default_task_list!
 
-  validates :name, presence: true, length: { maximum: 80 }, uniqueness: { case_sensitive: false }
+  validates :name, presence: true, length: { maximum: 80 }, uniqueness: { scope: :account_id, case_sensitive: false }
 
   def self.default
-    find_or_create_by!(name: "Zuwerk")
+    account = Current.account || (Account.test_default if Rails.env.test?)
+    account.projects.find_or_create_by!(name: "Zuwerk")
   end
 
   def default_task_list

@@ -11,7 +11,7 @@ class MentionAutocompleteTest < ApplicationSystemTestCase
     fill_in "Email", with: @human.email
     fill_in "Password", with: "password1"
     click_button "Sign in"
-    assert_current_path root_path
+    assert_current_path projects_path
   end
 
   test "typing @ suggests agents and Enter inserts the handle" do

@@ -48,12 +48,12 @@ class ProjectSearchTest < ActiveSupport::TestCase
     assert_equal matching_message.id, results.find { |result| result.type == "chat_message" }.source_id
     assert_equal matching_task.id, results.find { |result| result.type == "task" }.source_id
     assert_equal project.id, results.first.project_id
-    assert_equal "/projects/#{project.id}/chat#chat_message_#{matching_message.id}", results.find { |result| result.type == "chat_message" }.url
+    assert_equal "/#{project.account.account_number}/projects/#{project.id}/chat#chat_message_#{matching_message.id}", results.find { |result| result.type == "chat_message" }.url
     briefing_document = SearchDocument.find_by!(project: project, source_type: "briefing_comment", source_id: briefing_comment.id)
-    assert_equal "/projects/#{project.id}/briefings/#{briefing.id}#briefing_comment_#{briefing_comment.id}", briefing_document.url
+    assert_equal "/#{project.account.account_number}/projects/#{project.id}/briefings/#{briefing.id}#briefing_comment_#{briefing_comment.id}", briefing_document.url
     assert_includes briefing_document.content, "stabilen Betrieb"
     file_document = SearchDocument.find_by!(project: project, source_type: "project_file", source_id: file_entry.id)
-    assert_equal "/projects/#{project.id}/files#file_entry_#{file_entry.id}", file_document.url
+    assert_equal "/#{project.account.account_number}/projects/#{project.id}/files#file_entry_#{file_entry.id}", file_document.url
     assert_includes file_document.content, "Network connection"
     assert results.none? { |result| result.content.include?("anderen Projekt") }
 

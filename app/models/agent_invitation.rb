@@ -1,10 +1,11 @@
 class AgentInvitation < ApplicationRecord
+  belongs_to :account
   belongs_to :inviter, class_name: "User"
   validates :token_digest, :expires_at, presence: true
 
-  def self.issue!(inviter:)
+  def self.issue!(inviter:, account: Current.account || (Account.test_default if Rails.env.test?))
     token = SecureRandom.urlsafe_base64(32)
-    [ create!(inviter: inviter, token_digest: User.digest(token), expires_at: 15.minutes.from_now), token ]
+    [ create!(account: account, inviter: inviter, token_digest: User.digest(token), expires_at: 15.minutes.from_now), token ]
   end
 
   def valid_token?(token)

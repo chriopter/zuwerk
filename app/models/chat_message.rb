@@ -54,7 +54,7 @@ class ChatMessage < ApplicationRecord
       return unless author.human?
 
       automatically_notified_ids = chat.subscriptions.pluck(:agent_id)
-      User.agent.find_each do |agent|
+      project.account.agents.find_each do |agent|
         escaped_handle = Regexp.escape(agent.handle)
         chat_message_mentioned = body.match?(/(?<![[:alnum:]_-])@#{escaped_handle}(?![[:alnum:]_-])/i)
         next unless chat_message_mentioned || automatically_notified_ids.include?(agent.id)

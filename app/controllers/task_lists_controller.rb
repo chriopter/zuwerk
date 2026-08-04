@@ -2,7 +2,7 @@ class TaskListsController < ApplicationController
   before_action :require_human!
 
   def create
-    project = Project.find(params[:project_id])
+    project = find_project(params[:project_id])
     list = project.task_lists.new(name: params.dig(:task_list, :name))
     list.position = (project.task_lists.maximum(:position) || -1) + 1
     list.save!
@@ -12,7 +12,7 @@ class TaskListsController < ApplicationController
   end
 
   def reorder
-    project = Project.find(params[:project_id])
+    project = find_project(params[:project_id])
     list = project.task_lists.find(params[:id])
     ids = project.task_lists.order(:position, :id).pluck(:id) - [ list.id ]
     ids.insert(params[:position].to_i.clamp(0, ids.size), list.id)

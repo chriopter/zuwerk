@@ -7,12 +7,14 @@ class OnboardingsController < ApplicationController
 
   def create
     @user = User.new(user_params.merge(kind: :human, admin: true))
-    if @user.save
+    @user.skip_automatic_test_membership = true
+    account = Account.new(name: "#{@user.name.presence || 'My'} workspace")
+    if Account.transaction { @user.save!; account.save!; account.memberships.create!(user: @user, role: :owner); account.projects.create!(name: "Zuwerk") }
       session[:user_id] = @user.id
       redirect_to root_path, notice: "Your workspace is ready."
-    else
-      render :new, status: :unprocessable_entity
     end
+  rescue ActiveRecord::RecordInvalid
+      render :new, status: :unprocessable_entity
   end
 
   private

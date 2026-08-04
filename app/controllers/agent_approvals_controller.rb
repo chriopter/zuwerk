@@ -3,6 +3,8 @@ class AgentApprovalsController < ApplicationController
 
   def update
     approval = AgentApproval.find(params[:id])
+    project = Current.account.projects.find(approval.agent_event.project.id)
+    authorize project, :update?
     approval.resolve!(selected_option_id(approval), resolver: current_user)
     if request.format.json? || params.key?(:option_id)
       head :no_content

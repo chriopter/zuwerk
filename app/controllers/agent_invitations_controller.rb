@@ -2,10 +2,12 @@ class AgentInvitationsController < ApplicationController
   before_action :require_human!
 
   def new
+    authorize Current.account, :update?
     @agent_profiles = AgentConnectors::Profiles.all
   end
 
   def create
+    authorize Current.account, :update?
     profile = AgentConnectors::Profiles.find(params[:profile])
     return redirect_to(new_agent_invitation_path, alert: "Choose a supported agent type.") unless profile
 
@@ -14,7 +16,8 @@ class AgentInvitationsController < ApplicationController
   end
 
   def show
-    @invitation = current_user.agent_invitations.find(params[:id])
+    authorize Current.account, :update?
+    @invitation = Current.account.agent_invitations.find(params[:id])
     @token = params[:token]
     @agent_profile = AgentConnectors::Profiles.find(params[:profile])
     if @token.blank? || !@invitation.valid_token?(@token) || !@agent_profile

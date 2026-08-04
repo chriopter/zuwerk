@@ -3,18 +3,20 @@ class ProjectsController < ApplicationController
   before_action :require_human!
 
   def index
+    authorize Project
     load_directory
   end
 
   def show
-    @project = Project.find(params[:id])
+    @project = find_project(params[:id])
     @message = @project.chat.messages.new
     @recent_chat_messages = @project.chat.messages.includes(:author).order(created_at: :desc, id: :desc).limit(8).reverse
-    @agents = User.agent.order(:name)
+    @agents = current_account_agents.order(:name)
   end
 
   def create
-    project = Project.new(project_params)
+    authorize Project
+    project = Current.account.projects.new(project_params)
     if project.save
       redirect_to projects_path
     else
@@ -25,18 +27,18 @@ class ProjectsController < ApplicationController
   end
 
   def reorder
-    project = Project.find(params[:id])
-    ids = Project.order(:position, :name).pluck(:id) - [ project.id ]
+    project = find_project(params[:id])
+    ids = Current.account.projects.order(:position, :name).pluck(:id) - [ project.id ]
     ids.insert(params[:position].to_i.clamp(0, ids.size), project.id)
     Project.transaction do
-      ids.each_with_index { |id, index| Project.where(id: id).update_all(position: index) }
+      ids.each_with_index { |id, index| Current.account.projects.where(id: id).update_all(position: index) }
     end
     head :no_content
   end
 
   private
     def load_directory
-      @projects = Project.order(:position, :name).load
+      @projects = policy_scope(Project).order(:position, :name).load
       @workspace_projects = @projects
       pairs = Participation.where(project_id: @projects.map(&:id)).distinct.pluck(:project_id, :user_id)
       people = User.where(id: pairs.map(&:last)).index_by(&:id)

@@ -1,6 +1,6 @@
 <% content_for :title, "#{@briefing.title} · Briefings · Zuwerk" %>
 <%= turbo_stream_from @project.agent_turn_stream %>
-<%= turbo_stream_from "agent_presence" %>
+<%= turbo_stream_from Current.account.agent_presence_stream %>
 
 <section class="briefing-detail-page" data-controller="working-ring">
   <div hidden><%= render "chat_messages/agent_presence", agents: @agents %></div>

@@ -186,19 +186,19 @@ class ProjectSearch
       (query_terms & source_terms).length.fdiv(query_terms.length)
     end
 
-    def project_chat_path(...)
-      Rails.application.routes.url_helpers.project_chat_path(...)
+    def project_chat_path(*args, **options)
+      Rails.application.routes.url_helpers.project_chat_path(*args, **options.merge(account_number: @project.account))
     end
 
-    def project_task_path(...)
-      Rails.application.routes.url_helpers.project_task_path(...)
+    def project_task_path(*args, **options)
+      Rails.application.routes.url_helpers.project_task_path(*args, **options.merge(account_number: @project.account))
     end
 
-    def project_file_entries_path(...)
-      Rails.application.routes.url_helpers.project_file_entries_path(...)
+    def project_file_entries_path(*args, **options)
+      Rails.application.routes.url_helpers.project_file_entries_path(*args, **options.merge(account_number: @project.account))
     end
 
-    def project_briefing_path(...)
-      Rails.application.routes.url_helpers.project_briefing_path(...)
+    def project_briefing_path(*args, **options)
+      Rails.application.routes.url_helpers.project_briefing_path(*args, **options.merge(account_number: @project.account))
     end
 end

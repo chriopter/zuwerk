@@ -1,4 +1,4 @@
 <div id="task_reactions">
   <%= render "reactions/reactions", reactable: task, current_user: nil,
-        path: Rails.application.routes.url_helpers.project_task_reactions_path(task.project, task) %>
+        path: Rails.application.routes.url_helpers.project_task_reactions_path(task.project, task, account_number: task.project.account) %>
 </div>

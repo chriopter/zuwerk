@@ -13,6 +13,7 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
     other.chat.messages.create!(author: @agent, body: "New project update")
 
     get root_path
+    follow_redirect!
     assert_response :success
     assert_select ".project-directory-list" do
       assert_select ".project-directory-item[draggable='true']", text: /Client launch/

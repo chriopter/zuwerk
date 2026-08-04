@@ -44,6 +44,7 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
     @first_project.chat.messages.create!(author: @human, body: "Latest project note")
 
     get root_path
+    follow_redirect!
     assert_response :success
     assert_select ".workspace-sidebar", count: 0
     assert_select ".project-directory-item", count: 2

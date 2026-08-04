@@ -95,8 +95,8 @@ class TasksController < ApplicationController
   private
 
   def load_workspace
-    @project = Project.find(params[:project_id])
-    @agents = User.agent.order(:name)
+    @project = find_project(params[:project_id])
+    @agents = current_account_agents.order(:name)
     @tasks = @project.tasks.includes(:assigned_agents).ordered
   end
 

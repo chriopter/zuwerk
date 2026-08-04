@@ -35,7 +35,7 @@ class TaskCommentsController < ApplicationController
   private
 
   def load_records
-    @project = Project.find(params[:project_id])
+    @project = find_project(params[:project_id])
     @task = @project.tasks.find(params[:task_id])
   end
 
@@ -54,7 +54,7 @@ class TaskCommentsController < ApplicationController
   end
 
   def load_workspace
-    @agents = User.agent.order(:name)
+    @agents = current_account_agents.order(:name)
     @tasks = @project.tasks.ordered
   end
 end
