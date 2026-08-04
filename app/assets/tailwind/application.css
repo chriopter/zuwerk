@@ -516,11 +516,15 @@
   .workspace-topbar .project-switcher-option i { @apply text-xs not-italic text-[#27332d]; }
   .topbar-project-tools { @apply flex h-11 min-w-0 items-center gap-1 overflow-x-auto rounded-full border border-white/60 bg-white/55 p-1 shadow-[0_10px_30px_-12px_rgba(28,25,23,.3),inset_0_1px_0_rgba(255,255,255,.6)] backdrop-blur-xl; scrollbar-width: none; }
   .topbar-project-tools::-webkit-scrollbar { display: none; }
-  .topbar-project-tools a { @apply grid h-9 w-9 shrink-0 place-items-center rounded-full text-stone-500 transition hover:-translate-y-px hover:bg-white/70 hover:text-stone-900; }
-  .topbar-project-tools a svg { @apply h-4 w-4; }
-  .topbar-project-tool-label { @apply hidden whitespace-nowrap; }
+  .topbar-project-tools a { @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-full px-2 text-stone-500 transition-all duration-200 hover:-translate-y-px hover:bg-white/70 hover:text-stone-900; }
+  .topbar-project-tools a svg { @apply h-4 w-4 shrink-0; }
+  .topbar-project-tool-label { @apply inline-block max-w-0 overflow-hidden whitespace-nowrap text-[11px] font-semibold opacity-0 transition-all duration-200; }
+  .topbar-project-tools a:hover .topbar-project-tool-label,
+  .topbar-project-tools a:focus-visible .topbar-project-tool-label { @apply ml-2 max-w-20 opacity-100; }
+  .topbar-project-tools a:hover,
+  .topbar-project-tools a:focus-visible { @apply w-21; }
   .topbar-project-tools a.is-active { @apply flex w-auto gap-2 bg-[#27332d] px-3 text-white shadow-sm hover:bg-[#27332d] hover:text-white; }
-  .topbar-project-tools a.is-active .topbar-project-tool-label { @apply block text-[11px] font-semibold; }
+  .topbar-project-tools a.is-active .topbar-project-tool-label { @apply ml-0 max-w-20 opacity-100; }
   .topbar-status-menu { @apply relative block; }
     .topbar-status-menu > summary::-webkit-details-marker { display: none; }
   .topbar-status-menu > div { @apply absolute right-0 top-12 z-50 flex w-56 flex-col rounded-2xl border border-white/60 bg-white/80 p-2 shadow-[0_20px_60px_rgba(28,25,23,.16),inset_0_1px_0_rgba(255,255,255,.6)] backdrop-blur-xl; }
