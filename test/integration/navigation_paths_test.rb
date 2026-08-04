@@ -77,8 +77,11 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
       assert_select "i", count: 0
       assert_select "a[title] > svg", count: 4
     end
-    assert_equal %w[Inbox Chat Tasks Files], css_select(".topbar-project-tools a").map { |link| link["title"] }
-    assert_select ".topbar-project-tools a.is-active[title='Chat'] .topbar-project-tool-label", text: "Chat", count: 1
+    assert_equal [ "1 — Inbox", "2 — Chat", "3 — Tasks", "4 — Files" ], css_select(".topbar-project-tools a").map { |link| link["title"] }
+    assert_equal %w[1 2 3 4], css_select(".topbar-project-tools a").map { |link| link["data-shortcut"] }
+    assert_equal %w[1 2 3 4], css_select(".topbar-project-tools a").map { |link| link["aria-keyshortcuts"] }
+    assert_select ".topbar-project-tools[data-controller='tool-shortcuts'][data-action='keydown@window->tool-shortcuts#navigate']", count: 1
+    assert_select ".topbar-project-tools a.is-active[data-shortcut='2'] .topbar-project-tool-label", text: "Chat", count: 1
     assert_select ".topbar-status-menu a[href='#{agents_path}']", text: "Agents", count: 1
     assert_select ".topbar-status-menu > summary .topbar-agents" do
       assert_select "svg", count: 1

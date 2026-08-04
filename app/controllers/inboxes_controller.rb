@@ -5,9 +5,10 @@ class InboxesController < ApplicationController
     @project = workspace_projects.find(params[:project_id]) if params[:project_id].present?
     @items = current_user.inbox_items
       .then { |scope| @project ? scope.where(project: @project) : scope }
-      .includes(:project, :trackable, latest_activity: :actor)
+      .preload(:project, :trackable, latest_activity: :actor)
       .recent_first
-    @briefings = @project&.briefings&.recently_active&.includes(:agent, comments: [ :author, :rich_text_body ]) || []
+      .limit(50)
+    @briefings = @project&.briefings&.recently_active&.preload(:agent) || []
   end
 
   def mark_all_read

@@ -36,8 +36,9 @@ class ProjectsController < ApplicationController
 
   private
     def load_directory
-      @projects = Project.includes(:tasks).order(:position, :name)
-      pairs = Participation.distinct.pluck(:project_id, :user_id)
+      @projects = Project.order(:position, :name).load
+      @workspace_projects = @projects
+      pairs = Participation.where(project_id: @projects.map(&:id)).distinct.pluck(:project_id, :user_id)
       people = User.where(id: pairs.map(&:last)).index_by(&:id)
       @project_participants = pairs.group_by(&:first).transform_values do |entries|
         entries.filter_map { |_, user_id| people[user_id] }.uniq

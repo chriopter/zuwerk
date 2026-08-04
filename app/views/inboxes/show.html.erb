@@ -1,27 +1,24 @@
 <% content_for :title, "#{@project ? "Inbox & Briefings · #{@project.name}" : "Inbox"} · Zuwerk" %>
 
 <section class="inbox-page">
-  <header class="workspace-page-header">
+  <header class="updates-page-header">
     <div>
-      <% if @project %>
-        <nav class="workspace-breadcrumb" aria-label="Breadcrumb"><%= link_to @project.name, project_path(@project) %><span aria-hidden="true">/</span><span aria-current="page">Inbox</span></nav>
-      <% end %>
-      <h1>Inbox</h1>
+      <h1><%= @project ? "Updates" : "Inbox" %></h1>
       <p><%= @project ? "Updates and recurring agent reports in one place." : "Updates on work you have participated in." %></p>
     </div>
-    <% if @project %><%= link_to "New briefing", new_project_briefing_path(@project), class: "workspace-primary-action" %><% end %>
+    <% if @project %><%= link_to "+ New briefing", new_project_briefing_path(@project), class: "workspace-secondary-action" %><% end %>
   </header>
 
   <section class="updates-section" aria-labelledby="inbox-section-title">
     <header class="updates-section-header">
       <div><h2 id="inbox-section-title">Inbox</h2><p>New activity on work you joined.</p></div>
       <% if @items.any? { |item| !item.read? } %>
-        <%= button_to "Mark all read", mark_all_read_inbox_path(project_id: @project&.id), method: :patch, class: "workspace-secondary-action" %>
+        <%= button_to "Mark all read", mark_all_read_inbox_path(project_id: @project&.id), method: :patch, class: "updates-text-action" %>
       <% end %>
     </header>
 
     <% if @items.any? %>
-      <div class="inbox-list glass-card">
+      <div class="inbox-list updates-list">
         <% @items.each do |item| %>
           <%= link_to inbox_item_destination(item), class: "inbox-row #{'is-unread' unless item.read?}" do %>
             <span class="inbox-unread-dot" aria-hidden="true"></span>
@@ -35,7 +32,7 @@
         <% end %>
       </div>
     <% else %>
-      <div class="inbox-empty glass-card">
+      <div class="inbox-empty updates-empty">
         <strong>Nothing new</strong>
         <p>When work you participated in receives an update, it will appear here.</p>
       </div>
@@ -49,22 +46,20 @@
       </header>
 
       <% if @briefings.any? %>
-        <div class="briefing-list glass-card">
+        <div class="briefing-list updates-list">
           <% @briefings.each do |briefing| %>
-            <% latest_comment = briefing.comments.select(&:published_at?).max_by(&:published_at) %>
             <%= link_to project_briefing_path(@project, briefing), class: "briefing-row" do %>
               <span class="project-avatar project-avatar-small" aria-hidden="true"><%= briefing.agent.name.first.upcase %></span>
               <span class="briefing-row-copy">
                 <span class="briefing-row-title"><%= briefing.title %></span>
-                <span class="briefing-row-excerpt"><%= latest_comment ? truncate(latest_comment.body.to_plain_text.squish, length: 150) : "No comments yet." %></span>
                 <span class="briefing-row-meta"><%= briefing.agent.name %> · <%= briefing.frequency_label %> · <%= briefing.active? ? "Next run #{time_ago_in_words(briefing.next_run_at)} from now" : "Paused" %></span>
               </span>
-              <span class="briefing-row-activity"><%= latest_comment ? "#{time_ago_in_words(latest_comment.published_at)} ago" : "New" %></span>
+              <span class="briefing-row-activity"><%= time_ago_in_words(briefing.last_activity_at) %> ago</span>
             <% end %>
           <% end %>
         </div>
       <% else %>
-        <div class="briefing-empty glass-card">
+        <div class="briefing-empty updates-empty">
           <strong>No briefings yet</strong>
           <p>Create a briefing to ask an agent for recurring project updates.</p>
           <%= link_to "Create briefing", new_project_briefing_path(@project), class: "workspace-primary-action" %>

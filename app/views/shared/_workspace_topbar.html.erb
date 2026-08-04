@@ -25,17 +25,17 @@
     <div class="topbar-zone topbar-zone-center">
       <% if project.present? %>
         <% active_tool = active == :projects ? :chat : (active == :briefing ? :inbox : active) %>
-        <nav class="topbar-project-tools" aria-label="Project tools">
-          <%= link_to inbox_path(project_id: project.id), class: "#{'is-active' if active_tool == :inbox}", aria: { label: "Inbox", current: ("page" if active_tool == :inbox) }, title: "Inbox" do %>
+        <nav class="topbar-project-tools" aria-label="Project tools" data-controller="tool-shortcuts" data-action="keydown@window->tool-shortcuts#navigate">
+          <%= link_to inbox_path(project_id: project.id), class: "#{'is-active' if active_tool == :inbox}", aria: { label: "Inbox, shortcut 1", current: ("page" if active_tool == :inbox), keyshortcuts: "1" }, title: "1 — Inbox", data: { shortcut: "1" } do %>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16l2 12H16l-2 3h-4l-2-3H2Z"/></svg><span class="topbar-project-tool-label" aria-hidden="true">Inbox</span>
           <% end %>
-          <%= link_to project_chat_path(project), class: "#{'is-active' if active_tool == :chat}", aria: { label: "Chat", current: ("page" if active_tool == :chat) }, title: "Chat" do %>
+          <%= link_to project_chat_path(project), class: "#{'is-active' if active_tool == :chat}", aria: { label: "Chat, shortcut 2", current: ("page" if active_tool == :chat), keyshortcuts: "2" }, title: "2 — Chat", data: { shortcut: "2" } do %>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/></svg><span class="topbar-project-tool-label" aria-hidden="true">Chat</span>
           <% end %>
-          <%= link_to project_tasks_path(project), class: "#{'is-active' if active_tool == :tasks}", aria: { label: "Tasks", current: ("page" if active_tool == :tasks) }, title: "Tasks" do %>
+          <%= link_to project_tasks_path(project), class: "#{'is-active' if active_tool == :tasks}", aria: { label: "Tasks, shortcut 3", current: ("page" if active_tool == :tasks), keyshortcuts: "3" }, title: "3 — Tasks", data: { shortcut: "3" } do %>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="m8 12 2.5 2.5L16 9"/></svg><span class="topbar-project-tool-label" aria-hidden="true">Tasks</span>
           <% end %>
-          <%= link_to project_file_entries_path(project), class: "#{'is-active' if active_tool == :files}", aria: { label: "Files", current: ("page" if active_tool == :files) }, title: "Files" do %>
+          <%= link_to project_file_entries_path(project), class: "#{'is-active' if active_tool == :files}", aria: { label: "Files, shortcut 4", current: ("page" if active_tool == :files), keyshortcuts: "4" }, title: "4 — Files", data: { shortcut: "4" } do %>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg><span class="topbar-project-tool-label" aria-hidden="true">Files</span>
           <% end %>
         </nav>

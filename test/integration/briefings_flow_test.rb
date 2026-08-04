@@ -16,7 +16,7 @@ class BriefingsFlowTest < ActionDispatch::IntegrationTest
     get inbox_path(project_id: @project.id)
 
     assert_response :success
-    assert_select "h1", text: "Inbox"
+    assert_select "h1", text: "Updates"
     assert_select "#briefings" do
       assert_select ".briefing-row" do |rows|
         assert_includes rows.first.text, older.title
