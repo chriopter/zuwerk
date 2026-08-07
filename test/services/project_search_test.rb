@@ -35,15 +35,17 @@ class ProjectSearchTest < ActiveSupport::TestCase
     briefing = project.briefings.create!(creator: human, agent: agent, title: "Briefing report", frequency: "weekly", prompt: "Report")
     briefing_comment = briefing.run_now!
     briefing_comment.publish!("Die Dokumentation beschreibt den stabilen Betrieb.", event: briefing_comment.agent_event)
-    file_entry = project.file_entries.new(kind: "file", name: "network-notes.txt", creator: human)
-    file_entry.file.attach(io: StringIO.new("Network connection recovery notes"), filename: "network-notes.txt", content_type: "text/plain")
-    file_entry.save!
+    page = project.library_pages.first
+    page.update!(content: "Stable network operating notes")
+    page_file = page.files.new(name: "network-notes.txt", creator: human)
+    page_file.file.attach(io: StringIO.new("Network connection recovery notes"), filename: "network-notes.txt", content_type: "text/plain")
+    page_file.save!
     other_project.chat.messages.create!(author: human, body: "Verbindungsproblem in einem anderen Projekt")
 
     embedder = SemanticFixtureEmbedder.new
     results = ProjectSearch.new(project, embedder: embedder).call("Verbindungsproblem", limit: 3)
 
-    assert_equal 6, SearchDocument.where(project: project).count
+    assert_equal 7, SearchDocument.where(project: project).count
     assert_equal [ "chat_message", "task" ], results.first(2).map(&:type).sort
     assert_equal matching_message.id, results.find { |result| result.type == "chat_message" }.source_id
     assert_equal matching_task.id, results.find { |result| result.type == "task" }.source_id
@@ -52,8 +54,10 @@ class ProjectSearchTest < ActiveSupport::TestCase
     briefing_document = SearchDocument.find_by!(project: project, source_type: "briefing_comment", source_id: briefing_comment.id)
     assert_equal "/#{project.account.account_number}/projects/#{project.id}/briefings/#{briefing.id}#briefing_comment_#{briefing_comment.id}", briefing_document.url
     assert_includes briefing_document.content, "stabilen Betrieb"
-    file_document = SearchDocument.find_by!(project: project, source_type: "project_file", source_id: file_entry.id)
-    assert_equal "/#{project.account.account_number}/projects/#{project.id}/files#file_entry_#{file_entry.id}", file_document.url
+    page_document = SearchDocument.find_by!(project: project, source_type: "library_page", source_id: page.id)
+    assert_includes page_document.content, "Stable network"
+    file_document = SearchDocument.find_by!(project: project, source_type: "library_page_file", source_id: page_file.id)
+    assert_equal "/#{project.account.account_number}/projects/#{project.id}/library/#{page.id}", file_document.url
     assert_includes file_document.content, "Network connection"
     assert results.none? { |result| result.content.include?("anderen Projekt") }
 

@@ -35,8 +35,8 @@
           <%= link_to project_tasks_path(project), class: "#{'is-active' if active_tool == :tasks}", aria: { label: "Tasks, shortcut 3", current: ("page" if active_tool == :tasks), keyshortcuts: "3" }, data: { shortcut: "3" } do %>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="m8 12 2.5 2.5L16 9"/></svg><span class="topbar-project-tool-label" aria-hidden="true">Tasks</span>
           <% end %>
-          <%= link_to project_file_entries_path(project), class: "#{'is-active' if active_tool == :files}", aria: { label: "Files, shortcut 4", current: ("page" if active_tool == :files), keyshortcuts: "4" }, data: { shortcut: "4" } do %>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg><span class="topbar-project-tool-label" aria-hidden="true">Files</span>
+          <%= link_to project_library_pages_path(project), class: "#{'is-active' if active_tool == :library}", aria: { label: "Library, shortcut 4", current: ("page" if active_tool == :library), keyshortcuts: "4" }, data: { shortcut: "4" } do %>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5Z"/><path d="M4 5.5v16M8 7h8M8 11h6"/></svg><span class="topbar-project-tool-label" aria-hidden="true">Library</span>
           <% end %>
         </nav>
       <% end %>

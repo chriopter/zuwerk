@@ -22,8 +22,9 @@ Rails.application.routes.draw do
           resources :reactions, only: :create
         end
       end
-      resources :file_entries, path: "files", only: %i[index create destroy] do
-        get :download, on: :member
+      resources :library_pages, path: "library", only: %i[index show create update destroy] do
+        patch :reorder, on: :member
+        resources :files, controller: "library_page_files", only: :show
       end
       resources :task_lists, path: "task-lists", only: :create do
         patch :reorder, on: :member

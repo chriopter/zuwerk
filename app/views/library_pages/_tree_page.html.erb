@@ -1,0 +1,19 @@
+<% children = children_by_parent[page.id] || [] %>
+<li class="library-tree-branch">
+  <div class="library-tree-row <%= 'is-active' if page == selected_page %>" style="--tree-depth: <%= depth %>" draggable="true" data-page-id="<%= page.id %>" data-parent-id="<%= page.parent_id %>" data-position="<%= page.position %>" data-child-count="<%= children.size %>" data-reorder-url="<%= reorder_project_library_page_path(project, page) %>" data-action="dragstart->page-tree#dragStart dragover->page-tree#dragOver drop->page-tree#drop dragend->page-tree#dragEnd">
+    <% if children.any? %>
+      <span class="library-tree-chevron" aria-hidden="true">⌄</span>
+    <% else %>
+      <span class="library-tree-chevron is-empty" aria-hidden="true"></span>
+    <% end %>
+    <%= link_to page.title, project_library_page_path(project, page), class: "library-tree-link", aria: ({ current: "page" } if page == selected_page) %>
+    <%= link_to "+", project_library_page_path(project, selected_page || page, new_parent: page.id, anchor: "new-page"), class: "library-tree-add", aria: { label: "Add a page inside #{page.title}" } %>
+  </div>
+  <% if children.any? %>
+    <ul>
+      <% children.each do |child| %>
+        <%= render "library_pages/tree_page", page: child, project: project, selected_page: selected_page, children_by_parent: children_by_parent, depth: depth + 1 %>
+      <% end %>
+    </ul>
+  <% end %>
+</li>

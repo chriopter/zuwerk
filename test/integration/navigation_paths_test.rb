@@ -13,7 +13,7 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
       project_path(@first_project),
       project_chat_path(@first_project),
       project_tasks_path(@first_project),
-      project_file_entries_path(@first_project),
+      project_library_pages_path(@first_project),
       agents_path
     ].each do |path|
       get path
@@ -73,12 +73,12 @@ class NavigationPathsTest < ActionDispatch::IntegrationTest
       assert_select "a[href='#{inbox_path(project_id: @first_project.id)}']", text: /Inbox/
       assert_select "a[href='#{project_tasks_path(@first_project)}']", text: /Tasks/
       assert_select "a[href='#{project_briefings_path(@first_project)}']", count: 0
-      assert_select "a[href='#{project_file_entries_path(@first_project)}']", text: /Files/
+      assert_select "a[href='#{project_library_pages_path(@first_project)}']", text: /Library/
       assert_select "a[href='#{agents_path}']", count: 0
       assert_select "i", count: 0
       assert_select "a > svg", count: 4
     end
-    assert_equal %w[Inbox Chat Tasks Files], css_select(".topbar-project-tools .topbar-project-tool-label").map(&:text)
+    assert_equal %w[Inbox Chat Tasks Library], css_select(".topbar-project-tools .topbar-project-tool-label").map(&:text)
     assert_equal %w[1 2 3 4], css_select(".topbar-project-tools a").map { |link| link["data-shortcut"] }
     assert_equal %w[1 2 3 4], css_select(".topbar-project-tools a").map { |link| link["aria-keyshortcuts"] }
     assert_select ".topbar-project-tools[data-controller='tool-shortcuts'][data-action='keydown@window->tool-shortcuts#navigate']", count: 1

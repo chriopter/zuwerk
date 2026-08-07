@@ -115,7 +115,7 @@ class ProjectSearch
     end
 
     def source_documents
-      [ *chat_message_documents, *task_documents, *comment_documents, *attachment_documents, *briefing_comment_documents, *project_file_documents ]
+      [ *chat_message_documents, *task_documents, *comment_documents, *attachment_documents, *briefing_comment_documents, *library_page_documents, *library_page_file_documents ]
     end
 
     def chat_message_documents
@@ -155,15 +155,21 @@ class ProjectSearch
       end
     end
 
-    def project_file_documents
-      @project.file_entries.file.includes(file_attachment: :blob).order(:id).filter_map do |entry|
-        next unless entry.file.attached?
-        next unless entry.file.byte_size <= MAX_ATTACHMENT_BYTES
-        next unless entry.file.content_type.to_s.start_with?("text/")
+    def library_page_documents
+      @project.library_pages.includes(:rich_text_content).order(:id).map do |page|
+        content = [ page.title, page.content.to_plain_text ].reject(&:blank?).join("\n")
+        result("library_page", page.id, "Library · #{page.title}", content, project_library_page_path(@project, page), page.created_at)
+      end
+    end
 
-        content = entry.file.download.force_encoding(Encoding::UTF_8).scrub
-        url = project_file_entries_path(@project, folder_id: entry.parent_id, anchor: "file_entry_#{entry.id}")
-        result("project_file", entry.id, "File · #{entry.name}", content, url, entry.created_at)
+    def library_page_file_documents
+      LibraryPageFile.joins(:library_page).where(library_pages: { project_id: @project.id }).includes(file_attachment: :blob).order(:id).filter_map do |page_file|
+        next unless page_file.file.attached?
+        next unless page_file.file.byte_size <= MAX_ATTACHMENT_BYTES
+        next unless page_file.file.content_type.to_s.start_with?("text/")
+
+        content = page_file.file.download.force_encoding(Encoding::UTF_8).scrub
+        result("library_page_file", page_file.id, "File · #{page_file.name}", content, project_library_page_path(@project, page_file.library_page), page_file.created_at)
       end
     end
 
@@ -194,8 +200,8 @@ class ProjectSearch
       Rails.application.routes.url_helpers.project_task_path(*args, **options.merge(account_number: @project.account))
     end
 
-    def project_file_entries_path(*args, **options)
-      Rails.application.routes.url_helpers.project_file_entries_path(*args, **options.merge(account_number: @project.account))
+    def project_library_page_path(*args, **options)
+      Rails.application.routes.url_helpers.project_library_page_path(*args, **options.merge(account_number: @project.account))
     end
 
     def project_briefing_path(*args, **options)

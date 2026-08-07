@@ -60,7 +60,7 @@ class AgentTaskWorkTest < ApplicationSystemTestCase
 
     visit project_task_path(@project, @task)
     assert_selector "#task_reactions .boost-chip[title*='Codex Browser'] .boost-chip-emoji", text: "👍"
-    assert_selector "[data-agent-event-id='#{event.public_id}']", text: "Codex Browser is working"
+    assert_selector "[data-agent-event-id='#{event.public_id}']", text: "Codex Browser is working", visible: :all
     assert_selector "[data-agent-event-id='#{event.public_id}'] .agent-turn-spinner", visible: :all
 
     approval = event.agent_approvals.create!(
@@ -73,7 +73,7 @@ class AgentTaskWorkTest < ApplicationSystemTestCase
     assert_no_selector "[data-agent-event-id='#{event.public_id}'] .agent-turn-spinner"
 
     approval.resolve!({ "decision" => "allow" }, resolver: @human)
-    assert_selector "[data-agent-event-id='#{event.public_id}']", text: "Codex Browser is working"
+    assert_selector "[data-agent-event-id='#{event.public_id}']", text: "Codex Browser is working", visible: :all
     assert_selector "[data-agent-event-id='#{event.public_id}'] .agent-turn-spinner", visible: :all
 
     pool.finish
@@ -92,7 +92,7 @@ class AgentTaskWorkTest < ApplicationSystemTestCase
     event.transition_to!("running")
 
     visit project_chat_path(@project)
-    assert_selector "[data-agent-event-id='#{event.public_id}']", text: "Codex Browser is working"
+    assert_selector "[data-agent-event-id='#{event.public_id}']", text: "Codex Browser is working", visible: :all
     assert_selector "[data-agent-event-id='#{event.public_id}'] .agent-turn-spinner", visible: :all
 
     approval = AgentApproval.create!(
@@ -111,7 +111,7 @@ class AgentTaskWorkTest < ApplicationSystemTestCase
 
     assert_equal({ "decision" => "allow" }, approval.reload.selected_option_id)
     assert_equal "running", event.reload.state
-    assert_selector "[data-agent-event-id='#{event.public_id}']", text: "Codex Browser is working"
+    assert_selector "[data-agent-event-id='#{event.public_id}']", text: "Codex Browser is working", visible: :all
     assert_selector "[data-agent-event-id='#{event.public_id}'] .agent-turn-spinner", visible: :all
 
     event.transition_to!("completed")

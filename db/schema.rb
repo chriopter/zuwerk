@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_04_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_07_120000) do
   create_table "accounts", force: :cascade do |t|
     t.string "account_number", null: false
     t.datetime "created_at", null: false
@@ -233,6 +233,30 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_04_130000) do
     t.index ["user_id"], name: "index_inbox_items_on_user_id"
   end
 
+  create_table "library_page_files", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "creator_id"
+    t.integer "library_page_id", null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["creator_id"], name: "index_library_page_files_on_creator_id"
+    t.index ["library_page_id"], name: "index_library_page_files_on_library_page_id"
+  end
+
+  create_table "library_pages", force: :cascade do |t|
+    t.string "ancestry"
+    t.datetime "created_at", null: false
+    t.integer "creator_id"
+    t.integer "position", default: 0, null: false
+    t.integer "project_id", null: false
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.index ["ancestry"], name: "index_library_pages_on_ancestry"
+    t.index ["creator_id"], name: "index_library_pages_on_creator_id"
+    t.index ["project_id", "ancestry", "position"], name: "index_library_pages_on_project_id_and_ancestry_and_position"
+    t.index ["project_id"], name: "index_library_pages_on_project_id"
+  end
+
   create_table "memberships", force: :cascade do |t|
     t.integer "account_id", null: false
     t.datetime "created_at", null: false
@@ -256,22 +280,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_04_130000) do
     t.index ["trackable_type", "trackable_id"], name: "index_participations_on_trackable"
     t.index ["user_id", "trackable_type", "trackable_id"], name: "index_participations_on_user_and_trackable", unique: true
     t.index ["user_id"], name: "index_participations_on_user_id"
-  end
-
-  create_table "project_file_entries", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.integer "creator_id", null: false
-    t.string "kind", null: false
-    t.string "name", null: false
-    t.string "name_key", null: false
-    t.integer "parent_id"
-    t.integer "project_id", null: false
-    t.datetime "updated_at", null: false
-    t.index ["creator_id"], name: "index_project_file_entries_on_creator_id"
-    t.index ["parent_id"], name: "index_project_file_entries_on_parent_id"
-    t.index ["project_id", "name_key"], name: "index_root_file_entries_on_project_name", unique: true, where: "parent_id IS NULL"
-    t.index ["project_id", "parent_id", "name_key"], name: "index_file_entries_on_project_parent_name", unique: true, where: "parent_id IS NOT NULL"
-    t.index ["project_id"], name: "index_project_file_entries_on_project_id"
   end
 
   create_table "projects", force: :cascade do |t|
@@ -413,13 +421,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_04_130000) do
   add_foreign_key "inbox_items", "activities", column: "latest_activity_id"
   add_foreign_key "inbox_items", "projects"
   add_foreign_key "inbox_items", "users"
+  add_foreign_key "library_page_files", "library_pages"
+  add_foreign_key "library_page_files", "users", column: "creator_id"
+  add_foreign_key "library_pages", "projects"
+  add_foreign_key "library_pages", "users", column: "creator_id"
   add_foreign_key "memberships", "accounts"
   add_foreign_key "memberships", "users"
   add_foreign_key "participations", "projects"
   add_foreign_key "participations", "users"
-  add_foreign_key "project_file_entries", "project_file_entries", column: "parent_id"
-  add_foreign_key "project_file_entries", "projects"
-  add_foreign_key "project_file_entries", "users", column: "creator_id"
   add_foreign_key "projects", "accounts"
   add_foreign_key "reactions", "users", column: "author_id"
   add_foreign_key "search_documents", "projects"

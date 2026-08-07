@@ -33,9 +33,9 @@
           <%= link_to project_tasks_path(item), class: "sidebar-object #{'sidebar-object-active' if selected_project && active == :tasks}", aria: (selected_project && active == :tasks ? { current: "page" } : {}) do %>
             <span class="sidebar-object-icon" aria-hidden="true">✓</span><span>Tasks</span>
           <% end %>
-          <span class="sidebar-object sidebar-object-disabled" aria-disabled="true">
-            <span class="sidebar-object-icon" aria-hidden="true">◇</span><span>Files &amp; Memory</span><span class="sr-only"> — not yet available</span>
-          </span>
+          <%= link_to project_library_pages_path(item), class: "sidebar-object #{'sidebar-object-active' if selected_project && active == :library}", aria: (selected_project && active == :library ? { current: "page" } : {}) do %>
+            <span class="sidebar-object-icon" aria-hidden="true">□</span><span>Library</span>
+          <% end %>
         </div>
       </section>
     <% end %>

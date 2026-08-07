@@ -14,7 +14,8 @@ class User < ApplicationRecord
   has_many :inbox_items, dependent: :destroy
   has_many :briefings, foreign_key: :agent_id, dependent: :restrict_with_error
   has_many :created_briefings, class_name: "Briefing", foreign_key: :creator_id, dependent: :restrict_with_error
-  has_many :created_file_entries, class_name: "ProjectFileEntry", foreign_key: :creator_id, dependent: :restrict_with_error
+  has_many :created_library_pages, class_name: "LibraryPage", foreign_key: :creator_id, dependent: :nullify
+  has_many :created_library_page_files, class_name: "LibraryPageFile", foreign_key: :creator_id, dependent: :nullify
   has_many :briefing_comments, foreign_key: :author_id, dependent: :restrict_with_error
   has_many :assigned_task_assignments, class_name: "TaskAssignment", foreign_key: :assigned_by_id, dependent: :destroy
   has_many :memberships, dependent: :destroy

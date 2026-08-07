@@ -1,0 +1,79 @@
+<% content_for :title, "#{@selected_page.title} · Library · #{@project.name} · Zuwerk" %>
+
+<section class="library-page">
+  <aside class="library-tree-panel" aria-label="Library pages">
+    <header class="library-tree-header">
+      <%= link_to "Home", project_library_page_path(@project, @project.library_root), class: "library-tree-home #{'is-active' if @selected_page == @project.library_root}", aria: ({ current: "page" } if @selected_page == @project.library_root) %>
+      <details id="new-page" class="library-new-page" <%= "open" if params[:new_parent].present? || @new_page.errors.any? %>>
+        <summary aria-label="New page">＋</summary>
+        <%= form_with model: [ @project, @new_page ] do |form| %>
+          <% if @new_page.errors.any? %><p role="alert"><%= @new_page.errors.full_messages.to_sentence %></p><% end %>
+          <%= form.text_field :title, required: true, maxlength: 160, placeholder: "Page title…", aria: { label: "Page title" } %>
+          <%= form.collection_select :parent_id, @pages, :id, :title, { include_blank: "Top level", selected: @new_page.parent_id || params[:new_parent] }, aria: { label: "Parent page" } %>
+          <%= form.submit "Create" %>
+        <% end %>
+      </details>
+    </header>
+
+    <nav class="library-tree" aria-label="Page tree" data-controller="page-tree" data-page-tree-project-id-value="<%= @project.id %>" data-action="dragover->page-tree#dragOverRoot drop->page-tree#dropRoot">
+      <ul>
+        <% @root_pages.flat_map { |page| page == @project.library_root ? (@children_by_parent[page.id] || []) : [ page ] }.each do |page| %>
+          <%= render "tree_page", page: page, project: @project, selected_page: @selected_page, children_by_parent: @children_by_parent, depth: 0 %>
+        <% end %>
+      </ul>
+    </nav>
+
+  </aside>
+
+  <main class="library-document">
+    <div class="library-document-inner">
+      <nav class="library-breadcrumb" aria-label="Breadcrumb">
+        <%= link_to @project.name, project_path(@project) %>
+        <% @selected_page.lineage.each do |page| %>
+          <span aria-hidden="true">›</span>
+          <% if page == @selected_page %><span aria-current="page"><%= page.title %></span><% else %><%= link_to page.title, project_library_page_path(@project, page) %><% end %>
+        <% end %>
+      </nav>
+
+      <%= form_with model: [ @project, @selected_page ], class: "library-editor", data: { controller: "autosave library-toolbar", action: "input->autosave#queue change->autosave#queue lexxy:change->autosave#queue submit->autosave#submit" } do |form| %>
+        <% if @selected_page.errors.any? %><div class="library-errors" role="alert"><%= @selected_page.errors.full_messages.to_sentence %></div><% end %>
+        <div class="library-page-heading">
+          <% if @selected_page == @project.library_root %>
+            <h1 class="library-title library-title-static">Home</h1>
+          <% else %>
+            <%= form.text_field :title, required: true, maxlength: 160, class: "library-title", aria: { label: "Page title" } %>
+          <% end %>
+          <details class="library-page-menu">
+            <summary aria-label="Page options">•••</summary>
+            <div>
+              <%= form.label :parent_id, "Parent page" %>
+              <%= form.collection_select :parent_id, @pages.reject { |page| page.id.in?(@selected_page.subtree_ids) }, :id, :title, { include_blank: "Top level", selected: @selected_page.parent_id } %>
+              <% unless @selected_page == @project.library_root %>
+                <%= link_to "Delete page", project_library_page_path(@project, @selected_page), class: "library-delete", data: { turbo_method: :delete, turbo_confirm: "Delete this page and all of its subpages?" } %>
+              <% end %>
+            </div>
+          </details>
+        </div>
+        <button type="button" class="library-format-toggle" aria-expanded="false" data-library-toolbar-target="toggle" data-action="library-toolbar#toggle">
+          <span aria-hidden="true">Aa</span>
+          <span>Formatting</span>
+        </button>
+        <%= form.rich_text_area :content, placeholder: "Type / for commands…" %>
+
+        <% if @selected_page.files.any? %>
+          <section class="library-imported-files" aria-labelledby="imported-files-title">
+            <h2 id="imported-files-title">Imported files</h2>
+            <% @selected_page.files.with_attached_file.each do |page_file| %>
+              <%= link_to project_library_page_file_path(@project, @selected_page, page_file), class: "library-file" do %>
+                <span aria-hidden="true">↓</span>
+                <span><strong><%= page_file.name %></strong><small><%= number_to_human_size(page_file.file.byte_size) if page_file.file.attached? %></small></span>
+              <% end %>
+            <% end %>
+          </section>
+        <% end %>
+
+        <span class="library-save-status" data-autosave-target="status" role="status"></span>
+      <% end %>
+    </div>
+  </main>
+</section>

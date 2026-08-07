@@ -6,18 +6,13 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><rect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22%2327332d%22/><path d=%22M17 18h30L28 46h19%22 fill=%22none%22 stroke=%22white%22 stroke-width=%228%22 stroke-linejoin=%22round%22/></svg>">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
-    <% if Rails.env.test? %>
-      <link rel="stylesheet" href="/assets/lexxy.css">
-      <link rel="stylesheet" href="/assets/tailwind.css">
-    <% else %>
-      <%= stylesheet_link_tag "lexxy", "tailwind", "data-turbo-track": "reload" %>
-    <% end %>
+    <%= stylesheet_link_tag "lexxy", "tailwind", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
   <% task_page = controller_name.in?([ "tasks", "task_comments", "task_assignments" ]) %>
   <% chat_page = controller_name.in?([ "chats", "chat_messages" ]) %>
   <% briefing_page = controller_name.in?([ "briefings", "briefing_comments" ]) %>
-  <% files_page = controller_name == "file_entries" %>
+  <% library_page = controller_name.in?([ "library_pages", "library_page_files" ]) %>
   <% inbox_page = controller_name == "inboxes" %>
   <% active_section = if controller_name == "projects"
     :projects
@@ -29,8 +24,8 @@
     :chat
   elsif briefing_page
     :briefing
-  elsif files_page
-    :files
+  elsif library_page
+    :library
   elsif inbox_page
     :inbox
   else
@@ -47,7 +42,7 @@
             <% end %>
           </div>
         <% end %>
-        <main class="workspace-top-main <%= chat_page ? 'is-chat' : '' %>">
+        <main class="workspace-top-main <%= chat_page ? 'is-chat' : '' %> <%= library_page ? 'is-library' : '' %>">
           <%= yield %>
         </main>
       </div>
