@@ -65,7 +65,7 @@ group :test do
   gem "selenium-webdriver"
 end
 
-gem "lexxy", "~> 0.9.21"
+gem "lexxy", "~> 0.9.29"
 
 gem "ancestry", "~> 5.1"
 
