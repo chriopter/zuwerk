@@ -1,0 +1,27 @@
+#!/bin/bash
+set -euo pipefail
+
+repository=/srv/zuwerk-agent/zuwerk
+
+git_as_agent() {
+  runuser -u zuwerk-agent -- git -C "$repository" "$@"
+}
+
+test -z "$(git_as_agent status --porcelain)"
+git_as_agent fetch origin main
+test "$(git_as_agent rev-parse HEAD)" = "$(git_as_agent rev-parse origin/main)"
+
+docker build --pull -t zuwerk:local "$repository"
+systemctl restart zuwerk
+
+for attempt in {1..30}; do
+  if curl -fsS http://127.0.0.1:3100/up >/dev/null; then
+    echo "Zuwerk deployed at $(git_as_agent rev-parse --short HEAD)"
+    exit 0
+  fi
+  sleep 2
+done
+
+docker logs --tail 100 zuwerk >&2 || true
+echo "Zuwerk health check failed" >&2
+exit 1

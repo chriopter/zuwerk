@@ -1,0 +1,11 @@
+#!/bin/bash
+set -euo pipefail
+
+unit="zuwerk-deploy-$(date +%s)-$$"
+systemd-run \
+  --unit="$unit" \
+  --collect \
+  --property=Type=oneshot \
+  /usr/local/sbin/zuwerk-deploy-after-turn >/dev/null
+
+echo "Zuwerk deployment queued as $unit. The deploy starts after the active agent turn has finished."

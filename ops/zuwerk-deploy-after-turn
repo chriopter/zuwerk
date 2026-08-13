@@ -1,0 +1,12 @@
+#!/bin/bash
+set -euo pipefail
+
+for attempt in {1..120}; do
+  if docker exec zuwerk bin/rails runner 'exit AgentEvent.where(state: %w[running waiting_for_approval]).exists? ? 1 : 0'; then
+    exec /usr/local/sbin/zuwerk-deploy-now
+  fi
+  sleep 1
+done
+
+echo "Timed out waiting for active agent turns to finish" >&2
+exit 1
