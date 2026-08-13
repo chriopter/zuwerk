@@ -44,6 +44,7 @@ class Activity < ApplicationRecord
   def self.summary_for(subject)
     body = subject.body
     text = body.respond_to?(:to_plain_text) ? body.to_plain_text : body.to_s
+    text = subject.attachments.map { |attachment| attachment.filename.to_s }.join(", ") if text.blank? && subject.respond_to?(:attachments)
     text.squish.truncate(500)
   end
 

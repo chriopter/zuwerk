@@ -2,23 +2,43 @@ require "test_helper"
 
 class AgentConnectors::AcpClientTest < ActiveSupport::TestCase
   class FakeTransport
-    attr_reader :writes
+    attr_reader :writes, :read_timeouts
 
     def initialize(responses)
       @responses = Queue.new
       responses.each { |response| @responses << JSON.generate(response) + "\n" }
       @writes = []
+      @read_timeouts = []
       @alive = true
     end
 
     def alive? = @alive
     def read_line(timeout:)
+      @read_timeouts << timeout
       @responses.pop(true)
     rescue ThreadError
       raise AgentConnectors::Transport::Error, "timed out"
     end
     def write_line(line) = @writes << JSON.parse(line)
     def disconnect = (@alive = false)
+  end
+
+  test "treats the prompt timeout as an inactivity timeout" do
+    transport = FakeTransport.new([
+      { jsonrpc: "2.0", id: 1, result: {} },
+      { jsonrpc: "2.0", id: 2, result: { sessionId: "remote-session" } },
+      { jsonrpc: "2.0", method: "session/update", params: { update: { sessionUpdate: "agent_message_chunk", content: { type: "text", text: "Still" } } } },
+      { jsonrpc: "2.0", method: "session/update", params: { update: { sessionUpdate: "agent_message_chunk", content: { type: "text", text: " working" } } } },
+      { jsonrpc: "2.0", id: 3, result: { stopReason: "end_turn" } }
+    ])
+    client = AgentConnectors::AcpClient.new(transport:)
+
+    client.new_session
+    client.prompt("remote-session", "Work")
+
+    assert_equal [ 300, 300, 300 ], transport.read_timeouts.last(3)
+  ensure
+    client&.close
   end
 
   test "initializes ACP v2 and streams updates" do

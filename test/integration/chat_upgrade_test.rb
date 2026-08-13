@@ -108,6 +108,7 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
     assert_equal "", message.body
     assert_equal [ "logo.png" ], message.image_attachments.map { |image| image.filename.to_s }
     assert_empty message.file_attachments
+    assert_equal "logo.png", Activity.order(:id).last.summary
 
     get project_chat_path(project)
     assert_select "#chat_message_#{message.id} .message-image img[alt='logo.png']"

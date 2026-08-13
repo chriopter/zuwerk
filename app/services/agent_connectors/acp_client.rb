@@ -133,11 +133,8 @@ module AgentConnectors
       end
 
       def read_response(expected_id, timeout:, on_update: nil, on_permission: nil, session_id: nil)
-        deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + timeout
         loop do
-          remaining = deadline - Process.clock_gettime(Process::CLOCK_MONOTONIC)
-          raise Error, "ACP request timed out" unless remaining.positive?
-          line = @transport.read_line(timeout: remaining)
+          line = @transport.read_line(timeout: timeout)
           raise Error, "ACP response exceeded 10 MB" if line.bytesize > 10.megabytes
           message = JSON.parse(line)
           if message["id"] == expected_id && !message.key?("method")

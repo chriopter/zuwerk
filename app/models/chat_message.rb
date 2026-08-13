@@ -35,7 +35,7 @@ class ChatMessage < ApplicationRecord
     end
 
     def body_or_attachment_present
-      errors.add(:body, "can't be blank without an attachment") if body.blank? && !attachments.attached?
+      errors.add(:body, :blank) if body.blank? && !attachments.attached?
     end
 
     def acceptable_attachments
