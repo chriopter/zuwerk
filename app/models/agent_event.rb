@@ -98,6 +98,27 @@ class AgentEvent < ApplicationRecord
     end
   end
 
+  def retry!
+    with_lock do
+      raise InvalidTransition, "Only failed agent events can be retried" unless state == "failed"
+
+      update!(
+        state: "queued",
+        attempts: 0,
+        accepted_at: nil,
+        connector_connection_id: nil,
+        delivered_at: nil,
+        finished_at: nil,
+        last_error: nil,
+        prompted_at: nil,
+        started_at: nil,
+        waiting_at: nil
+      )
+    end
+    DeliverAgentEventJob.perform_later(self)
+    self
+  end
+
   def terminalize_failure!(error, expected_connector_owner: nil)
     changed = false
     with_lock do

@@ -321,6 +321,16 @@
   .agents-session-count { @apply hidden shrink-0 text-[10px] font-semibold uppercase tracking-wide text-stone-400 sm:block; }
   .agents-row-chevron { @apply shrink-0 text-lg text-stone-400 transition; }
   .agents-row[open] .agents-row-chevron { @apply rotate-180; }
+  .agents-operations { @apply border-t border-stone-100 bg-white px-4 py-4 sm:flex sm:items-center sm:gap-5 sm:px-5; }
+  .agents-operation-facts { @apply flex shrink-0 gap-6; }
+  .agents-operation-facts span { @apply flex flex-col gap-0.5; }
+  .agents-operation-facts small { @apply text-[9px] font-semibold uppercase tracking-wide text-stone-400; }
+  .agents-operation-facts strong { @apply text-xs font-semibold text-stone-700; }
+  .agents-operation-error { @apply mt-3 min-w-0 flex-1 truncate text-xs text-red-600 sm:mt-0; }
+  .agents-operation-actions { @apply mt-3 flex flex-wrap gap-2 sm:ml-auto sm:mt-0; }
+  .agents-operation-actions form { @apply inline-flex; }
+  .agents-operation-action { @apply rounded-lg border border-stone-200 bg-white px-3 py-2 text-[11px] font-semibold text-stone-600 transition hover:bg-stone-50; }
+  .agents-operation-action-danger { @apply text-red-600; }
   .agents-sessions { @apply border-t border-stone-100 bg-stone-50/70 px-4 py-2 sm:px-5; }
   .agents-session-row { @apply grid items-center gap-3 border-b border-stone-200/70 py-3 last:border-0 sm:grid-cols-[5rem_minmax(0,1fr)_minmax(8rem,auto)]; }
   .agents-session-kind { @apply w-fit rounded-full bg-white px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-stone-500 shadow-sm; }

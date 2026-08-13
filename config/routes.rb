@@ -39,7 +39,11 @@ Rails.application.routes.draw do
       end
     end
     resources :agent_invitations, only: %i[new create show]
-    resources :agents, only: :index
+    resources :agents, only: :index do
+      patch :cancel, on: :member
+      patch :reconnect, on: :member
+      patch :retry, on: :member
+    end
     resources :agent_approvals, only: :update
   end
   get "database", to: "database#index", as: :database

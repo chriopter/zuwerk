@@ -36,6 +36,7 @@
     <div class="agents-list">
       <% @agents.each do |agent| %>
         <% sessions = @sessions_by_agent.fetch(agent.id, []) %>
+        <% latest_event = @latest_events_by_agent[agent.id] %>
         <details class="agents-row" data-agent-id="<%= agent.id %>" data-agent-origin="external">
           <summary class="agents-row-summary">
             <div class="agents-avatar"><%= agent.name.first.upcase %></div>
@@ -51,6 +52,24 @@
             <span class="agents-session-count"><%= pluralize(sessions.size, "session") %></span>
             <span class="agents-row-chevron" aria-hidden="true">⌄</span>
           </summary>
+          <div class="agents-operations">
+            <div class="agents-operation-facts">
+              <span><small>ACP activity</small><strong><%= agent.connector_heartbeat_at ? "#{time_ago_in_words(agent.connector_heartbeat_at)} ago" : "Never" %></strong></span>
+              <span><small>Last turn</small><strong><%= latest_event ? latest_event.state.humanize : "None" %></strong></span>
+            </div>
+            <% if latest_event&.last_error.present? %>
+              <p class="agents-operation-error" title="<%= latest_event.last_error %>"><%= latest_event.last_error %></p>
+            <% end %>
+            <div class="agents-operation-actions">
+              <% if latest_event&.state.in?(%w[queued running waiting_for_approval]) %>
+                <%= button_to "Cancel turn", cancel_agent_path(id: agent), method: :patch, class: "agents-operation-action agents-operation-action-danger" %>
+              <% end %>
+              <% if latest_event&.state == "failed" %>
+                <%= button_to "Retry turn", retry_agent_path(id: agent), method: :patch, class: "agents-operation-action" %>
+              <% end %>
+              <%= button_to "Reconnect", reconnect_agent_path(id: agent), method: :patch, class: "agents-operation-action" %>
+            </div>
+          </div>
           <div class="agents-sessions">
             <% if sessions.any? %>
               <% sessions.each do |session| %>

@@ -46,6 +46,9 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
     assert_select "[data-agent-id='#{@agent.id}'] .agents-model", text: "Model: Fable"
     assert_select "[data-agent-id='#{offline.id}']", text: /Offline/
     assert_select "details[data-agent-id='#{@agent.id}']" do
+      assert_select ".agents-operation-facts", text: /ACP activity/
+      assert_select "form[action='#{reconnect_agent_path(account_number: @human.primary_account.account_number, id: @agent)}']"
+      assert_select "form[action='#{cancel_agent_path(account_number: @human.primary_account.account_number, id: @agent)}']"
       assert_select ".agents-session-count", text: "2 sessions"
       assert_select "[data-agent-session-id]", count: 2
       assert_select "a[href='#{project_chat_path(project)}']", text: /Shared project chat/
@@ -69,6 +72,29 @@ class AgentsPageTest < ActionDispatch::IntegrationTest
     assert_select "[data-agent-profile='claude']", text: /zuwerk connect claude/
     assert_select "[data-agent-profile='codex']", text: /zuwerk connect codex/
     assert_select "[data-agent-profile='hermes']", text: /zuwerk connect hermes/
+  end
+
+  test "cancels an active turn and retries a failed turn" do
+    project = Project.create!(name: "Operations")
+    first_message = project.chat.messages.create!(author: @human, body: "First")
+    active = AgentEvent.create!(recipient: @agent, subject: first_message, event_type: "chat_message_mentioned")
+    active.transition_to!("running")
+
+    patch cancel_agent_path(account_number: @human.primary_account.account_number, id: @agent)
+    assert_redirected_to agents_path
+    assert_equal "cancelled", active.reload.state
+
+    second_message = project.chat.messages.create!(author: @human, body: "Second")
+    failed = AgentEvent.create!(recipient: @agent, subject: second_message, event_type: "chat_message_mentioned")
+    failed.transition_to!("running")
+    failed.terminalize_failure!(RuntimeError.new("Adapter stopped"))
+
+    assert_enqueued_with(job: DeliverAgentEventJob, args: [ failed ]) do
+      patch retry_agent_path(account_number: @human.primary_account.account_number, id: @agent)
+    end
+    assert_redirected_to agents_path
+    assert_equal "queued", failed.reload.state
+    assert_nil failed.last_error
   end
 
   test "global navigation does not present sidebar-only work indicators" do
