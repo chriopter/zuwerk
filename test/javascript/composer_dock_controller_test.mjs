@@ -81,5 +81,11 @@ test("the dock is pinned to the panel rather than carried by the message flow", 
 })
 
 test("the chat page never scrolls the document out from under the dock", () => {
-  assert.match(layout, /<html[^>]*h-dvh overflow-hidden overscroll-none/)
+  assert.match(layout, /<html[^>]*h-svh overflow-hidden overscroll-none/)
+  assert.match(styles, /\.workspace-top-shell\.is-chat-shell\s*{\s*@apply[^;]*\bh-svh\b/)
+})
+
+test("the project page entry sticks to the viewport while the document scrolls", () => {
+  assert.match(styles, /\.project-chat-entry\s*{\s*@apply[^;]*\bsticky\b/)
+  assert.match(styles, /\.project-chat-entry\s*{[\s\S]*?bottom: calc\(\.75rem/)
 })
