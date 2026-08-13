@@ -8,9 +8,18 @@ export default class extends Controller {
     this.scrollToBottom()
     this.observer = new MutationObserver(() => this.contentChanged())
     this.observer.observe(this.viewportTarget, { childList: true, subtree: true, characterData: true })
+    // The viewport shrinks when the keyboard opens and the feed's bottom
+    // padding grows with the composer — both would otherwise strand the
+    // newest message behind the dock.
+    this.resizeObserver = new ResizeObserver(() => { if (this.nearBottom) this.scrollToBottom() })
+    this.resizeObserver.observe(this.viewportTarget)
+    if (this.viewportTarget.firstElementChild) this.resizeObserver.observe(this.viewportTarget.firstElementChild)
   }
 
-  disconnect() { this.observer?.disconnect() }
+  disconnect() {
+    this.observer?.disconnect()
+    this.resizeObserver?.disconnect()
+  }
 
   track() {
     this.nearBottom = this.distanceFromBottom() < 120

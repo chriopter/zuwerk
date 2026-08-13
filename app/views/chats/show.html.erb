@@ -2,7 +2,7 @@
 <%= turbo_stream_from @project.agent_turn_stream %>
 <%= turbo_stream_from Current.account.agent_presence_stream %>
 
-<section class="chat-panel" data-controller="chat-scroll working-ring">
+<section class="chat-panel" data-controller="chat-scroll working-ring composer-dock">
     <header class="chat-header">
       <nav class="workspace-breadcrumb" aria-label="Breadcrumb">
         <%= link_to @project.name, project_path(@project) %><span aria-hidden="true">/</span><span aria-current="page">Chat</span>
@@ -62,7 +62,7 @@
       <button type="button" class="new-message-button hidden" data-chat-scroll-target="button" data-action="chat-scroll#scrollToBottom">New messages <span aria-hidden="true">↓</span></button>
     </div>
 
-    <div class="composer-dock">
+    <div class="composer-dock" data-composer-dock-target="dock">
       <%= form_with model: [@project, @message], class: "composer-form", data: { controller: "mention attachments", attachments_max_value: ChatMessage::MAX_ATTACHMENTS, mention_users_value: @agents.map { |agent| { handle: agent.handle, name: agent.name } }.to_json, action: "dragenter->attachments#dragenter dragover->attachments#dragover dragleave->attachments#dragleave drop->attachments#drop" } do |form| %>
         <%= render "shared/errors", object: @message %>
         <div class="mention-menu" data-mention-target="menu" hidden></div>

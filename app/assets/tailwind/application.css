@@ -104,6 +104,10 @@
 
   .chat-panel { @apply relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-[#eef1ed];
     background-image: radial-gradient(58% 50% at 15% 8%, rgba(232,95,66,.10), transparent 62%), radial-gradient(52% 48% at 90% 16%, rgba(39,51,45,.12), transparent 58%), radial-gradient(72% 60% at 50% 108%, rgba(39,51,45,.07), transparent 60%);
+    /* Measured by the composer-dock controller; the fallback covers the first
+       paint and any browser without ResizeObserver. */
+    --composer-space: 9rem;
+    --keyboard-inset: 0px;
   }
   .chat-header { @apply relative z-10 flex h-16 shrink-0 items-center justify-between px-4 sm:px-6 lg:px-8; }
   .mobile-agent-presence { @apply flex h-8 shrink-0 items-center border-b border-stone-200 bg-white px-4 lg:hidden; }
@@ -173,8 +177,12 @@
 
   .message-stage { @apply relative min-h-0 flex-1 bg-transparent; }
   .message-scroll { @apply h-full overflow-y-auto overscroll-contain; scrollbar-gutter: stable; }
-  .message-feed { @apply mx-auto w-full max-w-[820px] px-3 pb-36 pt-5 sm:px-7 sm:pb-40 sm:pt-8; }
-  .new-message-button { @apply absolute bottom-28 left-1/2 -translate-x-1/2 rounded-full border border-white/20 bg-[#27332d]/85 px-4 py-2 text-xs font-medium text-white shadow-[0_14px_34px_-10px_rgba(39,51,45,.55),inset_0_1px_0_rgba(255,255,255,.2)] backdrop-blur-md transition hover:-translate-y-px hover:bg-[#27332d]; }
+  .message-feed { @apply mx-auto w-full max-w-[820px] px-3 pt-5 sm:px-7 sm:pt-8;
+    padding-bottom: calc(var(--composer-space) + var(--keyboard-inset) + 1rem);
+  }
+  .new-message-button { @apply absolute left-1/2 -translate-x-1/2 rounded-full border border-white/20 bg-[#27332d]/85 px-4 py-2 text-xs font-medium text-white shadow-[0_14px_34px_-10px_rgba(39,51,45,.55),inset_0_1px_0_rgba(255,255,255,.2)] backdrop-blur-md transition hover:-translate-y-px hover:bg-[#27332d];
+    bottom: calc(var(--composer-space) + var(--keyboard-inset) + .5rem);
+  }
   .empty-conversation { @apply flex min-h-[25rem] flex-col items-center justify-center text-center; }
   .empty-icon { @apply grid h-10 w-10 place-items-center rounded-xl bg-[#27332d] text-xs font-bold text-white; }
   .empty-conversation h2 { @apply mt-5 font-serif text-xl font-normal tracking-wide text-stone-900; }
@@ -252,7 +260,15 @@
   .message-bubble-row.is-own .boost-picker-menu { @apply left-auto right-0 translate-x-0; }
   .boost-picker-option { @apply grid h-8 w-8 cursor-pointer place-items-center rounded-lg text-base transition hover:bg-stone-100; }
 
-  .composer-dock { @apply pointer-events-none absolute inset-x-0 bottom-0 z-20 px-3 pb-4 sm:px-6 sm:pb-6; }
+  /* Pinned to the panel, never to the message flow, so it stays put while the
+     feed scrolls; the transform lifts it clear of the on-screen keyboard. */
+  .composer-dock { @apply pointer-events-none absolute inset-x-0 bottom-0 z-20 px-3 sm:px-6;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    transform: translateY(calc(-1 * var(--keyboard-inset)));
+  }
+  @media (min-width: 640px) {
+    .composer-dock { padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px)); }
+  }
   .composer-form { @apply pointer-events-auto relative mx-auto w-full max-w-[820px]; }
   .mention-menu { @apply absolute bottom-full left-3 z-30 mb-2 flex w-72 flex-col overflow-hidden rounded-2xl border border-white/60 bg-white/90 p-1.5 shadow-[0_20px_60px_rgba(28,25,23,.18),inset_0_1px_0_rgba(255,255,255,.6)] backdrop-blur-xl; }
   .mention-option { @apply flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-2.5 py-2 text-left transition; }
