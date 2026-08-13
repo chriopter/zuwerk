@@ -97,6 +97,44 @@ class ChatUpgradeTest < ActionDispatch::IntegrationTest
     assert_select "#chat_message_#{message.id} .message-attachment", text: /notes.txt/
   end
 
+  test "sends a picture without a body and shows it inline" do
+    project = Project.default
+    upload = Rack::Test::UploadedFile.new(file_fixture("logo.png"), "image/png")
+
+    post project_chat_messages_path(project), params: { chat_message: { body: "", attachments: [ upload ] } }
+
+    assert_redirected_to project_chat_path(project)
+    message = ChatMessage.order(:id).last
+    assert_equal "", message.body
+    assert_equal [ "logo.png" ], message.image_attachments.map { |image| image.filename.to_s }
+    assert_empty message.file_attachments
+
+    get project_chat_path(project)
+    assert_select "#chat_message_#{message.id} .message-image img[alt='logo.png']"
+    assert_select "#chat_message_#{message.id} .message-copy", count: 0
+    assert_select "#chat_message_#{message.id} .message-attachment", count: 0
+  end
+
+  test "rejects a message with neither a body nor an attachment" do
+    project = Project.default
+
+    assert_no_difference "ChatMessage.count" do
+      post project_chat_messages_path(project), params: { chat_message: { body: "  " } }
+    end
+
+    assert_response :unprocessable_entity
+  end
+
+  test "composer accepts dropped and pasted files" do
+    get project_chat_path(Project.default)
+
+    assert_select ".composer-form[data-controller~='attachments']"
+    assert_select ".composer-form[data-action*='drop->attachments#drop']"
+    assert_select ".composer-input[data-action*='paste->attachments#paste']"
+    assert_select ".composer-input[required]", count: 0
+    assert_select "input[type='file'][name='chat_message[attachments][]'][multiple]"
+  end
+
   test "bot subscriptions require a signed-in human" do
     project = Project.default
     delete session_path

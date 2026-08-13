@@ -63,23 +63,28 @@
     </div>
 
     <div class="composer-dock">
-      <%= form_with model: [@project, @message], class: "composer-form", data: { controller: "mention", mention_users_value: @agents.map { |agent| { handle: agent.handle, name: agent.name } }.to_json } do |form| %>
+      <%= form_with model: [@project, @message], class: "composer-form", data: { controller: "mention attachments", attachments_max_value: ChatMessage::MAX_ATTACHMENTS, mention_users_value: @agents.map { |agent| { handle: agent.handle, name: agent.name } }.to_json, action: "dragenter->attachments#dragenter dragover->attachments#dragover dragleave->attachments#dragleave drop->attachments#drop" } do |form| %>
         <%= render "shared/errors", object: @message %>
         <div class="mention-menu" data-mention-target="menu" hidden></div>
         <div class="composer-box">
           <div class="composer-input-wrap">
             <div class="mention-highlights" data-mention-target="highlights" aria-hidden="true"></div>
-            <%= form.text_area :body, placeholder: "Write a message…", required: true, rows: 1, maxlength: 4000, class: "composer-input", data: { controller: "composer", mention_target: "input", action: "input->composer#grow input->mention#update keydown->mention#keydown keydown->composer#keydown click->mention#update scroll->mention#highlight" }, aria: { label: "Message" } %>
+            <%= form.text_area :body, placeholder: "Write a message…", rows: 1, maxlength: 4000, class: "composer-input", data: { controller: "composer", mention_target: "input", action: "input->composer#grow input->mention#update input->attachments#refreshSubmit paste->attachments#paste keydown->mention#keydown keydown->composer#keydown click->mention#update scroll->mention#highlight" }, aria: { label: "Message" } %>
           </div>
+          <div class="composer-attachments" data-attachments-target="list" hidden></div>
           <div class="composer-footer">
             <div class="composer-tools">
-              <%= form.file_field :attachments, multiple: true, class: "composer-file-input", accept: "image/*,.pdf,.txt,.md,.csv,.json,.zip", aria: { label: "Attach files" } %>
-              <span class="hidden sm:inline">Markdown supported · up to 5 files</span>
+              <%= form.file_field :attachments, multiple: true, class: "sr-only", accept: "image/*,audio/*,video/*,.pdf,.txt,.md,.csv,.json,.zip", data: { attachments_target: "input", action: "change->attachments#picked" }, aria: { label: "Attach files" } %>
+              <button type="button" class="composer-attach" data-action="attachments#open" title="Attach pictures or files" aria-label="Attach pictures or files">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.4 11.05 12.25 20.2a5.5 5.5 0 0 1-7.78-7.78l9.19-9.19a3.67 3.67 0 1 1 5.19 5.19l-9.2 9.19a1.83 1.83 0 1 1-2.59-2.6l8.49-8.48"/></svg>
+              </button>
+              <span class="hidden sm:inline">Markdown · drop, paste, or attach up to <%= ChatMessage::MAX_ATTACHMENTS %> files</span>
             </div>
             <span class="sm:hidden"></span>
-            <%= form.submit "Send", class: "send-button" %>
+            <%= form.submit "Send", class: "send-button", data: { attachments_target: "submit" } %>
           </div>
         </div>
+        <p class="composer-dropzone" aria-hidden="true">Drop files to attach</p>
       <% end %>
     </div>
 </section>

@@ -7,7 +7,8 @@ it an authenticated, project-scoped place to work.
 
 It provides:
 
-- Project-scoped chat with live Turbo updates, rich text, and emoji reactions
+- Project-scoped chat with live Turbo updates, rich text, emoji reactions, and
+  picture and file attachments by drop, paste, or picker
 - Tasks, task lists, and comments
 - A nested project library for long-lived documents and files
 - Recurring briefings

@@ -1,5 +1,7 @@
 class ChatMessage < ApplicationRecord
   MAX_BODY_LENGTH = 4_000
+  MAX_ATTACHMENTS = 5
+  MAX_ATTACHMENT_SIZE = 10.megabytes
 
   belongs_to :chat
   belongs_to :author, class_name: "User"
@@ -10,8 +12,10 @@ class ChatMessage < ApplicationRecord
   has_many :activities, as: :subject
   delegate :project, to: :chat
 
-  validates :body, presence: true
+  before_validation :normalize_body
+
   validates :body, length: { maximum: MAX_BODY_LENGTH }
+  validate :body_or_attachment_present
   validate :acceptable_attachments
   validate :agent_event_matches_message
   after_create :create_mention_events
@@ -20,11 +24,24 @@ class ChatMessage < ApplicationRecord
   after_update_commit :broadcast_replace
   after_destroy_commit :broadcast_remove
 
+  # Images are shown inline in the feed; everything else is listed as a file.
+  def image_attachments = attachments.select { |attachment| attachment.image? }
+  def file_attachments = attachments.reject { |attachment| attachment.image? }
+
   private
+    # The column is NOT NULL, so an attachment-only message stores an empty body.
+    def normalize_body
+      self.body = body.to_s
+    end
+
+    def body_or_attachment_present
+      errors.add(:body, "can't be blank without an attachment") if body.blank? && !attachments.attached?
+    end
+
     def acceptable_attachments
-      errors.add(:attachments, "are limited to 5 files") if attachments.size > 5
+      errors.add(:attachments, "are limited to #{MAX_ATTACHMENTS} files") if attachments.size > MAX_ATTACHMENTS
       attachments.each do |attachment|
-        errors.add(:attachments, "must be 10 MB or smaller") if attachment.blob.byte_size > 10.megabytes
+        errors.add(:attachments, "must be 10 MB or smaller") if attachment.blob.byte_size > MAX_ATTACHMENT_SIZE
       end
     end
 

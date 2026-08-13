@@ -11,19 +11,33 @@
         <time datetime="<%= chat_message.created_at.iso8601 %>"><%= chat_message.created_at.strftime("%H:%M") %></time>
       </div>
 
-      <% long_body = chat_message.body.to_s.length > 500 %>
-      <div class="message-collapse <%= 'is-collapsed' if long_body %>" <%= 'data-controller=collapse'.html_safe if long_body %>>
-        <div class="message-copy lexxy-content">
-          <%= render_message_markdown(chat_message.body) %>
+      <% if chat_message.body.present? %>
+        <% long_body = chat_message.body.length > 500 %>
+        <div class="message-collapse <%= 'is-collapsed' if long_body %>" <%= 'data-controller=collapse'.html_safe if long_body %>>
+          <div class="message-copy lexxy-content">
+            <%= render_message_markdown(chat_message.body) %>
+          </div>
+          <% if long_body %>
+            <button type="button" class="message-show-more" data-action="collapse#toggle"><span data-collapse-target="label">Show more</span></button>
+          <% end %>
         </div>
-        <% if long_body %>
-          <button type="button" class="message-show-more" data-action="collapse#toggle"><span data-collapse-target="label">Show more</span></button>
-        <% end %>
-      </div>
+      <% end %>
 
-      <% if chat_message.attachments.any? %>
+      <% images = chat_message.image_attachments %>
+      <% if images.any? %>
+        <div class="message-images <%= 'is-multiple' if images.size > 1 %>" aria-label="Images">
+          <% images.each do |image| %>
+            <%= link_to rails_blob_path(image, disposition: "inline"), class: "message-image", target: "_blank", rel: "noopener", title: image.filename.to_s do %>
+              <%= image_tag rails_blob_path(image, disposition: "inline"), alt: image.filename.to_s, loading: "lazy" %>
+            <% end %>
+          <% end %>
+        </div>
+      <% end %>
+
+      <% files = chat_message.file_attachments %>
+      <% if files.any? %>
         <div class="message-attachments" aria-label="Attachments">
-          <% chat_message.attachments.each do |attachment| %>
+          <% files.each do |attachment| %>
             <%= link_to rails_blob_path(attachment, disposition: "attachment"), class: "message-attachment" do %>
               <span class="message-attachment-icon" aria-hidden="true">↧</span>
               <span><strong><%= attachment.filename %></strong><small><%= number_to_human_size attachment.byte_size %></small></span>
