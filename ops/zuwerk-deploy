@@ -3,6 +3,7 @@ set -euo pipefail
 
 unit="zuwerk-deploy-$(date +%s)-$$"
 systemd-run \
+  --no-block \
   --unit="$unit" \
   --collect \
   --property=Type=oneshot \
