@@ -2,8 +2,10 @@
 <div class="boosts" aria-label="Reactions">
   <% reactions.each do |reaction| %>
     <% own = reaction.author_id == current_user&.id %>
+    <%# Broadcasts render for nobody in particular, so the viewer's own chip is %>
+    <%# marked in the browser from this author id. %>
     <%= button_to path, params: { emoji: reaction.emoji },
-          class: "boost-chip #{'is-own' if own}",
+          class: "boost-chip #{'is-own' if own}", data: { author_id: reaction.author_id },
           title: own ? "Remove your #{reaction.emoji}" : "#{reaction.author.name} reacted #{reaction.emoji} — react too",
           aria: { label: own ? "Remove your #{reaction.emoji} reaction" : "#{reaction.author.name} reacted #{reaction.emoji}" } do %>
       <span class="boost-chip-avatar <%= 'is-agent' if reaction.author.agent? %>" aria-hidden="true"><%= reaction.author.name.first.upcase %></span>

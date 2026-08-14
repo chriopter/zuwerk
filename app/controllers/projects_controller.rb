@@ -9,8 +9,10 @@ class ProjectsController < ApplicationController
 
   def show
     @project = find_project(params[:id])
-    @message = @project.chat.messages.new
-    @recent_chat_messages = @project.chat.messages.includes(:author).order(created_at: :desc, id: :desc).limit(8).reverse
+    @chat = @project.chat
+    @message = @chat.messages.new
+    @recent_chat_messages = @chat.messages.includes(:author).with_attached_attachments
+      .order(created_at: :desc, id: :desc).limit(8).reverse
     @agents = current_account_agents.order(:name)
   end
 

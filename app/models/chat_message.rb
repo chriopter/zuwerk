@@ -1,5 +1,5 @@
 class ChatMessage < ApplicationRecord
-  MAX_BODY_LENGTH = 4_000
+  MAX_BODY_LENGTH = 50_000
   MAX_ATTACHMENTS = 5
   MAX_ATTACHMENT_SIZE = 10.megabytes
 
@@ -28,6 +28,10 @@ class ChatMessage < ApplicationRecord
   def image_attachments = attachments.select { |attachment| attachment.image? }
   def file_attachments = attachments.reject { |attachment| attachment.image? }
 
+  # The project home renders its own markup for the same record, so it needs a
+  # dom id that cannot collide with the chat bubble's.
+  def live_dom_id = ActionView::RecordIdentifier.dom_id(self, :live)
+
   private
     # The column is NOT NULL, so an attachment-only message stores an empty body.
     def normalize_body
@@ -54,16 +58,24 @@ class ChatMessage < ApplicationRecord
       errors.add(:agent_event, "must be the author's mention event for this project")
     end
 
+    # Both surfaces render for nobody in particular — a broadcast is one render
+    # shared by every subscriber — so "is-own" is applied per viewer in the
+    # browser from the author id on the element.
     def broadcast_append
       broadcast_append_to chat.message_stream, target: "messages", partial: "chat_messages/chat_message", locals: { current_user: nil }
+      broadcast_append_to chat.home_stream, target: "project_live_messages", partial: "projects/live_message", locals: { current_user: nil }
     end
 
     def broadcast_replace
       broadcast_replace_to chat.message_stream, partial: "chat_messages/chat_message", locals: { current_user: nil }
+      broadcast_replace_to chat.home_stream, target: live_dom_id, partial: "projects/live_message", locals: { current_user: nil }
     end
 
     def broadcast_remove
       broadcast_remove_to chat.message_stream
+      # Addressed through the channel because the record helper removes its own
+      # dom id, and the project home renders this message under a different one.
+      Turbo::StreamsChannel.broadcast_remove_to chat.home_stream, target: live_dom_id
     end
 
 

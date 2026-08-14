@@ -23,18 +23,24 @@ export default class extends Controller {
 
   track() {
     this.nearBottom = this.distanceFromBottom() < 120
-    if (this.nearBottom) this.buttonTarget.classList.add("hidden")
+    if (this.nearBottom) this.hideButton()
   }
 
   contentChanged() {
     if (this.nearBottom) this.scrollToBottom()
-    else this.buttonTarget.classList.remove("hidden")
+    else if (this.hasButtonTarget) this.buttonTarget.classList.remove("hidden")
   }
 
   scrollToBottom() {
     this.viewportTarget.scrollTop = this.viewportTarget.scrollHeight
     this.nearBottom = true
-    this.buttonTarget.classList.add("hidden")
+    this.hideButton()
+  }
+
+  // The project home reuses this controller for its condensed feed, which has
+  // no catch-up button.
+  hideButton() {
+    if (this.hasButtonTarget) this.buttonTarget.classList.add("hidden")
   }
 
   distanceFromBottom() {

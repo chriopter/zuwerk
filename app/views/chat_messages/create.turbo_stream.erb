@@ -1,0 +1,7 @@
+<% if params[:return_to] == "project" %>
+  <%= turbo_stream.replace "project_chat_entry", partial: "projects/chat_entry",
+        locals: { project: @project, message: @message, agents: @agents, focus: true } %>
+<% else %>
+  <%= turbo_stream.replace "chat_composer", partial: "chats/composer",
+        locals: { project: @project, message: @message, agents: @agents, focus: true } %>
+<% end %>

@@ -1,35 +1,28 @@
 <% content_for :title, "#{@project.name} · Zuwerk" %>
 
+<%= turbo_stream_from @chat.home_stream %>
+<%= turbo_stream_from @project.agent_turn_stream %>
+<%= turbo_stream_from Current.account.agent_presence_stream %>
+
 <section class="project-home" aria-labelledby="project-title">
   <header class="sr-only">
     <h1 id="project-title"><%= @project.name %></h1>
   </header>
 
-  <section class="project-live-chat" aria-labelledby="project-chat-title">
+  <section class="project-live-chat" aria-labelledby="project-chat-title" data-controller="chat-scroll">
     <h2 id="project-chat-title" class="sr-only">Chat</h2>
 
-    <div class="project-live-messages">
-      <% if @recent_chat_messages.any? %>
-        <% @recent_chat_messages.each do |message| %>
-          <article class="project-live-message <%= 'is-own' if message.author == current_user %> <%= 'is-agent' if message.author.agent? %>">
-            <i aria-hidden="true"><%= message.author.name.first.upcase %></i>
-            <div>
-              <header><strong><%= message.author.name %></strong><time><%= time_ago_in_words(message.created_at) %> ago</time></header>
-              <p><%= truncate(strip_tags(render_message_markdown(message.body)).squish, length: 320) %></p>
-            </div>
-          </article>
-        <% end %>
-      <% else %>
-        <div class="project-live-empty"><strong>Start the conversation</strong><span>Write a message or mention an agent to begin working together.</span></div>
-      <% end %>
+    <div id="project_live_messages" class="project-live-messages" data-controller="own-messages"
+      data-own-messages-user-value="<%= current_user.id %>" data-chat-scroll-target="viewport" data-action="scroll->chat-scroll#track">
+      <div class="project-live-empty"><strong>Start the conversation</strong><span>Write a message or mention an agent to begin working together.</span></div>
+      <%= render partial: "projects/live_message", collection: @recent_chat_messages, as: :chat_message, locals: { current_user: current_user } %>
     </div>
 
-    <%= form_with model: [ @project, @message ], class: "project-chat-entry", data: { controller: "mention", mention_users_value: @agents.map { |agent| { handle: agent.handle, name: agent.name } }.to_json } do |form| %>
-      <%= hidden_field_tag :return_to, "project" %>
-      <div class="mention-menu" data-mention-target="menu" hidden></div>
-      <%= form.text_area :body, placeholder: "Write to the project or mention an agent…", required: true, rows: 1, maxlength: 4000,
-            data: { controller: "composer", mention_target: "input", action: "input->composer#grow input->mention#update keydown->mention#keydown keydown->composer#keydown click->mention#update" }, aria: { label: "Message" } %>
-      <%= form.submit "Send" %>
-    <% end %>
+    <div class="project-live-status">
+      <%= render "chat_messages/agent_presence", agents: @agents %>
+      <%= render "agent_events/chat_status", project: @project %>
+    </div>
+
+    <%= render "projects/chat_entry", project: @project, message: @message, agents: @agents %>
   </section>
 </section>

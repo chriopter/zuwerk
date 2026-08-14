@@ -1,0 +1,10 @@
+<% composer = local_assigns[:focus] ? "composer autofocus" : "composer" %>
+<%= form_with model: [ project, message ], id: "project_chat_entry", class: "project-chat-entry",
+      data: { controller: "mention", mention_users_value: agents.map { |agent| { handle: agent.handle, name: agent.name } }.to_json } do |form| %>
+  <%= hidden_field_tag :return_to, "project" %>
+  <%= render "shared/errors", object: message %>
+  <div class="mention-menu" data-mention-target="menu" hidden></div>
+  <%= form.text_area :body, placeholder: "Write to the project or mention an agent…", required: true, rows: 1, maxlength: 4000,
+        data: { controller: composer, mention_target: "input", action: "input->composer#grow input->mention#update keydown->mention#keydown keydown->composer#keydown click->mention#update" }, aria: { label: "Message" } %>
+  <%= form.submit "Send" %>
+<% end %>

@@ -14,6 +14,12 @@ class Chat < ApplicationRecord
     "chat_#{id}_messages"
   end
 
+  # The project home renders the same messages in its own condensed markup, so
+  # it subscribes separately instead of receiving the full chat bubbles.
+  def home_stream
+    "chat_#{id}_home"
+  end
+
   private
 
   def set_initial_activity
